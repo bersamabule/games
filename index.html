@@ -6,8 +6,12 @@
 <title>Drill Games</title>
 <meta name="description" content="4 free games you can play in your browser or install like an app.">
 <meta name="theme-color" content="#17130f">
-<link rel="icon" type="image/png" sizes="32x32" href="drill/icons/favicon-32.png">
-<link rel="apple-touch-icon" href="drill/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Drill Games">
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{--ink:#17130f;--void:#0c0907;--panel:#221c16;--panel-hi:#2d251e;--line:#41362b;--text:#f0e6d4;--dim:#a8987f;--rig:#f4b400;--on-rig:#1b1406;
@@ -40,9 +44,26 @@ h1{margin:0;font:400 clamp(40px,10vw,76px)/.95 var(--f-display);letter-spacing:.
 .hint{margin:14px 0 0;color:var(--dim);font-size:20px;text-align:center}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--rig);color:var(--on-rig);font:400 22px/1 var(--f-display);padding:14px 22px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
+.showqr{display:block;margin:0 auto;background:var(--rig);color:var(--on-rig);border:0;border-radius:14px;font:400 28px/1 var(--f-display);letter-spacing:.06em;padding:0 26px;min-height:68px;cursor:pointer;width:100%;max-width:420px}
+.showqr:hover{background:#ffc928}
+.qrb{padding:0 14px;font-size:18px}
+.welcome{display:flex;align-items:center;gap:12px;margin:14px 0 0;background:#2a4a2a;border:2px solid #6cc070;border-radius:14px;padding:12px 14px;font-size:21px;font-weight:600}
+.welcome[hidden]{display:none}
+.welcome span{flex:1}
+.welcome button{background:transparent;color:var(--text);border:2px solid #6cc070;border-radius:10px;font:400 20px/1 var(--f-display);min-width:48px;min-height:48px;cursor:pointer}
+.qrov{position:fixed;inset:0;z-index:50;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;cursor:pointer}
+.qrov[hidden]{display:none}
+.qrov .x{position:absolute;top:12px;right:12px;width:56px;height:56px;border:2px solid #111;border-radius:14px;background:#fff;color:#111;font:400 30px/1 var(--f-display);cursor:pointer}
+.qrov .who{display:flex;align-items:center;gap:12px;font:400 30px/1.1 var(--f-display);letter-spacing:.04em}
+.qrov .who img{width:56px;height:56px;border-radius:12px}
+.qrov .who[hidden]{display:none}
+.qrov .code{width:min(88vw,calc(100vh - 230px),640px);height:min(88vw,calc(100vh - 230px),640px);display:block}
+.qrov .scan{margin:0;font:400 clamp(22px,6vw,34px)/1.1 var(--f-display);letter-spacing:.03em}
+.qrov .addr{margin:0;font:700 clamp(26px,8vw,48px)/1.1 var(--f-ui);letter-spacing:.02em;word-break:break-all}
 .play:hover{background:#ffc928}
 .install{background:var(--panel-hi);border:2px solid var(--rig);border-radius:14px;padding:18px 16px}
 .install h2{margin:0 0 6px;font:400 30px/1.05 var(--f-display);letter-spacing:.04em;color:var(--rig)}
+.steps.one{margin:10px 0 14px}
 .steps{display:grid;gap:14px;grid-template-columns:1fr;margin-top:14px}
 .steps section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .steps h3{margin:0 0 4px;font:600 20px/1.1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--rig)}
@@ -52,13 +73,16 @@ h1{margin:0;font:400 clamp(40px,10vw,76px)/.95 var(--f-display);letter-spacing:.
 footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
 @media(min-width:700px){.grid{grid-template-columns:1fr 1fr}.steps{grid-template-columns:repeat(3,1fr)}.card{padding:18px}}
 </style>
+<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('sw',e)})})}</script>
 </head>
 <body>
 <div class="wrap">
+  <div class="welcome" id="welcome" hidden role="status"><span>Welcome! Tap a game to play. No sign-up needed.</span><button type="button" id="welcomeX" aria-label="Close">✕</button></div>
   <header>
     <h1>Drill Games</h1>
     <p class="lead">Dig deep, save the day. Pick a game and play!</p>
     <p class="hint">Tap Play to try it right away. No sign-up.</p>
+    <div class="top"><button type="button" class="showqr" data-qr="qr/site.svg" data-name="" data-icon="">📱 Show QR</button></div>
     <div class="top"><button type="button" class="share" data-title="Drill Games" data-text="Free games to play in your browser!" data-url="./">📤 Share Drill Games</button></div>
   </header>
   <main>
@@ -74,6 +98,7 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
       <div class="btns">
         <a class="play" href="drill/">Play Drill</a>
         <button type="button" class="share" data-title="Drill" data-text="Dig to the core of an alien planet and rebuild your wrecked satellite." data-url="drill/">📤 Share</button>
+        <button type="button" class="share qrb" data-qr="qr/drill.svg" data-name="Drill" data-icon="drill/icons/icon-192.png" aria-label="Show QR code for Drill">📱 QR</button>
       </div>
     </article>
     <article class="card" data-updated="2026-10-10">
@@ -87,6 +112,7 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
       <div class="btns">
         <a class="play" href="drill-2/">Play Drill 2</a>
         <button type="button" class="share" data-title="Drill 2" data-text="Answer a distress call 470 m under planet 173v4 and bring the survivor home." data-url="drill-2/">📤 Share</button>
+        <button type="button" class="share qrb" data-qr="qr/drill-2.svg" data-name="Drill 2" data-icon="drill-2/icons/icon-192.png" aria-label="Show QR code for Drill 2">📱 QR</button>
       </div>
     </article>
     <article class="card" data-updated="2026-10-10">
@@ -100,6 +126,7 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
       <div class="btns">
         <a class="play" href="drill-3/">Play Drill 3</a>
         <button type="button" class="share" data-title="Drill 3" data-text="Ram the robots invading Novaport, then mine under the streets to rebuild it." data-url="drill-3/">📤 Share</button>
+        <button type="button" class="share qrb" data-qr="qr/drill-3.svg" data-name="Drill 3" data-icon="drill-3/icons/icon-192.png" aria-label="Show QR code for Drill 3">📱 QR</button>
       </div>
     </article>
     <article class="card" data-updated="2026-10-10">
@@ -113,12 +140,20 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
       <div class="btns">
         <a class="play" href="drill-full/">Play Drill Full Version</a>
         <button type="button" class="share" data-title="Drill Full Version" data-text="All three Drill games as one story: a satellite, a rescue and a city to save." data-url="drill-full/">📤 Share</button>
+        <button type="button" class="share qrb" data-qr="qr/drill-full.svg" data-name="Drill Full Version" data-icon="drill-full/icons/icon-192.png" aria-label="Show QR code for Drill Full Version">📱 QR</button>
       </div>
     </article>
     </section>
     <section class="install" aria-labelledby="inst">
       <h2 id="inst">Install it like an app</h2>
-      <p>Open a game first, then follow the steps for your device. Each game gets its own icon, plays full screen, and works with no internet.</p>
+      <section class="steps one">
+        <section>
+          <h3>Put Drill Games on your phone</h3>
+          <p>Install this page and you get one icon. Tap it, then tap <b>Show QR</b>, and a friend can scan it and play right away.</p>
+          <p>Use the steps below, but open <b>this page</b> instead of a game.</p>
+        </section>
+      </section>
+      <p>Or install one game on its own. Open a game first, then follow the steps for your device. Each game gets its own icon, plays full screen, and works with no internet.</p>
       <div class="steps">
         <section>
           <h3>Android (Chrome)</h3>
@@ -138,6 +173,13 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
   </main>
   <footer>Free to play. No ads. No sign-up.</footer>
 </div>
+<div class="qrov" id="qrov" hidden role="dialog" aria-modal="true" aria-label="QR code">
+  <button type="button" class="x" id="qrx" aria-label="Close">✕</button>
+  <div class="who" id="qrwho" hidden><img id="qricon" alt="" width="56" height="56"><span id="qrname"></span></div>
+  <img class="code" id="qrimg" alt="QR code. Scan it with a phone camera to play.">
+  <p class="scan">Scan with your camera to play!</p>
+  <p class="addr">bersamabule.github.io/games</p>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){
@@ -154,7 +196,25 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
   }
   function old(u){var a=document.createElement('textarea');a.value=u;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();
     try{document.execCommand('copy');say('Link copied!')}catch(e){say(u)}document.body.removeChild(a)}
+  /* welcome banner for people who scanned a QR code */
+  if(/[?&]from=qr(&|$)/.test(location.search)){var w=document.getElementById('welcome');w.hidden=false;
+    document.getElementById('welcomeX').addEventListener('click',function(){w.hidden=true})}
+  /* full-screen QR overlay, screen kept awake while it is open */
+  var ov=document.getElementById('qrov'),lock=null;
+  function openQR(b){
+    document.getElementById('qrimg').src=b.getAttribute('data-qr');
+    var nm=b.getAttribute('data-name'),who=document.getElementById('qrwho');
+    who.hidden=!nm;document.getElementById('qrname').textContent=nm||'';
+    if(nm)document.getElementById('qricon').src=b.getAttribute('data-icon');
+    ov.hidden=false;
+    try{if(navigator.wakeLock&&navigator.wakeLock.request)navigator.wakeLock.request('screen').then(function(l){lock=l;if(ov.hidden){l.release();lock=null}},function(){})}catch(e){}
+  }
+  function closeQR(){ov.hidden=true;try{if(lock){lock.release();lock=null}}catch(e){}}
+  ov.addEventListener('click',closeQR);
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!ov.hidden)closeQR()});
+  document.addEventListener('visibilitychange',function(){if(!ov.hidden&&document.visibilityState==='visible'&&!lock){try{navigator.wakeLock.request('screen').then(function(l){lock=l},function(){})}catch(e){}}});
   document.addEventListener('click',function(e){
+    var q=e.target.closest&&e.target.closest('[data-qr]'); if(q){openQR(q);return}
     var b=e.target.closest&&e.target.closest('.share'); if(!b)return;
     var url=new URL(b.getAttribute('data-url'),location.href).href;
     var data={title:b.getAttribute('data-title'),text:b.getAttribute('data-text'),url:url};
