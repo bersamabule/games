@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drill Games</title>
+<meta name="description" content="Four free Drill games you can play in your browser or install like an app.">
+<meta name="theme-color" content="#17130f">
+<link rel="icon" type="image/png" sizes="32x32" href="drill/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="drill/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{--ink:#17130f;--void:#0c0907;--panel:#221c16;--panel-hi:#2d251e;--line:#41362b;--text:#f0e6d4;--dim:#a8987f;--rig:#f4b400;--on-rig:#1b1406;
+--f-display:"Saira Stencil One",Impact,"Arial Narrow",sans-serif;--f-ui:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--text);font:500 19px/1.4 var(--f-ui);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:3px solid var(--rig);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 40px}
+header{padding:36px 0 20px;text-align:center}
+h1{margin:0;font:400 clamp(40px,10vw,76px)/.95 var(--f-display);letter-spacing:.05em;color:var(--rig)}
+.lead{margin:12px auto 0;max-width:34ch;color:var(--dim);font-size:22px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr;margin:18px 0 28px}
+.card{display:grid;grid-template-columns:96px 1fr;gap:6px 16px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.ico{width:96px;height:96px;border-radius:20px;display:block}
+.txt h3{margin:0;font:400 28px/1 var(--f-display);letter-spacing:.04em;color:var(--rig)}
+.txt p{margin:6px 0 0}
+.txt .tag{color:var(--dim);font-size:16px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.play{grid-column:1/-1;display:block;text-align:center;background:var(--rig);color:var(--on-rig);text-decoration:none;font:400 26px/1 var(--f-display);letter-spacing:.08em;padding:16px;border-radius:12px;margin-top:8px;min-height:56px}
+.play:hover{background:#ffc928}
+.install{background:var(--panel-hi);border:2px solid var(--rig);border-radius:14px;padding:18px 16px}
+.install h2{margin:0 0 6px;font:400 30px/1.05 var(--f-display);letter-spacing:.04em;color:var(--rig)}
+.steps{display:grid;gap:14px;grid-template-columns:1fr;margin-top:14px}
+.steps section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.steps h3{margin:0 0 4px;font:600 20px/1.1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--rig)}
+.steps ol{margin:0;padding-left:22px}
+.steps li{margin:3px 0}
+.saved{margin:16px 0 0;font-weight:600}
+footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
+@media(min-width:700px){.grid{grid-template-columns:1fr 1fr}.steps{grid-template-columns:repeat(3,1fr)}.card{padding:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Drill Games</h1>
+    <p class="lead">Dig deep, save the day. Pick a game and play!</p>
+  </header>
+  <main>
+    <section class="grid" aria-label="Games">
+    <article class="card">
+      <img class="ico" src="drill/icons/icon-192.png" width="96" height="96" alt="">
+      <div class="txt">
+        <h3>Drill</h3>
+        <p class="tag">Planet 1.7305.d · Rebuild the satellite</p>
+        <p>Dig to the core of an alien planet and rebuild your wrecked satellite.</p>
+      </div>
+      <a class="play" href="drill/">Play Drill</a>
+    </article>
+    <article class="card">
+      <img class="ico" src="drill-2/icons/icon-192.png" width="96" height="96" alt="">
+      <div class="txt">
+        <h3>Drill 2</h3>
+        <p class="tag">Planet 173v4 · Answer the distress call</p>
+        <p>Answer a distress call 470 m under planet 173v4 and bring the survivor home.</p>
+      </div>
+      <a class="play" href="drill-2/">Play Drill 2</a>
+    </article>
+    <article class="card">
+      <img class="ico" src="drill-3/icons/icon-192.png" width="96" height="96" alt="">
+      <div class="txt">
+        <h3>Drill 3</h3>
+        <p class="tag">Novaport · Save the city</p>
+        <p>Ram the robots invading Novaport, then mine under the streets to rebuild it.</p>
+      </div>
+      <a class="play" href="drill-3/">Play Drill 3</a>
+    </article>
+    <article class="card">
+      <img class="ico" src="drill-full/icons/icon-192.png" width="96" height="96" alt="">
+      <div class="txt">
+        <h3>Drill Full Version</h3>
+        <p class="tag">Drill · Drill 2 · Drill 3, one story</p>
+        <p>All three Drill games as one story: a satellite, a rescue and a city to save.</p>
+      </div>
+      <a class="play" href="drill-full/">Play Drill Full Version</a>
+    </article>
+    </section>
+    <section class="install" aria-labelledby="inst">
+      <h2 id="inst">Install it like an app</h2>
+      <p>Open a game first, then follow the steps for your device. Each game gets its own icon, plays full screen, and works with no internet.</p>
+      <div class="steps">
+        <section>
+          <h3>Android (Chrome)</h3>
+          <ol><li>Open a game.</li><li>Tap the three dots menu.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>
+        </section>
+        <section>
+          <h3>iPhone / iPad (Safari)</h3>
+          <ol><li>Open a game in <b>Safari</b>.</li><li>Tap the <b>Share</b> button.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol>
+        </section>
+        <section>
+          <h3>Windows / Mac (Chrome or Edge)</h3>
+          <ol><li>Open a game.</li><li>Click the <b>Install</b> icon at the right end of the address bar.</li><li>Click <b>Install</b>.</li></ol>
+        </section>
+      </div>
+      <p class="saved">Your progress is saved on your own device.</p>
+    </section>
+  </main>
+  <footer>Free to play. No ads. No sign-up.</footer>
+</div>
+</body>
+</html>
