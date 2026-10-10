@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Drill Games</title>
-<meta name="description" content="Four free Drill games you can play in your browser or install like an app.">
+<meta name="description" content="4 free games you can play in your browser or install like an app.">
 <meta name="theme-color" content="#17130f">
 <link rel="icon" type="image/png" sizes="32x32" href="drill/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="drill/icons/apple-touch-icon.png">
@@ -27,6 +27,19 @@ h1{margin:0;font:400 clamp(40px,10vw,76px)/.95 var(--f-display);letter-spacing:.
 .txt p{margin:6px 0 0}
 .txt .tag{color:var(--dim);font-size:16px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
 .play{grid-column:1/-1;display:block;text-align:center;background:var(--rig);color:var(--on-rig);text-decoration:none;font:400 26px/1 var(--f-display);letter-spacing:.08em;padding:16px;border-radius:12px;margin-top:8px;min-height:56px}
+.btns{grid-column:1/-1;display:flex;gap:10px;margin-top:8px}
+.btns .play{flex:1;margin-top:0}
+.share{background:var(--panel-hi);color:var(--text);border:2px solid var(--line);border-radius:12px;font:400 20px/1 var(--f-display);letter-spacing:.06em;padding:0 16px;min-height:56px;cursor:pointer}
+.share:hover{border-color:var(--rig)}
+.top{display:flex;justify-content:center;gap:10px;margin-top:16px}
+.top .share{border-color:var(--rig);min-height:52px}
+.new{display:inline-block;vertical-align:middle;background:#e5484d;color:#fff;font:400 15px/1 var(--f-display);letter-spacing:.08em;padding:5px 8px;border-radius:8px;margin-left:6px}
+.new[hidden]{display:none}
+.whats{font-size:18px;color:var(--text)}
+.whats b{color:var(--rig);font-weight:600}
+.hint{margin:14px 0 0;color:var(--dim);font-size:20px;text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--rig);color:var(--on-rig);font:400 22px/1 var(--f-display);padding:14px 22px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
 .play:hover{background:#ffc928}
 .install{background:var(--panel-hi);border:2px solid var(--rig);border-radius:14px;padding:18px 16px}
 .install h2{margin:0 0 6px;font:400 30px/1.05 var(--f-display);letter-spacing:.04em;color:var(--rig)}
@@ -44,45 +57,63 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
 <div class="wrap">
   <header>
     <h1>Drill Games</h1>
-    <p class="lead">Dig deep, save the day. Pick a game and play!</p>
+    <p class="lead">Pick a game and play!</p>
+    <p class="hint">Tap Play to try it right away. No sign-up.</p>
+    <div class="top"><button type="button" class="share" data-title="Drill Games" data-text="Free games to play in your browser!" data-url="./">📤 Share Drill Games</button></div>
   </header>
   <main>
     <section class="grid" aria-label="Games">
-    <article class="card">
+    <article class="card" data-updated="2026-10-10">
       <img class="ico" src="drill/icons/icon-192.png" width="96" height="96" alt="">
       <div class="txt">
-        <h3>Drill</h3>
-        <p class="tag">Planet 1.7305.d · Rebuild the satellite</p>
+        <h3>Drill <span class="new" hidden>NEW!</span></h3>
+        <p class="tag">Planet 1.7305.d · Rebuild the satellite · Version 1</p>
         <p>Dig to the core of an alien planet and rebuild your wrecked satellite.</p>
+        <p class="whats"><b>What's new:</b> Big touch buttons for phones!</p>
       </div>
-      <a class="play" href="drill/">Play Drill</a>
+      <div class="btns">
+        <a class="play" href="drill/">Play Drill</a>
+        <button type="button" class="share" data-title="Drill" data-text="Dig to the core of an alien planet and rebuild your wrecked satellite." data-url="drill/">📤 Share</button>
+      </div>
     </article>
-    <article class="card">
+    <article class="card" data-updated="2026-10-10">
       <img class="ico" src="drill-2/icons/icon-192.png" width="96" height="96" alt="">
       <div class="txt">
-        <h3>Drill 2</h3>
-        <p class="tag">Planet 173v4 · Answer the distress call</p>
+        <h3>Drill 2 <span class="new" hidden>NEW!</span></h3>
+        <p class="tag">Planet 173v4 · Answer the distress call · Version 1</p>
         <p>Answer a distress call 470 m under planet 173v4 and bring the survivor home.</p>
+        <p class="whats"><b>What's new:</b> Big touch buttons for phones!</p>
       </div>
-      <a class="play" href="drill-2/">Play Drill 2</a>
+      <div class="btns">
+        <a class="play" href="drill-2/">Play Drill 2</a>
+        <button type="button" class="share" data-title="Drill 2" data-text="Answer a distress call 470 m under planet 173v4 and bring the survivor home." data-url="drill-2/">📤 Share</button>
+      </div>
     </article>
-    <article class="card">
+    <article class="card" data-updated="2026-10-10">
       <img class="ico" src="drill-3/icons/icon-192.png" width="96" height="96" alt="">
       <div class="txt">
-        <h3>Drill 3</h3>
-        <p class="tag">Novaport · Save the city</p>
+        <h3>Drill 3 <span class="new" hidden>NEW!</span></h3>
+        <p class="tag">Novaport · Save the city · Version 1</p>
         <p>Ram the robots invading Novaport, then mine under the streets to rebuild it.</p>
+        <p class="whats"><b>What's new:</b> Big touch buttons for phones!</p>
       </div>
-      <a class="play" href="drill-3/">Play Drill 3</a>
+      <div class="btns">
+        <a class="play" href="drill-3/">Play Drill 3</a>
+        <button type="button" class="share" data-title="Drill 3" data-text="Ram the robots invading Novaport, then mine under the streets to rebuild it." data-url="drill-3/">📤 Share</button>
+      </div>
     </article>
-    <article class="card">
+    <article class="card" data-updated="2026-10-10">
       <img class="ico" src="drill-full/icons/icon-192.png" width="96" height="96" alt="">
       <div class="txt">
-        <h3>Drill Full Version</h3>
-        <p class="tag">Drill · Drill 2 · Drill 3, one story</p>
+        <h3>Drill Full Version <span class="new" hidden>NEW!</span></h3>
+        <p class="tag">Drill · Drill 2 · Drill 3, one story · Version 1</p>
         <p>All three Drill games as one story: a satellite, a rescue and a city to save.</p>
+        <p class="whats"><b>What's new:</b> Big touch buttons for phones!</p>
       </div>
-      <a class="play" href="drill-full/">Play Drill Full Version</a>
+      <div class="btns">
+        <a class="play" href="drill-full/">Play Drill Full Version</a>
+        <button type="button" class="share" data-title="Drill Full Version" data-text="All three Drill games as one story: a satellite, a rescue and a city to save." data-url="drill-full/">📤 Share</button>
+      </div>
     </article>
     </section>
     <section class="install" aria-labelledby="inst">
@@ -107,5 +138,30 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:16px}
   </main>
   <footer>Free to play. No ads. No sign-up.</footer>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+  var day=864e5, now=Date.now();
+  Array.prototype.forEach.call(document.querySelectorAll('.card[data-updated]'),function(c){
+    var t=Date.parse(c.getAttribute('data-updated')+'T00:00:00'), n=c.querySelector('.new');
+    if(n&&!isNaN(t)&&now-t<=14*day&&now-t>=-day)n.hidden=false;
+  });
+  var toast=document.getElementById('toast'),timer;
+  function say(m){toast.textContent=m;toast.className='toast on';clearTimeout(timer);timer=setTimeout(function(){toast.className='toast'},2200)}
+  function copy(u){
+    if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(u).then(function(){say('Link copied!')},function(){old(u)})}
+    old(u);
+  }
+  function old(u){var a=document.createElement('textarea');a.value=u;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();
+    try{document.execCommand('copy');say('Link copied!')}catch(e){say(u)}document.body.removeChild(a)}
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.share'); if(!b)return;
+    var url=new URL(b.getAttribute('data-url'),location.href).href;
+    var data={title:b.getAttribute('data-title'),text:b.getAttribute('data-text'),url:url};
+    if(navigator.share){navigator.share(data).catch(function(err){if(!err||err.name!=='AbortError')copy(url)})}
+    else copy(url);
+  });
+})();
+</script>
 </body>
 </html>
