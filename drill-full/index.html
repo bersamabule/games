@@ -2020,6 +2020,12 @@ const SaveKit = (() => {
     const m = /[#&]family=([^&]+)/.exec(location.hash);
     if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
   } catch (e) {}
+  // separate players under the one family code: each has their own save slots in the cloud. '' is the first player, whose
+  // slots have no prefix (the family's saves from before players existed); the others look like 'pk3x-drill1'.
+  // Each device remembers who plays on it; until someone is picked, nothing goes to the cloud from that device.
+  const PLAYER = 'drillcloud.player', PNAME = 'drillcloud.playername', STASH = 'drillcloud.stash.', SWITCH = 'drillcloud.switch'; // STASH + player: a player's games put away on this device
+  let player = null, pname = '';
+  try { player = localStorage.getItem(PLAYER); pname = localStorage.getItem(PNAME) || ''; } catch (e) {}
   const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
   async function rpc(fn, args, keepalive) {
     const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
@@ -2039,20 +2045,21 @@ const SaveKit = (() => {
   function badge(ok, refused) {
     if (!fam || !cloudOn()) return;
     if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
-    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.textContent = ok ? '☁️ Saved' + (pname ? ' · ' + pname : '') : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
     mark.classList.toggle('off', !ok);
     mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
   }
+  const mine = slot => (player ? player + '-' + slot : slot);
   function doc(slot) {
     return {
       async get() {
-        const j = await rpc('drill_load', { code: fam, slot });
+        const j = await rpc('drill_load', { code: fam, slot: mine(slot) });
         const row = Array.isArray(j) ? j[0] : j;
         const ok = !!(row && typeof row.state === 'string');
         return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
       },
       async set(d) {
-        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        const args = { code: fam, slot: mine(slot), state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
         // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
         await rpc('drill_save', args, JSON.stringify(args).length < 60000);
         badge(true);
@@ -2067,8 +2074,40 @@ const SaveKit = (() => {
     },
   };
   // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
-  const cloud = () => (cloudOn() && fam ? host : null);
+  const cloud = () => (cloudOn() && fam && player !== null ? host : null);
   async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+  // the family's players, kept in one shared slot: [{ id, name }]
+  async function loadPlayers() {
+    const j = await rpc('drill_load', { code: fam, slot: 'players' });
+    const row = Array.isArray(j) ? j[0] : j;
+    let list = [];
+    try { const o = row ? JSON.parse(row.state) : null; if (o && Array.isArray(o.list)) list = o.list.filter(p => p && typeof p.id === 'string' && /^(p[a-z0-9]{4})?$/.test(p.id)); } catch (e) {}
+    if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Player 1' });
+    return list;
+  }
+  const savePlayers = list => rpc('drill_save', { code: fam, slot: 'players', state: JSON.stringify({ v: 1, list: list.map(p => ({ id: p.id, name: String(p.name).slice(0, 16) })) }), saved_at: Date.now() });
+  const newId = list => { let id; do { id = 'p' + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); } while (list.some(p => p.id === id)); return id; };
+  // the saved games on this site that belong to whoever plays on this device (sound settings and the cloud setup stay put)
+  const own = k => /^drill/.test(k) && !/^drillcloud\./.test(k) && !/\.muted$/.test(k);
+  // a device changes player: its games are put away under the old player and the new player's are brought back, and
+  // the cloud then fills in anything newer. keepLocal: a brand-new player takes over what this device has played so far.
+  // the switch is booked here and done when the page opens again, before the game reads its save: the page that is
+  // closing saves one last time on its way out, and that save must still go to the player it belongs to
+  function usePlayer(id, name, keepLocal) { localStorage.setItem(SWITCH, JSON.stringify({ id, name: name || '', keepLocal: !!keepLocal })); }
+  function doSwitch(id, name, keepLocal) {
+    if (!keepLocal) {
+      const keys = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own(k)) keys.push(k); }
+      const out = {}; for (const k of keys) if (!/\.(r[0-2]|rot)$/.test(k)) out[k] = localStorage.getItem(k);
+      const tag = STASH + (player === null ? 'device' : player || 'p1');
+      if (Object.keys(out).length) localStorage.setItem(tag, JSON.stringify(out)); // if storage is full this throws, and nothing has moved
+      for (const k of keys) localStorage.removeItem(k);
+      let back = null; try { back = JSON.parse(localStorage.getItem(STASH + (id || 'p1')) || 'null'); } catch (e) {}
+      if (back) { for (const k in back) localStorage.setItem(k, back[k]); localStorage.removeItem(STASH + (id || 'p1')); }
+    }
+    player = id; pname = name || '';
+    localStorage.setItem(PLAYER, id); localStorage.setItem(PNAME, pname);
+  }
+  try { const sw = JSON.parse(localStorage.getItem(SWITCH) || 'null'); if (sw) { localStorage.removeItem(SWITCH); doSwitch(sw.id, sw.name, sw.keepLocal); } } catch (e) {}
 
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
@@ -2086,6 +2125,8 @@ const SaveKit = (() => {
 .sk .sk-cl b{color:#cfe8ff}
 .sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
 .sk .sk-cl [hidden]{display:none}
+.sk .sk-cl-out,.sk .sk-cl-pick{display:grid;gap:8px}
+.sk .sk-cl-list .btn{flex:0 1 auto}
 .sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
 .sk-cloud.off{color:#ffb3a8}`;
 const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
@@ -2100,7 +2141,15 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
   ${cloudOn() ? `<div class="sk-cl">
     <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
     <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
-    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+    <div class="sk-cl-out" hidden>
+      <div class="sk-cl-pick" hidden>
+        <div class="sk-cl-ask"></div>
+        <div class="sk-row sk-cl-list"></div>
+        <div class="sk-row"><input class="sk-cl-new" type="text" maxlength="16" autocomplete="off" placeholder="New player's name (a nickname is fine)" aria-label="New player's name"><button class="btn" type="button" data-sk="add">＋ New player</button></div>
+        <div class="sk-row sk-cl-ren"><input type="text" maxlength="16" autocomplete="off" placeholder="New name for this player" aria-label="New name"><button class="btn" type="button" data-sk="rename">Rename</button></div>
+      </div>
+      <div class="sk-row"><button class="btn" type="button" data-sk="who">👤 Change player</button><button class="btn" type="button" data-sk="disconnect">Stop cloud saves here</button></div>
+    </div>
   </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
@@ -2116,9 +2165,25 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
     function showCloud() {
       if (!cloudOn()) return;
-      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
-        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-say').textContent = !fam ? 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.'
+        : player === null ? 'is connected. Pick who plays on this device.'
+        : `is on. Playing as ${pname || 'Player 1'}: progress saves to the cloud by itself and opens on every family device where ${pname || 'Player 1'} is picked.`;
       $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+      if (fam && player === null) showPick();
+    }
+    // the player list: one button per player, plus a new player and a rename
+    let plist = null;
+    async function showPick() {
+      const box = $k('.sk-cl-pick'); box.hidden = false;
+      $k('.sk-cl-ask').textContent = player === null ? 'Who plays on this device? Pick your name, or make a new player.' : 'Pick a player. Each player has their own saves.';
+      $k('.sk-cl-ren').hidden = player === null;
+      const list = $k('.sk-cl-list'); list.textContent = 'Getting the players...';
+      try { plist = await loadPlayers(); } catch (e) { list.textContent = ''; say(e.message, true); return; }
+      list.textContent = '';
+      for (const p of plist) {
+        const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.dataset.sk = 'pick'; b.dataset.id = p.id;
+        b.textContent = (p.id === player ? '✓ ' : '👤 ') + p.name; list.append(b);
+      }
     }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
@@ -2153,11 +2218,38 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
             const code = $k('.sk-cl-in input').value;
             if (!tidy(code)) { say('Type the family code first.', true); return; }
             await connect(code);
-            say('Connected! Getting your cloud saves...'); showCloud();
-            location.reload(); // start again, so the game picks up the newest save from the cloud
-          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+            say('Connected! Now pick who plays on this device.'); showCloud();
+          } else { keepFam(null); try { localStorage.removeItem(PLAYER); localStorage.removeItem(PNAME); } catch (e2) {} player = null; pname = ''; say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
         } catch (e) { say(e.message, true); }
         finally { b.disabled = false; }
+        return;
+      }
+      if (act === 'who' || act === 'pick' || act === 'add' || act === 'rename') {
+        try {
+          if (act === 'who') { const box = $k('.sk-cl-pick'); if (box.hidden) await showPick(); else box.hidden = true; return; }
+          if (!plist) plist = await loadPlayers();
+          let chosen = '';
+          if (act === 'pick') {
+            const p = plist.find(x => x.id === b.dataset.id); if (!p) return;
+            if (p.id === player) { say(`Already playing as ${p.name}.`); return; }
+            usePlayer(p.id, p.name, false); chosen = p.name;
+          } else if (act === 'add') {
+            const name = $k('.sk-cl-new').value.trim().slice(0, 16);
+            if (!name) { say('Type the new player\'s name first.', true); return; }
+            if (plist.some(x => x.name.toLowerCase() === name.toLowerCase())) { say('There is already a player called ' + name + '. Pick that one, or use another name.', true); return; }
+            const p = { id: newId(plist), name }; plist.push(p);
+            await savePlayers(plist);
+            usePlayer(p.id, p.name, player === null); chosen = p.name; // on a device nobody had picked yet, what was played here becomes theirs
+          } else {
+            const name = $k('.sk-cl-ren input').value.trim().slice(0, 16), p = plist.find(x => x.id === player);
+            if (!name || !p) { say('Type the new name first.', true); return; }
+            p.name = name; await savePlayers(plist);
+            pname = name; try { localStorage.setItem(PNAME, name); } catch (e2) {}
+            say('Renamed to ' + name + '.'); showCloud(); await showPick(); return;
+          }
+          say(`Playing as ${chosen}! Getting ${chosen}'s saves...`);
+          location.reload(); // start again with this player's saves
+        } catch (e) { say(e.message, true); }
         return;
       }
       if (act === 'file') {
@@ -2182,9 +2274,11 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     });
     function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
+    // a device that was just given the family code (by a setup link) asks who plays here before anything is saved
+    if (cloudOn() && fam && player === null && !window.__drillCloudAsk) { window.__drillCloudAsk = true; open(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel, cloud };
+  return { rotate, rescue, encode, decode, panel, cloud, _t: { usePlayer, loadPlayers, savePlayers, newId, who: () => [player, pname] } }; // _t: for the tests
 })();
 /* save-kit:end */
 // Backups: every chapter's save, the wave checkpoint and the chapter progress, in one save code or file. It only loads
@@ -3197,6 +3291,12 @@ const SaveKit = (() => {
     const m = /[#&]family=([^&]+)/.exec(location.hash);
     if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
   } catch (e) {}
+  // separate players under the one family code: each has their own save slots in the cloud. '' is the first player, whose
+  // slots have no prefix (the family's saves from before players existed); the others look like 'pk3x-drill1'.
+  // Each device remembers who plays on it; until someone is picked, nothing goes to the cloud from that device.
+  const PLAYER = 'drillcloud.player', PNAME = 'drillcloud.playername', STASH = 'drillcloud.stash.', SWITCH = 'drillcloud.switch'; // STASH + player: a player's games put away on this device
+  let player = null, pname = '';
+  try { player = localStorage.getItem(PLAYER); pname = localStorage.getItem(PNAME) || ''; } catch (e) {}
   const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
   async function rpc(fn, args, keepalive) {
     const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
@@ -3216,20 +3316,21 @@ const SaveKit = (() => {
   function badge(ok, refused) {
     if (!fam || !cloudOn()) return;
     if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
-    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.textContent = ok ? '☁️ Saved' + (pname ? ' · ' + pname : '') : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
     mark.classList.toggle('off', !ok);
     mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
   }
+  const mine = slot => (player ? player + '-' + slot : slot);
   function doc(slot) {
     return {
       async get() {
-        const j = await rpc('drill_load', { code: fam, slot });
+        const j = await rpc('drill_load', { code: fam, slot: mine(slot) });
         const row = Array.isArray(j) ? j[0] : j;
         const ok = !!(row && typeof row.state === 'string');
         return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
       },
       async set(d) {
-        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        const args = { code: fam, slot: mine(slot), state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
         // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
         await rpc('drill_save', args, JSON.stringify(args).length < 60000);
         badge(true);
@@ -3244,8 +3345,40 @@ const SaveKit = (() => {
     },
   };
   // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
-  const cloud = () => (cloudOn() && fam ? host : null);
+  const cloud = () => (cloudOn() && fam && player !== null ? host : null);
   async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+  // the family's players, kept in one shared slot: [{ id, name }]
+  async function loadPlayers() {
+    const j = await rpc('drill_load', { code: fam, slot: 'players' });
+    const row = Array.isArray(j) ? j[0] : j;
+    let list = [];
+    try { const o = row ? JSON.parse(row.state) : null; if (o && Array.isArray(o.list)) list = o.list.filter(p => p && typeof p.id === 'string' && /^(p[a-z0-9]{4})?$/.test(p.id)); } catch (e) {}
+    if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Player 1' });
+    return list;
+  }
+  const savePlayers = list => rpc('drill_save', { code: fam, slot: 'players', state: JSON.stringify({ v: 1, list: list.map(p => ({ id: p.id, name: String(p.name).slice(0, 16) })) }), saved_at: Date.now() });
+  const newId = list => { let id; do { id = 'p' + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); } while (list.some(p => p.id === id)); return id; };
+  // the saved games on this site that belong to whoever plays on this device (sound settings and the cloud setup stay put)
+  const own = k => /^drill/.test(k) && !/^drillcloud\./.test(k) && !/\.muted$/.test(k);
+  // a device changes player: its games are put away under the old player and the new player's are brought back, and
+  // the cloud then fills in anything newer. keepLocal: a brand-new player takes over what this device has played so far.
+  // the switch is booked here and done when the page opens again, before the game reads its save: the page that is
+  // closing saves one last time on its way out, and that save must still go to the player it belongs to
+  function usePlayer(id, name, keepLocal) { localStorage.setItem(SWITCH, JSON.stringify({ id, name: name || '', keepLocal: !!keepLocal })); }
+  function doSwitch(id, name, keepLocal) {
+    if (!keepLocal) {
+      const keys = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own(k)) keys.push(k); }
+      const out = {}; for (const k of keys) if (!/\.(r[0-2]|rot)$/.test(k)) out[k] = localStorage.getItem(k);
+      const tag = STASH + (player === null ? 'device' : player || 'p1');
+      if (Object.keys(out).length) localStorage.setItem(tag, JSON.stringify(out)); // if storage is full this throws, and nothing has moved
+      for (const k of keys) localStorage.removeItem(k);
+      let back = null; try { back = JSON.parse(localStorage.getItem(STASH + (id || 'p1')) || 'null'); } catch (e) {}
+      if (back) { for (const k in back) localStorage.setItem(k, back[k]); localStorage.removeItem(STASH + (id || 'p1')); }
+    }
+    player = id; pname = name || '';
+    localStorage.setItem(PLAYER, id); localStorage.setItem(PNAME, pname);
+  }
+  try { const sw = JSON.parse(localStorage.getItem(SWITCH) || 'null'); if (sw) { localStorage.removeItem(SWITCH); doSwitch(sw.id, sw.name, sw.keepLocal); } } catch (e) {}
 
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
@@ -3263,6 +3396,8 @@ const SaveKit = (() => {
 .sk .sk-cl b{color:#cfe8ff}
 .sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
 .sk .sk-cl [hidden]{display:none}
+.sk .sk-cl-out,.sk .sk-cl-pick{display:grid;gap:8px}
+.sk .sk-cl-list .btn{flex:0 1 auto}
 .sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
 .sk-cloud.off{color:#ffb3a8}`;
 const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
@@ -3277,7 +3412,15 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
   ${cloudOn() ? `<div class="sk-cl">
     <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
     <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
-    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+    <div class="sk-cl-out" hidden>
+      <div class="sk-cl-pick" hidden>
+        <div class="sk-cl-ask"></div>
+        <div class="sk-row sk-cl-list"></div>
+        <div class="sk-row"><input class="sk-cl-new" type="text" maxlength="16" autocomplete="off" placeholder="New player's name (a nickname is fine)" aria-label="New player's name"><button class="btn" type="button" data-sk="add">＋ New player</button></div>
+        <div class="sk-row sk-cl-ren"><input type="text" maxlength="16" autocomplete="off" placeholder="New name for this player" aria-label="New name"><button class="btn" type="button" data-sk="rename">Rename</button></div>
+      </div>
+      <div class="sk-row"><button class="btn" type="button" data-sk="who">👤 Change player</button><button class="btn" type="button" data-sk="disconnect">Stop cloud saves here</button></div>
+    </div>
   </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
@@ -3293,9 +3436,25 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
     function showCloud() {
       if (!cloudOn()) return;
-      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
-        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-say').textContent = !fam ? 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.'
+        : player === null ? 'is connected. Pick who plays on this device.'
+        : `is on. Playing as ${pname || 'Player 1'}: progress saves to the cloud by itself and opens on every family device where ${pname || 'Player 1'} is picked.`;
       $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+      if (fam && player === null) showPick();
+    }
+    // the player list: one button per player, plus a new player and a rename
+    let plist = null;
+    async function showPick() {
+      const box = $k('.sk-cl-pick'); box.hidden = false;
+      $k('.sk-cl-ask').textContent = player === null ? 'Who plays on this device? Pick your name, or make a new player.' : 'Pick a player. Each player has their own saves.';
+      $k('.sk-cl-ren').hidden = player === null;
+      const list = $k('.sk-cl-list'); list.textContent = 'Getting the players...';
+      try { plist = await loadPlayers(); } catch (e) { list.textContent = ''; say(e.message, true); return; }
+      list.textContent = '';
+      for (const p of plist) {
+        const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.dataset.sk = 'pick'; b.dataset.id = p.id;
+        b.textContent = (p.id === player ? '✓ ' : '👤 ') + p.name; list.append(b);
+      }
     }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
@@ -3330,11 +3489,38 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
             const code = $k('.sk-cl-in input').value;
             if (!tidy(code)) { say('Type the family code first.', true); return; }
             await connect(code);
-            say('Connected! Getting your cloud saves...'); showCloud();
-            location.reload(); // start again, so the game picks up the newest save from the cloud
-          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+            say('Connected! Now pick who plays on this device.'); showCloud();
+          } else { keepFam(null); try { localStorage.removeItem(PLAYER); localStorage.removeItem(PNAME); } catch (e2) {} player = null; pname = ''; say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
         } catch (e) { say(e.message, true); }
         finally { b.disabled = false; }
+        return;
+      }
+      if (act === 'who' || act === 'pick' || act === 'add' || act === 'rename') {
+        try {
+          if (act === 'who') { const box = $k('.sk-cl-pick'); if (box.hidden) await showPick(); else box.hidden = true; return; }
+          if (!plist) plist = await loadPlayers();
+          let chosen = '';
+          if (act === 'pick') {
+            const p = plist.find(x => x.id === b.dataset.id); if (!p) return;
+            if (p.id === player) { say(`Already playing as ${p.name}.`); return; }
+            usePlayer(p.id, p.name, false); chosen = p.name;
+          } else if (act === 'add') {
+            const name = $k('.sk-cl-new').value.trim().slice(0, 16);
+            if (!name) { say('Type the new player\'s name first.', true); return; }
+            if (plist.some(x => x.name.toLowerCase() === name.toLowerCase())) { say('There is already a player called ' + name + '. Pick that one, or use another name.', true); return; }
+            const p = { id: newId(plist), name }; plist.push(p);
+            await savePlayers(plist);
+            usePlayer(p.id, p.name, player === null); chosen = p.name; // on a device nobody had picked yet, what was played here becomes theirs
+          } else {
+            const name = $k('.sk-cl-ren input').value.trim().slice(0, 16), p = plist.find(x => x.id === player);
+            if (!name || !p) { say('Type the new name first.', true); return; }
+            p.name = name; await savePlayers(plist);
+            pname = name; try { localStorage.setItem(PNAME, name); } catch (e2) {}
+            say('Renamed to ' + name + '.'); showCloud(); await showPick(); return;
+          }
+          say(`Playing as ${chosen}! Getting ${chosen}'s saves...`);
+          location.reload(); // start again with this player's saves
+        } catch (e) { say(e.message, true); }
         return;
       }
       if (act === 'file') {
@@ -3359,9 +3545,11 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     });
     function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
+    // a device that was just given the family code (by a setup link) asks who plays here before anything is saved
+    if (cloudOn() && fam && player === null && !window.__drillCloudAsk) { window.__drillCloudAsk = true; open(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel, cloud };
+  return { rotate, rescue, encode, decode, panel, cloud, _t: { usePlayer, loadPlayers, savePlayers, newId, who: () => [player, pname] } }; // _t: for the tests
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c1';
@@ -3414,6 +3602,12 @@ async function cloudInit() {
       // the account has a more recent save than this browser (another computer, or cleared browser data): pick it up
       if (restore(remote)) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(serialize())); } catch (e) {} }
     } else if (newer && progressOf(remote) > progressOf(S)) return; // already playing something else: leave the account save alone this visit
+    // this device's save is newer and is about to replace the account's, which has more progress (played on another device
+    // while this one was offline): keep the account's as the earlier save, so that progress is never simply thrown away
+    if (remote && !newer && progressOf(remote) > progressOf(S) && progressOf(remote) > progressOf(prevSave)) {
+      prevSave = remote; try { localStorage.setItem(PREV_KEY, JSON.stringify(remote)); } catch (e) {}
+      prevDoc.set({ savedAt: Date.now(), state: JSON.stringify(remote) }).catch(() => {});
+    }
     cloud = doc; cloudPrev = prevDoc;
     cloudDirty = !remote || !newer;
     if (G.overlay === 'intro' && !G.started) introMode(hasProgress(S) ? 'continue' : 'new');
@@ -6490,6 +6684,12 @@ const SaveKit = (() => {
     const m = /[#&]family=([^&]+)/.exec(location.hash);
     if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
   } catch (e) {}
+  // separate players under the one family code: each has their own save slots in the cloud. '' is the first player, whose
+  // slots have no prefix (the family's saves from before players existed); the others look like 'pk3x-drill1'.
+  // Each device remembers who plays on it; until someone is picked, nothing goes to the cloud from that device.
+  const PLAYER = 'drillcloud.player', PNAME = 'drillcloud.playername', STASH = 'drillcloud.stash.', SWITCH = 'drillcloud.switch'; // STASH + player: a player's games put away on this device
+  let player = null, pname = '';
+  try { player = localStorage.getItem(PLAYER); pname = localStorage.getItem(PNAME) || ''; } catch (e) {}
   const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
   async function rpc(fn, args, keepalive) {
     const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
@@ -6509,20 +6709,21 @@ const SaveKit = (() => {
   function badge(ok, refused) {
     if (!fam || !cloudOn()) return;
     if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
-    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.textContent = ok ? '☁️ Saved' + (pname ? ' · ' + pname : '') : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
     mark.classList.toggle('off', !ok);
     mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
   }
+  const mine = slot => (player ? player + '-' + slot : slot);
   function doc(slot) {
     return {
       async get() {
-        const j = await rpc('drill_load', { code: fam, slot });
+        const j = await rpc('drill_load', { code: fam, slot: mine(slot) });
         const row = Array.isArray(j) ? j[0] : j;
         const ok = !!(row && typeof row.state === 'string');
         return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
       },
       async set(d) {
-        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        const args = { code: fam, slot: mine(slot), state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
         // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
         await rpc('drill_save', args, JSON.stringify(args).length < 60000);
         badge(true);
@@ -6537,8 +6738,40 @@ const SaveKit = (() => {
     },
   };
   // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
-  const cloud = () => (cloudOn() && fam ? host : null);
+  const cloud = () => (cloudOn() && fam && player !== null ? host : null);
   async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+  // the family's players, kept in one shared slot: [{ id, name }]
+  async function loadPlayers() {
+    const j = await rpc('drill_load', { code: fam, slot: 'players' });
+    const row = Array.isArray(j) ? j[0] : j;
+    let list = [];
+    try { const o = row ? JSON.parse(row.state) : null; if (o && Array.isArray(o.list)) list = o.list.filter(p => p && typeof p.id === 'string' && /^(p[a-z0-9]{4})?$/.test(p.id)); } catch (e) {}
+    if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Player 1' });
+    return list;
+  }
+  const savePlayers = list => rpc('drill_save', { code: fam, slot: 'players', state: JSON.stringify({ v: 1, list: list.map(p => ({ id: p.id, name: String(p.name).slice(0, 16) })) }), saved_at: Date.now() });
+  const newId = list => { let id; do { id = 'p' + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); } while (list.some(p => p.id === id)); return id; };
+  // the saved games on this site that belong to whoever plays on this device (sound settings and the cloud setup stay put)
+  const own = k => /^drill/.test(k) && !/^drillcloud\./.test(k) && !/\.muted$/.test(k);
+  // a device changes player: its games are put away under the old player and the new player's are brought back, and
+  // the cloud then fills in anything newer. keepLocal: a brand-new player takes over what this device has played so far.
+  // the switch is booked here and done when the page opens again, before the game reads its save: the page that is
+  // closing saves one last time on its way out, and that save must still go to the player it belongs to
+  function usePlayer(id, name, keepLocal) { localStorage.setItem(SWITCH, JSON.stringify({ id, name: name || '', keepLocal: !!keepLocal })); }
+  function doSwitch(id, name, keepLocal) {
+    if (!keepLocal) {
+      const keys = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own(k)) keys.push(k); }
+      const out = {}; for (const k of keys) if (!/\.(r[0-2]|rot)$/.test(k)) out[k] = localStorage.getItem(k);
+      const tag = STASH + (player === null ? 'device' : player || 'p1');
+      if (Object.keys(out).length) localStorage.setItem(tag, JSON.stringify(out)); // if storage is full this throws, and nothing has moved
+      for (const k of keys) localStorage.removeItem(k);
+      let back = null; try { back = JSON.parse(localStorage.getItem(STASH + (id || 'p1')) || 'null'); } catch (e) {}
+      if (back) { for (const k in back) localStorage.setItem(k, back[k]); localStorage.removeItem(STASH + (id || 'p1')); }
+    }
+    player = id; pname = name || '';
+    localStorage.setItem(PLAYER, id); localStorage.setItem(PNAME, pname);
+  }
+  try { const sw = JSON.parse(localStorage.getItem(SWITCH) || 'null'); if (sw) { localStorage.removeItem(SWITCH); doSwitch(sw.id, sw.name, sw.keepLocal); } } catch (e) {}
 
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
@@ -6556,6 +6789,8 @@ const SaveKit = (() => {
 .sk .sk-cl b{color:#cfe8ff}
 .sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
 .sk .sk-cl [hidden]{display:none}
+.sk .sk-cl-out,.sk .sk-cl-pick{display:grid;gap:8px}
+.sk .sk-cl-list .btn{flex:0 1 auto}
 .sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
 .sk-cloud.off{color:#ffb3a8}`;
 const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
@@ -6570,7 +6805,15 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
   ${cloudOn() ? `<div class="sk-cl">
     <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
     <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
-    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+    <div class="sk-cl-out" hidden>
+      <div class="sk-cl-pick" hidden>
+        <div class="sk-cl-ask"></div>
+        <div class="sk-row sk-cl-list"></div>
+        <div class="sk-row"><input class="sk-cl-new" type="text" maxlength="16" autocomplete="off" placeholder="New player's name (a nickname is fine)" aria-label="New player's name"><button class="btn" type="button" data-sk="add">＋ New player</button></div>
+        <div class="sk-row sk-cl-ren"><input type="text" maxlength="16" autocomplete="off" placeholder="New name for this player" aria-label="New name"><button class="btn" type="button" data-sk="rename">Rename</button></div>
+      </div>
+      <div class="sk-row"><button class="btn" type="button" data-sk="who">👤 Change player</button><button class="btn" type="button" data-sk="disconnect">Stop cloud saves here</button></div>
+    </div>
   </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
@@ -6586,9 +6829,25 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
     function showCloud() {
       if (!cloudOn()) return;
-      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
-        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-say').textContent = !fam ? 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.'
+        : player === null ? 'is connected. Pick who plays on this device.'
+        : `is on. Playing as ${pname || 'Player 1'}: progress saves to the cloud by itself and opens on every family device where ${pname || 'Player 1'} is picked.`;
       $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+      if (fam && player === null) showPick();
+    }
+    // the player list: one button per player, plus a new player and a rename
+    let plist = null;
+    async function showPick() {
+      const box = $k('.sk-cl-pick'); box.hidden = false;
+      $k('.sk-cl-ask').textContent = player === null ? 'Who plays on this device? Pick your name, or make a new player.' : 'Pick a player. Each player has their own saves.';
+      $k('.sk-cl-ren').hidden = player === null;
+      const list = $k('.sk-cl-list'); list.textContent = 'Getting the players...';
+      try { plist = await loadPlayers(); } catch (e) { list.textContent = ''; say(e.message, true); return; }
+      list.textContent = '';
+      for (const p of plist) {
+        const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.dataset.sk = 'pick'; b.dataset.id = p.id;
+        b.textContent = (p.id === player ? '✓ ' : '👤 ') + p.name; list.append(b);
+      }
     }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
@@ -6623,11 +6882,38 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
             const code = $k('.sk-cl-in input').value;
             if (!tidy(code)) { say('Type the family code first.', true); return; }
             await connect(code);
-            say('Connected! Getting your cloud saves...'); showCloud();
-            location.reload(); // start again, so the game picks up the newest save from the cloud
-          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+            say('Connected! Now pick who plays on this device.'); showCloud();
+          } else { keepFam(null); try { localStorage.removeItem(PLAYER); localStorage.removeItem(PNAME); } catch (e2) {} player = null; pname = ''; say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
         } catch (e) { say(e.message, true); }
         finally { b.disabled = false; }
+        return;
+      }
+      if (act === 'who' || act === 'pick' || act === 'add' || act === 'rename') {
+        try {
+          if (act === 'who') { const box = $k('.sk-cl-pick'); if (box.hidden) await showPick(); else box.hidden = true; return; }
+          if (!plist) plist = await loadPlayers();
+          let chosen = '';
+          if (act === 'pick') {
+            const p = plist.find(x => x.id === b.dataset.id); if (!p) return;
+            if (p.id === player) { say(`Already playing as ${p.name}.`); return; }
+            usePlayer(p.id, p.name, false); chosen = p.name;
+          } else if (act === 'add') {
+            const name = $k('.sk-cl-new').value.trim().slice(0, 16);
+            if (!name) { say('Type the new player\'s name first.', true); return; }
+            if (plist.some(x => x.name.toLowerCase() === name.toLowerCase())) { say('There is already a player called ' + name + '. Pick that one, or use another name.', true); return; }
+            const p = { id: newId(plist), name }; plist.push(p);
+            await savePlayers(plist);
+            usePlayer(p.id, p.name, player === null); chosen = p.name; // on a device nobody had picked yet, what was played here becomes theirs
+          } else {
+            const name = $k('.sk-cl-ren input').value.trim().slice(0, 16), p = plist.find(x => x.id === player);
+            if (!name || !p) { say('Type the new name first.', true); return; }
+            p.name = name; await savePlayers(plist);
+            pname = name; try { localStorage.setItem(PNAME, name); } catch (e2) {}
+            say('Renamed to ' + name + '.'); showCloud(); await showPick(); return;
+          }
+          say(`Playing as ${chosen}! Getting ${chosen}'s saves...`);
+          location.reload(); // start again with this player's saves
+        } catch (e) { say(e.message, true); }
         return;
       }
       if (act === 'file') {
@@ -6652,9 +6938,11 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     });
     function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
+    // a device that was just given the family code (by a setup link) asks who plays here before anything is saved
+    if (cloudOn() && fam && player === null && !window.__drillCloudAsk) { window.__drillCloudAsk = true; open(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel, cloud };
+  return { rotate, rescue, encode, decode, panel, cloud, _t: { usePlayer, loadPlayers, savePlayers, newId, who: () => [player, pname] } }; // _t: for the tests
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c2', PREV_KEY = 'drillfull.c2.prev';
@@ -6702,6 +6990,12 @@ async function cloudInit() {
       // the account has a more recent save than this browser (another computer, or cleared browser data): pick it up
       if (restore(remote)) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(serialize())); } catch (e) {} }
     } else if (newer && progressOf(remote) > progressOf(S)) return; // already playing something else: leave the account save alone this visit
+    // this device's save is newer and is about to replace the account's, which has more progress (played on another device
+    // while this one was offline): keep the account's as the earlier save, so that progress is never simply thrown away
+    if (remote && !newer && progressOf(remote) > progressOf(S) && progressOf(remote) > progressOf(prevSave)) {
+      prevSave = remote; try { localStorage.setItem(PREV_KEY, JSON.stringify(remote)); } catch (e) {}
+      prevDoc.set({ savedAt: Date.now(), state: JSON.stringify(remote) }).catch(() => {});
+    }
     cloud = doc; cloudPrev = prevDoc;
     cloudDirty = !remote || !newer;
     if (G.overlay === 'intro' && !G.started) introMode(S.maxDepth || S.cash || S.mined ? 'continue' : 'new');
@@ -9555,6 +9849,12 @@ const SaveKit = (() => {
     const m = /[#&]family=([^&]+)/.exec(location.hash);
     if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
   } catch (e) {}
+  // separate players under the one family code: each has their own save slots in the cloud. '' is the first player, whose
+  // slots have no prefix (the family's saves from before players existed); the others look like 'pk3x-drill1'.
+  // Each device remembers who plays on it; until someone is picked, nothing goes to the cloud from that device.
+  const PLAYER = 'drillcloud.player', PNAME = 'drillcloud.playername', STASH = 'drillcloud.stash.', SWITCH = 'drillcloud.switch'; // STASH + player: a player's games put away on this device
+  let player = null, pname = '';
+  try { player = localStorage.getItem(PLAYER); pname = localStorage.getItem(PNAME) || ''; } catch (e) {}
   const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
   async function rpc(fn, args, keepalive) {
     const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
@@ -9574,20 +9874,21 @@ const SaveKit = (() => {
   function badge(ok, refused) {
     if (!fam || !cloudOn()) return;
     if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
-    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.textContent = ok ? '☁️ Saved' + (pname ? ' · ' + pname : '') : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
     mark.classList.toggle('off', !ok);
     mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
   }
+  const mine = slot => (player ? player + '-' + slot : slot);
   function doc(slot) {
     return {
       async get() {
-        const j = await rpc('drill_load', { code: fam, slot });
+        const j = await rpc('drill_load', { code: fam, slot: mine(slot) });
         const row = Array.isArray(j) ? j[0] : j;
         const ok = !!(row && typeof row.state === 'string');
         return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
       },
       async set(d) {
-        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        const args = { code: fam, slot: mine(slot), state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
         // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
         await rpc('drill_save', args, JSON.stringify(args).length < 60000);
         badge(true);
@@ -9602,8 +9903,40 @@ const SaveKit = (() => {
     },
   };
   // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
-  const cloud = () => (cloudOn() && fam ? host : null);
+  const cloud = () => (cloudOn() && fam && player !== null ? host : null);
   async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+  // the family's players, kept in one shared slot: [{ id, name }]
+  async function loadPlayers() {
+    const j = await rpc('drill_load', { code: fam, slot: 'players' });
+    const row = Array.isArray(j) ? j[0] : j;
+    let list = [];
+    try { const o = row ? JSON.parse(row.state) : null; if (o && Array.isArray(o.list)) list = o.list.filter(p => p && typeof p.id === 'string' && /^(p[a-z0-9]{4})?$/.test(p.id)); } catch (e) {}
+    if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Player 1' });
+    return list;
+  }
+  const savePlayers = list => rpc('drill_save', { code: fam, slot: 'players', state: JSON.stringify({ v: 1, list: list.map(p => ({ id: p.id, name: String(p.name).slice(0, 16) })) }), saved_at: Date.now() });
+  const newId = list => { let id; do { id = 'p' + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); } while (list.some(p => p.id === id)); return id; };
+  // the saved games on this site that belong to whoever plays on this device (sound settings and the cloud setup stay put)
+  const own = k => /^drill/.test(k) && !/^drillcloud\./.test(k) && !/\.muted$/.test(k);
+  // a device changes player: its games are put away under the old player and the new player's are brought back, and
+  // the cloud then fills in anything newer. keepLocal: a brand-new player takes over what this device has played so far.
+  // the switch is booked here and done when the page opens again, before the game reads its save: the page that is
+  // closing saves one last time on its way out, and that save must still go to the player it belongs to
+  function usePlayer(id, name, keepLocal) { localStorage.setItem(SWITCH, JSON.stringify({ id, name: name || '', keepLocal: !!keepLocal })); }
+  function doSwitch(id, name, keepLocal) {
+    if (!keepLocal) {
+      const keys = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own(k)) keys.push(k); }
+      const out = {}; for (const k of keys) if (!/\.(r[0-2]|rot)$/.test(k)) out[k] = localStorage.getItem(k);
+      const tag = STASH + (player === null ? 'device' : player || 'p1');
+      if (Object.keys(out).length) localStorage.setItem(tag, JSON.stringify(out)); // if storage is full this throws, and nothing has moved
+      for (const k of keys) localStorage.removeItem(k);
+      let back = null; try { back = JSON.parse(localStorage.getItem(STASH + (id || 'p1')) || 'null'); } catch (e) {}
+      if (back) { for (const k in back) localStorage.setItem(k, back[k]); localStorage.removeItem(STASH + (id || 'p1')); }
+    }
+    player = id; pname = name || '';
+    localStorage.setItem(PLAYER, id); localStorage.setItem(PNAME, pname);
+  }
+  try { const sw = JSON.parse(localStorage.getItem(SWITCH) || 'null'); if (sw) { localStorage.removeItem(SWITCH); doSwitch(sw.id, sw.name, sw.keepLocal); } } catch (e) {}
 
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
@@ -9621,6 +9954,8 @@ const SaveKit = (() => {
 .sk .sk-cl b{color:#cfe8ff}
 .sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
 .sk .sk-cl [hidden]{display:none}
+.sk .sk-cl-out,.sk .sk-cl-pick{display:grid;gap:8px}
+.sk .sk-cl-list .btn{flex:0 1 auto}
 .sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
 .sk-cloud.off{color:#ffb3a8}`;
 const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
@@ -9635,7 +9970,15 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
   ${cloudOn() ? `<div class="sk-cl">
     <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
     <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
-    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+    <div class="sk-cl-out" hidden>
+      <div class="sk-cl-pick" hidden>
+        <div class="sk-cl-ask"></div>
+        <div class="sk-row sk-cl-list"></div>
+        <div class="sk-row"><input class="sk-cl-new" type="text" maxlength="16" autocomplete="off" placeholder="New player's name (a nickname is fine)" aria-label="New player's name"><button class="btn" type="button" data-sk="add">＋ New player</button></div>
+        <div class="sk-row sk-cl-ren"><input type="text" maxlength="16" autocomplete="off" placeholder="New name for this player" aria-label="New name"><button class="btn" type="button" data-sk="rename">Rename</button></div>
+      </div>
+      <div class="sk-row"><button class="btn" type="button" data-sk="who">👤 Change player</button><button class="btn" type="button" data-sk="disconnect">Stop cloud saves here</button></div>
+    </div>
   </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
@@ -9651,9 +9994,25 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
     function showCloud() {
       if (!cloudOn()) return;
-      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
-        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-say').textContent = !fam ? 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.'
+        : player === null ? 'is connected. Pick who plays on this device.'
+        : `is on. Playing as ${pname || 'Player 1'}: progress saves to the cloud by itself and opens on every family device where ${pname || 'Player 1'} is picked.`;
       $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+      if (fam && player === null) showPick();
+    }
+    // the player list: one button per player, plus a new player and a rename
+    let plist = null;
+    async function showPick() {
+      const box = $k('.sk-cl-pick'); box.hidden = false;
+      $k('.sk-cl-ask').textContent = player === null ? 'Who plays on this device? Pick your name, or make a new player.' : 'Pick a player. Each player has their own saves.';
+      $k('.sk-cl-ren').hidden = player === null;
+      const list = $k('.sk-cl-list'); list.textContent = 'Getting the players...';
+      try { plist = await loadPlayers(); } catch (e) { list.textContent = ''; say(e.message, true); return; }
+      list.textContent = '';
+      for (const p of plist) {
+        const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.dataset.sk = 'pick'; b.dataset.id = p.id;
+        b.textContent = (p.id === player ? '✓ ' : '👤 ') + p.name; list.append(b);
+      }
     }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
@@ -9688,11 +10047,38 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
             const code = $k('.sk-cl-in input').value;
             if (!tidy(code)) { say('Type the family code first.', true); return; }
             await connect(code);
-            say('Connected! Getting your cloud saves...'); showCloud();
-            location.reload(); // start again, so the game picks up the newest save from the cloud
-          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+            say('Connected! Now pick who plays on this device.'); showCloud();
+          } else { keepFam(null); try { localStorage.removeItem(PLAYER); localStorage.removeItem(PNAME); } catch (e2) {} player = null; pname = ''; say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
         } catch (e) { say(e.message, true); }
         finally { b.disabled = false; }
+        return;
+      }
+      if (act === 'who' || act === 'pick' || act === 'add' || act === 'rename') {
+        try {
+          if (act === 'who') { const box = $k('.sk-cl-pick'); if (box.hidden) await showPick(); else box.hidden = true; return; }
+          if (!plist) plist = await loadPlayers();
+          let chosen = '';
+          if (act === 'pick') {
+            const p = plist.find(x => x.id === b.dataset.id); if (!p) return;
+            if (p.id === player) { say(`Already playing as ${p.name}.`); return; }
+            usePlayer(p.id, p.name, false); chosen = p.name;
+          } else if (act === 'add') {
+            const name = $k('.sk-cl-new').value.trim().slice(0, 16);
+            if (!name) { say('Type the new player\'s name first.', true); return; }
+            if (plist.some(x => x.name.toLowerCase() === name.toLowerCase())) { say('There is already a player called ' + name + '. Pick that one, or use another name.', true); return; }
+            const p = { id: newId(plist), name }; plist.push(p);
+            await savePlayers(plist);
+            usePlayer(p.id, p.name, player === null); chosen = p.name; // on a device nobody had picked yet, what was played here becomes theirs
+          } else {
+            const name = $k('.sk-cl-ren input').value.trim().slice(0, 16), p = plist.find(x => x.id === player);
+            if (!name || !p) { say('Type the new name first.', true); return; }
+            p.name = name; await savePlayers(plist);
+            pname = name; try { localStorage.setItem(PNAME, name); } catch (e2) {}
+            say('Renamed to ' + name + '.'); showCloud(); await showPick(); return;
+          }
+          say(`Playing as ${chosen}! Getting ${chosen}'s saves...`);
+          location.reload(); // start again with this player's saves
+        } catch (e) { say(e.message, true); }
         return;
       }
       if (act === 'file') {
@@ -9717,9 +10103,11 @@ const css = () => { if (document.getElementById('save-kit-css')) return; const s
     });
     function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
+    // a device that was just given the family code (by a setup link) asks who plays here before anything is saved
+    if (cloudOn() && fam && player === null && !window.__drillCloudAsk) { window.__drillCloudAsk = true; open(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel, cloud };
+  return { rotate, rescue, encode, decode, panel, cloud, _t: { usePlayer, loadPlayers, savePlayers, newId, who: () => [player, pname] } }; // _t: for the tests
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c3', PREV_KEY = 'drillfull.c3.prev', CKPT_KEY = 'drillfull.c3.ckpt';
@@ -9776,6 +10164,12 @@ async function cloudInit() {
         if (remoteCk) { ckpt = remoteCk; try { localStorage.setItem(CKPT_KEY, JSON.stringify(remoteCk)); } catch (e) {} }
       }
     } else if (newer && progressOf(remote) > progressOf(S)) return; // already playing something else: leave the account save alone this visit
+    // this device's save is newer and is about to replace the account's, which has more progress (played on another device
+    // while this one was offline): keep the account's as the earlier save, so that progress is never simply thrown away
+    if (remote && !newer && progressOf(remote) > progressOf(S) && progressOf(remote) > progressOf(prevSave)) {
+      prevSave = remote; try { localStorage.setItem(PREV_KEY, JSON.stringify(remote)); } catch (e) {}
+      prevDoc.set({ savedAt: Date.now(), state: JSON.stringify(remote) }).catch(() => {});
+    }
     cloud = doc; cloudPrev = prevDoc; cloudCk = ckDoc;
     cloudDirty = !remote || !newer;
     if (G.overlay === 'intro' && !G.started) introMode(hasProgress() ? 'continue' : 'new');
