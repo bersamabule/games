@@ -563,12 +563,14 @@ kbd{border-radius:9px}
           <li><b>Smelting.</b> 2 copper + 1 coal makes a copper bar, 2 iron + 1 coal makes an iron bar, and 2 sulfur makes a sulfur bar.</li>
           <li><b>Two limits on the way down.</b> Your bit cuts rock up to its Mohs hardness, and your heat shield handles layers up to its temperature. The core log shows which layers are still out of reach.</li>
           <li><b>Hazards.</b> Violet blocks are gas pockets and explode. Magma and drops of more than 8 m dent the hull.</li>
+          <li><b>Backups.</b> Your mission saves itself in this browser. To keep a copy somewhere else, or to carry on with another browser or device, press 💾 Backups on this screen: save a file or copy a save code, then load it on the other one.</li>
         </ul>
         <p class="saveinfo" id="saveInfo" hidden></p>
         <div class="actions">
           <button class="primary" id="bStart" type="button">Start the mission</button>
           <button class="btn" id="bNew" type="button" hidden>New mission</button>
           <button class="btn" id="bOld" type="button" hidden>Bring back earlier mission</button>
+          <button class="btn" id="bBackup" type="button">💾 Backups</button>
         </div>
       </div>
     </div>
@@ -888,12 +890,144 @@ function restore(o) {
     return true;
   } catch (e) { return false; }
 }
+/* save-kit:start */
+/* ---------- save kit (shared by the Drill games) ----------
+   Edit tools/save-kit/save-kit.js, then run `node tools/save-kit/sync.js` to copy it into every game.
+   Layer 0: asks the browser to keep this site's storage, keeps 3 rotating copies of the save, and can fall back to them.
+   Layer 1: a save code / save file that carries an expedition to any browser or device, with a checksum. */
+const SaveKit = (() => {
+  const VER = 1, NAMES = { drill: 'Drill', drill2: 'Drill 2', drill3: 'Drill 3', drillfull: 'Drill Full Version' };
+  try { const st = navigator.storage; if (st && st.persist) st.persisted().then(p => p || st.persist()).catch(() => {}); } catch (e) {}
+  // FNV-1a: a short checksum, so a damaged code or file is caught before it is loaded
+  const sum = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
+  // every 2 minutes of saving, the save is also copied into the next of 3 slots: key.r0, key.r1, key.r2
+  let lastRot = 0;
+  function rotate(key, json) {
+    const now = Date.now(); if (now - lastRot < 120000) return; lastRot = now;
+    try { const i = ((+localStorage.getItem(key + '.rot') || 0) + 1) % 3; localStorage.setItem(key + '.r' + i, json); localStorage.setItem(key + '.rot', String(i)); } catch (e) {}
+  }
+  // when the main save will not load: try the rotating copies, newest first; tryLoad(o) returns true once one works
+  function rescue(key, tryLoad) {
+    let i = 0; try { i = +localStorage.getItem(key + '.rot') || 0; } catch (e) {}
+    for (let k = 0; k < 3; k++) {
+      try { const s = localStorage.getItem(key + '.r' + ((i - k + 3) % 3)); if (s && tryLoad(JSON.parse(s))) return true; } catch (e) {}
+    }
+    return false;
+  }
+  const b64 = b => { let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64 = t => { const s = atob(t.replace(/-/g, '+').replace(/_/g, '/')), b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; };
+  const pipe = async (b, tr) => new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(tr)).arrayBuffer());
+  async function encode(game, data) {
+    const j = JSON.stringify({ kit: VER, game, at: Date.now(), data });
+    let b = new TextEncoder().encode(JSON.stringify({ j, s: sum(j) })), z = 'J';
+    if (typeof CompressionStream === 'function') { try { b = await pipe(b, new CompressionStream('deflate-raw')); z = 'Z'; } catch (e) {} }
+    return `DRILLSAVE-${z}-${b64(b)}`;
+  }
+  async function decode(text, game) {
+    const m = /DRILLSAVE-([JZ])-([A-Za-z0-9_-]+)/.exec(String(text).replace(/\s+/g, ''));
+    if (!m) throw new Error('That is not a Drill save code.');
+    let b;
+    try { b = unb64(m[2]); } catch (e) { throw new Error('This save code is damaged. Copy all of it again.'); }
+    if (m[1] === 'Z') {
+      if (typeof DecompressionStream !== 'function') throw new Error('This browser is too old to open this save. Try Chrome or Edge.');
+      try { b = await pipe(b, new DecompressionStream('deflate-raw')); } catch (e) { throw new Error('This save code is damaged. Copy all of it again.'); }
+    }
+    let o;
+    try { const body = JSON.parse(new TextDecoder().decode(b)); if (sum(body.j) !== body.s) throw 0; o = JSON.parse(body.j); }
+    catch (e) { throw new Error('This save code is damaged. Copy all of it again.'); }
+    if (o.game !== game) throw new Error(`This save is from ${NAMES[o.game] || 'another game'}, not ${NAMES[game]}.`);
+    return o;
+  }
+  const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
+  const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
+.sk-back[hidden]{display:none}
+.sk{width:min(520px,100%);max-height:calc(100% - 8px);overflow:auto;display:grid;gap:10px;padding:18px;border-radius:14px;background:var(--panel,#1d1915);color:var(--text,#f2ead8);border:1px solid var(--line,#3a322a);box-shadow:0 18px 50px rgba(0,0,0,.6);font-size:16px;line-height:1.35;text-align:left}
+.sk h3{margin:0;font-size:22px;color:var(--rig,#f4b400);letter-spacing:.02em}
+.sk p{margin:0;color:var(--dim,#b7ab95)}
+.sk .sk-row{display:flex;flex-wrap:wrap;gap:8px}
+.sk .sk-row .btn{flex:1 1 150px}
+.sk textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;padding:8px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:12px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
+.sk .sk-msg{min-height:1.35em;color:var(--text,#f2ead8);font-weight:600}
+.sk .sk-msg.bad{color:#ff8a7a}
+.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}`;
+  // the Backups box. opts: root (where the box goes), game, title, getData() -> the save or null, putData(data) -> true once loaded
+  function panel(opts) {
+    if (!document.getElementById('save-kit-css')) { const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); }
+    const app = !!window.Capacitor; // the phone apps cannot download files, so they get the code only
+    const back = document.createElement('div');
+    back.className = 'sk-back'; back.hidden = true;
+    back.innerHTML = `<div class="sk" role="dialog" aria-modal="true" aria-label="${opts.title}">
+  <h3>💾 ${opts.title}</h3>
+  <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
+  <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
+  <textarea class="sk-code" spellcheck="false" aria-label="Save code" placeholder="Your save code shows up here. To load a save, paste its code here."></textarea>
+  <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="open">📂 Load from file</button>'}<button class="btn" type="button" data-sk="paste">📥 Load this code</button></div>
+  <p class="sk-msg" role="status"></p>
+  <div class="sk-row"><button class="btn" type="button" data-sk="close">Done</button></div>
+  <input type="file" accept=".drillsave,.txt,text/plain" hidden>
+</div>`;
+    opts.root.append(back);
+    const $k = s => back.querySelector(s), ta = $k('.sk-code'), msg = $k('.sk-msg'), file = $k('input[type=file]');
+    const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    let armed = null, armT = 0;
+    const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
+    async function current() { const d = opts.getData(); if (!d) { say('There is no progress to save yet. Play a little first!', true); return null; } return encode(opts.game, d); }
+    async function load(text, btn) {
+      let o;
+      try { o = await decode(text, opts.game); } catch (e) { say(e.message, true); return; }
+      // loading replaces the expedition, so it takes a second press; the old one can still be brought back
+      if (!armed || armed.btn !== btn || Date.now() - armT > 6000) {
+        disarm(); armed = { btn, label: btn.textContent }; armT = Date.now();
+        btn.textContent = 'Press again to load it'; btn.classList.add('sk-warn');
+        say(`This save is from ${new Date(o.at).toLocaleString()}. Loading it replaces the progress here. The progress it replaces is kept as the earlier save.`);
+        return;
+      }
+      disarm();
+      let ok = false;
+      try { ok = await opts.putData(o.data); } catch (e) {}
+      say(ok ? 'Loaded! Your progress is back.' : 'That save could not be loaded.', !ok);
+      if (ok) ta.value = '';
+    }
+    back.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') close(); }); // typing here must not drive the game
+    back.addEventListener('click', async e => {
+      if (e.target === back) return close();
+      const b = e.target.closest('button[data-sk]'); if (!b) return;
+      const act = b.dataset.sk;
+      if (act !== 'paste' && act !== 'open') disarm();
+      if (act === 'close') return close();
+      if (act === 'file') {
+        const code = await current(); if (!code) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([code + '\n'], { type: 'text/plain' })); a.download = `${opts.game}-${stamp(Date.now())}.drillsave`;
+        back.append(a); a.click(); a.remove();
+        say('Saved a file to your Downloads. Keep it somewhere safe, like a USB stick or your email.');
+      } else if (act === 'copy') {
+        const code = await current(); if (!code) return;
+        ta.value = code; ta.select();
+        let copied = false;
+        try { await navigator.clipboard.writeText(code); copied = true; } catch (e) { try { copied = document.execCommand('copy'); } catch (e2) {} }
+        say(copied ? 'Copied! Paste it into a message or note to yourself to keep it.' : 'Select the code above and copy it.');
+      } else if (act === 'open') file.click();
+      else if (act === 'paste') load(ta.value, b);
+    });
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0]; file.value = ''; if (!f) return;
+      ta.value = await f.text();
+      say('File opened. Press "Load this code" to load it.');
+    });
+    function open() { disarm(); say(''); ta.value = ''; back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
+    function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
+    return { open, close, get isOpen() { return !back.hidden; }, el: back };
+  }
+  return { rotate, rescue, encode, decode, panel };
+})();
+/* save-kit:end */
 const SAVE_KEY = 'drill2.v1', PREV_KEY = 'drill2.v1.prev';
 let saveWarned = false, lastPush = 0;
 function save() {
   if (!S) return;
   S.savedAt = Date.now();
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(serialize())); }
+  try { const json = JSON.stringify(serialize()); localStorage.setItem(SAVE_KEY, json); SaveKit.rotate(SAVE_KEY, json); }
   catch (e) {
     if (!saveWarned && !cloud) { saveWarned = true; toast('This browser is blocking saves, so progress will be lost when you close the page.'); }
   }
@@ -2868,6 +3002,22 @@ bOld.addEventListener('click', () => {
   save(); cloudPush();
   introMode('continue');
 });
+// Backups: a save code or file that carries the mission to another browser or device. Drill Full Version has its
+// own Backups button on its chapter list, so the chapter's one is taken away there.
+const backups = SaveKit.panel({
+  root: intro, game: 'drill2', title: 'Backups',
+  getData: () => (S && progressOf(serialize()) > 0 ? serialize() : null),
+  putData: data => {
+    if (G.overlay !== 'intro' || !data || data.v !== 1) return false;
+    const cur = serialize();
+    if (!restore(data)) { restore(cur); return false; }
+    if (progressOf(cur) > 0) { prevSave = cur; try { localStorage.setItem(PREV_KEY, JSON.stringify(cur)); } catch (e) {} cloudBackup(cur); } // the one it replaced can be brought back
+    save(); cloudPush();
+    introMode('continue');
+    return true;
+  },
+});
+if (typeof ENV !== 'undefined') $('#bBackup').remove(); else $('#bBackup').addEventListener('click', () => backups.open());
 $('#bWin').addEventListener('click', hideWin);
 $('#bLog').addEventListener('click', hideLog);
 // not during a cutscene or on the win screen (the help card would open underneath them and leave them stuck), and not
@@ -3364,6 +3514,7 @@ function boot(data) {
   else {
     const sv = loadSave();
     if (sv && restore(sv)) introMode('continue');
+    else if (SaveKit.rescue(SAVE_KEY, restore)) { introMode('continue'); save(); }
     else { newGame(); introMode('new'); }
   }
   cloudReady = cloudInit();
