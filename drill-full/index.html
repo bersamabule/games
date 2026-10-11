@@ -2001,6 +2001,75 @@ const SaveKit = (() => {
     if (o.game !== game) throw new Error(`This save is from ${NAMES[o.game] || 'another game'}, not ${NAMES[game]}.`);
     return o;
   }
+  /* ---------- Drill Cloud: automatic cloud saves in the family's Supabase project ----------
+     No sign-in: a device that knows the family code (a 4-word phrase, entered once in the Backups box or opened from a
+     setup link ending in #family=...) hands the games this in place of window.claude, and their own account-save code
+     (newest save wins, the other one is kept as the earlier save) then saves to the cloud by itself. The saves sit in a
+     private table that only three database functions can reach, and each one needs the family code. The URL and key
+     below are public by design. sync.js fills them in from tools/save-kit/cloud-config.json. */
+  const CLOUD = window.DRILL_CLOUD_TEST || { url: "https://ibloaxbriadfydevwkjb.supabase.co", key: "sb_publishable_FNjVBXVSbto1xn_r4-yBiA_7hprKJlO" };
+  const FAMILY = 'drillcloud.family'; // shared by every Drill game on the same site, so one setup covers them all
+  let fam = null;
+  try { fam = localStorage.getItem(FAMILY); } catch (e) {}
+  const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+  const keepFam = c => { fam = c; try { if (c) localStorage.setItem(FAMILY, c); else localStorage.removeItem(FAMILY); } catch (e) {} };
+  // a family code is xxxx-xxxx-xxxx: forgive spaces, capitals and missing dashes
+  const tidy = c => { const t = String(c || '').toLowerCase().replace(/\s+/g, ''); return /^[a-z0-9]{12}$/.test(t) ? t.replace(/^(.{4})(.{4})/, '$1-$2-') : t; };
+  // a setup link: take the code from the address, keep it, and take it out of the address bar again
+  try {
+    const m = /[#&]family=([^&]+)/.exec(location.hash);
+    if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
+  const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
+  async function rpc(fn, args, keepalive) {
+    const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+    if (CLOUD.key.startsWith('eyJ')) h.Authorization = 'Bearer ' + CLOUD.key; // an older (JWT) anon key also goes here
+    let r;
+    try { r = await fetch(CLOUD.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(args), keepalive: !!keepalive }); }
+    catch (e) { badge(false); throw fail('unavailable', 'No connection to Drill Cloud.'); }
+    if (r.status >= 500 || r.status === 429) { badge(false); throw fail('unavailable', 'Drill Cloud is busy. Try again in a minute.'); }
+    const text = await r.text(); let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
+    const denied = r.status === 401 || r.status === 403;
+    if (denied) badge(false, true);
+    if (!r.ok) throw fail(denied ? 'denied' : 'failed', denied ? 'That family code did not work.' : 'Drill Cloud said no (' + r.status + ').');
+    return j;
+  }
+  // a small "☁️ Saved" mark in the corner, so the family can see the cloud has the latest progress
+  let mark = null;
+  function badge(ok, refused) {
+    if (!fam || !cloudOn()) return;
+    if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
+    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.classList.toggle('off', !ok);
+    mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
+  }
+  function doc(slot) {
+    return {
+      async get() {
+        const j = await rpc('drill_load', { code: fam, slot });
+        const row = Array.isArray(j) ? j[0] : j;
+        const ok = !!(row && typeof row.state === 'string');
+        return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
+      },
+      async set(d) {
+        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
+        await rpc('drill_save', args, JSON.stringify(args).length < 60000);
+        badge(true);
+      },
+    };
+  }
+  const host = {
+    async use(what) {
+      if (what === 'user') return { id: async () => (fam ? 'family' : null) };
+      if (what === 'db') return { doc: path => doc(String(path).split('/').pop()) };
+      return null;
+    },
+  };
+  // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
+  const cloud = () => (cloudOn() && fam ? host : null);
+  async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
 .sk-back[hidden]{display:none}
@@ -2012,15 +2081,27 @@ const SaveKit = (() => {
 .sk textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;padding:8px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:12px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
 .sk .sk-msg{min-height:1.35em;color:var(--text,#f2ead8);font-weight:600}
 .sk .sk-msg.bad{color:#ff8a7a}
-.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}`;
+.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}
+.sk .sk-cl{display:grid;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid rgba(143,199,255,.45);background:rgba(90,160,255,.08)}
+.sk .sk-cl b{color:#cfe8ff}
+.sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
+.sk .sk-cl [hidden]{display:none}
+.sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
+.sk-cloud.off{color:#ffb3a8}`;
+const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
   // the Backups box. opts: root (where the box goes), game, title, getData() -> the save or null, putData(data) -> true once loaded
   function panel(opts) {
-    if (!document.getElementById('save-kit-css')) { const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); }
+    css();
     const app = !!window.Capacitor; // the phone apps cannot download files, so they get the code only
     const back = document.createElement('div');
     back.className = 'sk-back'; back.hidden = true;
     back.innerHTML = `<div class="sk" role="dialog" aria-modal="true" aria-label="${opts.title}">
   <h3>💾 ${opts.title}</h3>
+  ${cloudOn() ? `<div class="sk-cl">
+    <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
+    <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
+    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+  </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
   <textarea class="sk-code" spellcheck="false" aria-label="Save code" placeholder="Your save code shows up here. To load a save, paste its code here."></textarea>
@@ -2032,6 +2113,13 @@ const SaveKit = (() => {
     opts.root.append(back);
     const $k = s => back.querySelector(s), ta = $k('.sk-code'), msg = $k('.sk-msg'), file = $k('input[type=file]');
     const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
+    function showCloud() {
+      if (!cloudOn()) return;
+      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
+        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+    }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
     async function current() { const d = opts.getData(); if (!d) { say('There is no progress to save yet. Play a little first!', true); return null; } return encode(opts.game, d); }
@@ -2058,6 +2146,20 @@ const SaveKit = (() => {
       const act = b.dataset.sk;
       if (act !== 'paste' && act !== 'open') disarm();
       if (act === 'close') return close();
+      if (act === 'connect' || act === 'disconnect') {
+        b.disabled = true;
+        try {
+          if (act === 'connect') {
+            const code = $k('.sk-cl-in input').value;
+            if (!tidy(code)) { say('Type the family code first.', true); return; }
+            await connect(code);
+            say('Connected! Getting your cloud saves...'); showCloud();
+            location.reload(); // start again, so the game picks up the newest save from the cloud
+          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+        } catch (e) { say(e.message, true); }
+        finally { b.disabled = false; }
+        return;
+      }
       if (act === 'file') {
         const code = await current(); if (!code) return;
         const a = document.createElement('a');
@@ -2078,11 +2180,11 @@ const SaveKit = (() => {
       ta.value = await f.text();
       say('File opened. Press "Load this code" to load it.');
     });
-    function open() { disarm(); say(''); ta.value = ''; back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
+    function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel };
+  return { rotate, rescue, encode, decode, panel, cloud };
 })();
 /* save-kit:end */
 // Backups: every chapter's save, the wave checkpoint and the chapter progress, in one save code or file. It only loads
@@ -2127,8 +2229,10 @@ const started = n => { const s = chapterSave(n); return !!(s && (s.maxDepth || s
 let cloud = null, cloudBusy = false, cloudDirty = false;
 async function cloudInit() {
   try {
-    if (!window.claude || typeof window.claude.use !== 'function') return;
-    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    // on claude.ai the account keeps the saves; everywhere else Drill Cloud does, on devices that have the family code
+    const host = window.claude && typeof window.claude.use === 'function' ? window.claude : SaveKit.cloud();
+    if (!host) return;
+    const [db, user] = await Promise.all([host.use('db'), host.use('user')]);
     const id = user ? await user.id() : null;
     if (!db || !id) return;
     const doc = db.doc(`data/users/${id}/drillfull`);
@@ -2137,6 +2241,17 @@ async function cloudInit() {
     cloud = doc;
     if (remote) { mergeP(remote); try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} if (!cur) renderMenu(); }
     cloudDirty = true; cloudPush();
+    // a device that has not played a chapter yet still shows that chapter's progress from the cloud (the chapter itself
+    // also checks the cloud when it starts; this just keeps the chapter list right)
+    for (let n = 1; n <= 3; n++) {
+      if (cur && cur.n === n) continue;
+      try {
+        const sn = await db.doc(`data/users/${id}/drillfull-c${n}`).get(), co = sn.exists ? sn.data() : null;
+        const rs = co && typeof co.state === 'string' ? JSON.parse(co.state) : null, ls = chapterSave(n);
+        if (rs && (+rs.savedAt || 0) > Math.max(ls ? +ls.savedAt || 0 : 0, +P.resetAt || 0)) localStorage.setItem(CH[n].key, co.state);
+      } catch (e) {}
+    }
+    if (!cur) renderMenu();
   } catch (e) {}
 }
 async function cloudPush() {
@@ -3063,6 +3178,75 @@ const SaveKit = (() => {
     if (o.game !== game) throw new Error(`This save is from ${NAMES[o.game] || 'another game'}, not ${NAMES[game]}.`);
     return o;
   }
+  /* ---------- Drill Cloud: automatic cloud saves in the family's Supabase project ----------
+     No sign-in: a device that knows the family code (a 4-word phrase, entered once in the Backups box or opened from a
+     setup link ending in #family=...) hands the games this in place of window.claude, and their own account-save code
+     (newest save wins, the other one is kept as the earlier save) then saves to the cloud by itself. The saves sit in a
+     private table that only three database functions can reach, and each one needs the family code. The URL and key
+     below are public by design. sync.js fills them in from tools/save-kit/cloud-config.json. */
+  const CLOUD = window.DRILL_CLOUD_TEST || { url: "https://ibloaxbriadfydevwkjb.supabase.co", key: "sb_publishable_FNjVBXVSbto1xn_r4-yBiA_7hprKJlO" };
+  const FAMILY = 'drillcloud.family'; // shared by every Drill game on the same site, so one setup covers them all
+  let fam = null;
+  try { fam = localStorage.getItem(FAMILY); } catch (e) {}
+  const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+  const keepFam = c => { fam = c; try { if (c) localStorage.setItem(FAMILY, c); else localStorage.removeItem(FAMILY); } catch (e) {} };
+  // a family code is xxxx-xxxx-xxxx: forgive spaces, capitals and missing dashes
+  const tidy = c => { const t = String(c || '').toLowerCase().replace(/\s+/g, ''); return /^[a-z0-9]{12}$/.test(t) ? t.replace(/^(.{4})(.{4})/, '$1-$2-') : t; };
+  // a setup link: take the code from the address, keep it, and take it out of the address bar again
+  try {
+    const m = /[#&]family=([^&]+)/.exec(location.hash);
+    if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
+  const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
+  async function rpc(fn, args, keepalive) {
+    const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+    if (CLOUD.key.startsWith('eyJ')) h.Authorization = 'Bearer ' + CLOUD.key; // an older (JWT) anon key also goes here
+    let r;
+    try { r = await fetch(CLOUD.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(args), keepalive: !!keepalive }); }
+    catch (e) { badge(false); throw fail('unavailable', 'No connection to Drill Cloud.'); }
+    if (r.status >= 500 || r.status === 429) { badge(false); throw fail('unavailable', 'Drill Cloud is busy. Try again in a minute.'); }
+    const text = await r.text(); let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
+    const denied = r.status === 401 || r.status === 403;
+    if (denied) badge(false, true);
+    if (!r.ok) throw fail(denied ? 'denied' : 'failed', denied ? 'That family code did not work.' : 'Drill Cloud said no (' + r.status + ').');
+    return j;
+  }
+  // a small "☁️ Saved" mark in the corner, so the family can see the cloud has the latest progress
+  let mark = null;
+  function badge(ok, refused) {
+    if (!fam || !cloudOn()) return;
+    if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
+    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.classList.toggle('off', !ok);
+    mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
+  }
+  function doc(slot) {
+    return {
+      async get() {
+        const j = await rpc('drill_load', { code: fam, slot });
+        const row = Array.isArray(j) ? j[0] : j;
+        const ok = !!(row && typeof row.state === 'string');
+        return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
+      },
+      async set(d) {
+        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
+        await rpc('drill_save', args, JSON.stringify(args).length < 60000);
+        badge(true);
+      },
+    };
+  }
+  const host = {
+    async use(what) {
+      if (what === 'user') return { id: async () => (fam ? 'family' : null) };
+      if (what === 'db') return { doc: path => doc(String(path).split('/').pop()) };
+      return null;
+    },
+  };
+  // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
+  const cloud = () => (cloudOn() && fam ? host : null);
+  async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
 .sk-back[hidden]{display:none}
@@ -3074,15 +3258,27 @@ const SaveKit = (() => {
 .sk textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;padding:8px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:12px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
 .sk .sk-msg{min-height:1.35em;color:var(--text,#f2ead8);font-weight:600}
 .sk .sk-msg.bad{color:#ff8a7a}
-.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}`;
+.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}
+.sk .sk-cl{display:grid;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid rgba(143,199,255,.45);background:rgba(90,160,255,.08)}
+.sk .sk-cl b{color:#cfe8ff}
+.sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
+.sk .sk-cl [hidden]{display:none}
+.sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
+.sk-cloud.off{color:#ffb3a8}`;
+const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
   // the Backups box. opts: root (where the box goes), game, title, getData() -> the save or null, putData(data) -> true once loaded
   function panel(opts) {
-    if (!document.getElementById('save-kit-css')) { const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); }
+    css();
     const app = !!window.Capacitor; // the phone apps cannot download files, so they get the code only
     const back = document.createElement('div');
     back.className = 'sk-back'; back.hidden = true;
     back.innerHTML = `<div class="sk" role="dialog" aria-modal="true" aria-label="${opts.title}">
   <h3>💾 ${opts.title}</h3>
+  ${cloudOn() ? `<div class="sk-cl">
+    <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
+    <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
+    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+  </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
   <textarea class="sk-code" spellcheck="false" aria-label="Save code" placeholder="Your save code shows up here. To load a save, paste its code here."></textarea>
@@ -3094,6 +3290,13 @@ const SaveKit = (() => {
     opts.root.append(back);
     const $k = s => back.querySelector(s), ta = $k('.sk-code'), msg = $k('.sk-msg'), file = $k('input[type=file]');
     const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
+    function showCloud() {
+      if (!cloudOn()) return;
+      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
+        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+    }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
     async function current() { const d = opts.getData(); if (!d) { say('There is no progress to save yet. Play a little first!', true); return null; } return encode(opts.game, d); }
@@ -3120,6 +3323,20 @@ const SaveKit = (() => {
       const act = b.dataset.sk;
       if (act !== 'paste' && act !== 'open') disarm();
       if (act === 'close') return close();
+      if (act === 'connect' || act === 'disconnect') {
+        b.disabled = true;
+        try {
+          if (act === 'connect') {
+            const code = $k('.sk-cl-in input').value;
+            if (!tidy(code)) { say('Type the family code first.', true); return; }
+            await connect(code);
+            say('Connected! Getting your cloud saves...'); showCloud();
+            location.reload(); // start again, so the game picks up the newest save from the cloud
+          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+        } catch (e) { say(e.message, true); }
+        finally { b.disabled = false; }
+        return;
+      }
       if (act === 'file') {
         const code = await current(); if (!code) return;
         const a = document.createElement('a');
@@ -3140,11 +3357,11 @@ const SaveKit = (() => {
       ta.value = await f.text();
       say('File opened. Press "Load this code" to load it.');
     });
-    function open() { disarm(); say(''); ta.value = ''; back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
+    function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel };
+  return { rotate, rescue, encode, decode, panel, cloud };
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c1';
@@ -3181,8 +3398,10 @@ function backupSave() {
 let cloud = null, cloudPrev = null, cloudOk = false, cloudDirty = false, cloudBusy = false, cloudSettled = false, cloudReady = Promise.resolve();
 async function cloudInit() {
   try {
-    if (!window.claude || typeof window.claude.use !== 'function') return;
-    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    // on claude.ai the account keeps the saves; everywhere else Drill Cloud does, on devices that have the family code
+    const host = window.claude && typeof window.claude.use === 'function' ? window.claude : SaveKit.cloud();
+    if (!host) return;
+    const [db, user] = await Promise.all([host.use('db'), host.use('user')]);
     const id = user ? await user.id() : null;
     if (!db || !id) return;
     const doc = db.doc(`data/users/${id}/drillfull-c1`), prevDoc = db.doc(`data/users/${id}/drillfull-c1-prev`);
@@ -6252,6 +6471,75 @@ const SaveKit = (() => {
     if (o.game !== game) throw new Error(`This save is from ${NAMES[o.game] || 'another game'}, not ${NAMES[game]}.`);
     return o;
   }
+  /* ---------- Drill Cloud: automatic cloud saves in the family's Supabase project ----------
+     No sign-in: a device that knows the family code (a 4-word phrase, entered once in the Backups box or opened from a
+     setup link ending in #family=...) hands the games this in place of window.claude, and their own account-save code
+     (newest save wins, the other one is kept as the earlier save) then saves to the cloud by itself. The saves sit in a
+     private table that only three database functions can reach, and each one needs the family code. The URL and key
+     below are public by design. sync.js fills them in from tools/save-kit/cloud-config.json. */
+  const CLOUD = window.DRILL_CLOUD_TEST || { url: "https://ibloaxbriadfydevwkjb.supabase.co", key: "sb_publishable_FNjVBXVSbto1xn_r4-yBiA_7hprKJlO" };
+  const FAMILY = 'drillcloud.family'; // shared by every Drill game on the same site, so one setup covers them all
+  let fam = null;
+  try { fam = localStorage.getItem(FAMILY); } catch (e) {}
+  const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+  const keepFam = c => { fam = c; try { if (c) localStorage.setItem(FAMILY, c); else localStorage.removeItem(FAMILY); } catch (e) {} };
+  // a family code is xxxx-xxxx-xxxx: forgive spaces, capitals and missing dashes
+  const tidy = c => { const t = String(c || '').toLowerCase().replace(/\s+/g, ''); return /^[a-z0-9]{12}$/.test(t) ? t.replace(/^(.{4})(.{4})/, '$1-$2-') : t; };
+  // a setup link: take the code from the address, keep it, and take it out of the address bar again
+  try {
+    const m = /[#&]family=([^&]+)/.exec(location.hash);
+    if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
+  const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
+  async function rpc(fn, args, keepalive) {
+    const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+    if (CLOUD.key.startsWith('eyJ')) h.Authorization = 'Bearer ' + CLOUD.key; // an older (JWT) anon key also goes here
+    let r;
+    try { r = await fetch(CLOUD.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(args), keepalive: !!keepalive }); }
+    catch (e) { badge(false); throw fail('unavailable', 'No connection to Drill Cloud.'); }
+    if (r.status >= 500 || r.status === 429) { badge(false); throw fail('unavailable', 'Drill Cloud is busy. Try again in a minute.'); }
+    const text = await r.text(); let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
+    const denied = r.status === 401 || r.status === 403;
+    if (denied) badge(false, true);
+    if (!r.ok) throw fail(denied ? 'denied' : 'failed', denied ? 'That family code did not work.' : 'Drill Cloud said no (' + r.status + ').');
+    return j;
+  }
+  // a small "☁️ Saved" mark in the corner, so the family can see the cloud has the latest progress
+  let mark = null;
+  function badge(ok, refused) {
+    if (!fam || !cloudOn()) return;
+    if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
+    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.classList.toggle('off', !ok);
+    mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
+  }
+  function doc(slot) {
+    return {
+      async get() {
+        const j = await rpc('drill_load', { code: fam, slot });
+        const row = Array.isArray(j) ? j[0] : j;
+        const ok = !!(row && typeof row.state === 'string');
+        return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
+      },
+      async set(d) {
+        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
+        await rpc('drill_save', args, JSON.stringify(args).length < 60000);
+        badge(true);
+      },
+    };
+  }
+  const host = {
+    async use(what) {
+      if (what === 'user') return { id: async () => (fam ? 'family' : null) };
+      if (what === 'db') return { doc: path => doc(String(path).split('/').pop()) };
+      return null;
+    },
+  };
+  // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
+  const cloud = () => (cloudOn() && fam ? host : null);
+  async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
 .sk-back[hidden]{display:none}
@@ -6263,15 +6551,27 @@ const SaveKit = (() => {
 .sk textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;padding:8px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:12px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
 .sk .sk-msg{min-height:1.35em;color:var(--text,#f2ead8);font-weight:600}
 .sk .sk-msg.bad{color:#ff8a7a}
-.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}`;
+.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}
+.sk .sk-cl{display:grid;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid rgba(143,199,255,.45);background:rgba(90,160,255,.08)}
+.sk .sk-cl b{color:#cfe8ff}
+.sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
+.sk .sk-cl [hidden]{display:none}
+.sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
+.sk-cloud.off{color:#ffb3a8}`;
+const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
   // the Backups box. opts: root (where the box goes), game, title, getData() -> the save or null, putData(data) -> true once loaded
   function panel(opts) {
-    if (!document.getElementById('save-kit-css')) { const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); }
+    css();
     const app = !!window.Capacitor; // the phone apps cannot download files, so they get the code only
     const back = document.createElement('div');
     back.className = 'sk-back'; back.hidden = true;
     back.innerHTML = `<div class="sk" role="dialog" aria-modal="true" aria-label="${opts.title}">
   <h3>💾 ${opts.title}</h3>
+  ${cloudOn() ? `<div class="sk-cl">
+    <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
+    <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
+    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+  </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
   <textarea class="sk-code" spellcheck="false" aria-label="Save code" placeholder="Your save code shows up here. To load a save, paste its code here."></textarea>
@@ -6283,6 +6583,13 @@ const SaveKit = (() => {
     opts.root.append(back);
     const $k = s => back.querySelector(s), ta = $k('.sk-code'), msg = $k('.sk-msg'), file = $k('input[type=file]');
     const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
+    function showCloud() {
+      if (!cloudOn()) return;
+      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
+        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+    }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
     async function current() { const d = opts.getData(); if (!d) { say('There is no progress to save yet. Play a little first!', true); return null; } return encode(opts.game, d); }
@@ -6309,6 +6616,20 @@ const SaveKit = (() => {
       const act = b.dataset.sk;
       if (act !== 'paste' && act !== 'open') disarm();
       if (act === 'close') return close();
+      if (act === 'connect' || act === 'disconnect') {
+        b.disabled = true;
+        try {
+          if (act === 'connect') {
+            const code = $k('.sk-cl-in input').value;
+            if (!tidy(code)) { say('Type the family code first.', true); return; }
+            await connect(code);
+            say('Connected! Getting your cloud saves...'); showCloud();
+            location.reload(); // start again, so the game picks up the newest save from the cloud
+          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+        } catch (e) { say(e.message, true); }
+        finally { b.disabled = false; }
+        return;
+      }
       if (act === 'file') {
         const code = await current(); if (!code) return;
         const a = document.createElement('a');
@@ -6329,11 +6650,11 @@ const SaveKit = (() => {
       ta.value = await f.text();
       say('File opened. Press "Load this code" to load it.');
     });
-    function open() { disarm(); say(''); ta.value = ''; back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
+    function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel };
+  return { rotate, rescue, encode, decode, panel, cloud };
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c2', PREV_KEY = 'drillfull.c2.prev';
@@ -6365,8 +6686,10 @@ function backupSave() {
 let cloud = null, cloudPrev = null, cloudOk = false, cloudDirty = false, cloudBusy = false, cloudSettled = false, cloudReady = Promise.resolve();
 async function cloudInit() {
   try {
-    if (!window.claude || typeof window.claude.use !== 'function') return;
-    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    // on claude.ai the account keeps the saves; everywhere else Drill Cloud does, on devices that have the family code
+    const host = window.claude && typeof window.claude.use === 'function' ? window.claude : SaveKit.cloud();
+    if (!host) return;
+    const [db, user] = await Promise.all([host.use('db'), host.use('user')]);
     const id = user ? await user.id() : null;
     if (!db || !id) return;
     const doc = db.doc(`data/users/${id}/drillfull-c2`), prevDoc = db.doc(`data/users/${id}/drillfull-c2-prev`);
@@ -9213,6 +9536,75 @@ const SaveKit = (() => {
     if (o.game !== game) throw new Error(`This save is from ${NAMES[o.game] || 'another game'}, not ${NAMES[game]}.`);
     return o;
   }
+  /* ---------- Drill Cloud: automatic cloud saves in the family's Supabase project ----------
+     No sign-in: a device that knows the family code (a 4-word phrase, entered once in the Backups box or opened from a
+     setup link ending in #family=...) hands the games this in place of window.claude, and their own account-save code
+     (newest save wins, the other one is kept as the earlier save) then saves to the cloud by itself. The saves sit in a
+     private table that only three database functions can reach, and each one needs the family code. The URL and key
+     below are public by design. sync.js fills them in from tools/save-kit/cloud-config.json. */
+  const CLOUD = window.DRILL_CLOUD_TEST || { url: "https://ibloaxbriadfydevwkjb.supabase.co", key: "sb_publishable_FNjVBXVSbto1xn_r4-yBiA_7hprKJlO" };
+  const FAMILY = 'drillcloud.family'; // shared by every Drill game on the same site, so one setup covers them all
+  let fam = null;
+  try { fam = localStorage.getItem(FAMILY); } catch (e) {}
+  const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+  const keepFam = c => { fam = c; try { if (c) localStorage.setItem(FAMILY, c); else localStorage.removeItem(FAMILY); } catch (e) {} };
+  // a family code is xxxx-xxxx-xxxx: forgive spaces, capitals and missing dashes
+  const tidy = c => { const t = String(c || '').toLowerCase().replace(/\s+/g, ''); return /^[a-z0-9]{12}$/.test(t) ? t.replace(/^(.{4})(.{4})/, '$1-$2-') : t; };
+  // a setup link: take the code from the address, keep it, and take it out of the address bar again
+  try {
+    const m = /[#&]family=([^&]+)/.exec(location.hash);
+    if (m) { keepFam(tidy(decodeURIComponent(m[1]))); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
+  const fail = (code, msg) => Object.assign(new Error(msg || code), { code }); // 'unavailable' makes the games try again later
+  async function rpc(fn, args, keepalive) {
+    const h = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+    if (CLOUD.key.startsWith('eyJ')) h.Authorization = 'Bearer ' + CLOUD.key; // an older (JWT) anon key also goes here
+    let r;
+    try { r = await fetch(CLOUD.url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(args), keepalive: !!keepalive }); }
+    catch (e) { badge(false); throw fail('unavailable', 'No connection to Drill Cloud.'); }
+    if (r.status >= 500 || r.status === 429) { badge(false); throw fail('unavailable', 'Drill Cloud is busy. Try again in a minute.'); }
+    const text = await r.text(); let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
+    const denied = r.status === 401 || r.status === 403;
+    if (denied) badge(false, true);
+    if (!r.ok) throw fail(denied ? 'denied' : 'failed', denied ? 'That family code did not work.' : 'Drill Cloud said no (' + r.status + ').');
+    return j;
+  }
+  // a small "☁️ Saved" mark in the corner, so the family can see the cloud has the latest progress
+  let mark = null;
+  function badge(ok, refused) {
+    if (!fam || !cloudOn()) return;
+    if (!mark || !mark.isConnected) { css(); mark = document.createElement('div'); mark.className = 'sk-cloud'; mark.setAttribute('aria-live', 'polite'); (document.querySelector('.app') || document.body).append(mark); }
+    mark.textContent = ok ? '☁️ Saved' : refused ? '☁️ Family code not accepted' : '☁️ Offline, will retry';
+    mark.classList.toggle('off', !ok);
+    mark.title = ok ? 'Saved to Drill Cloud at ' + new Date().toLocaleTimeString() : refused ? 'Drill Cloud did not accept the family code on this device. Type it again in 💾 Backups.' : 'Drill Cloud could not be reached. Progress is safe on this device and goes up when the connection is back.';
+  }
+  function doc(slot) {
+    return {
+      async get() {
+        const j = await rpc('drill_load', { code: fam, slot });
+        const row = Array.isArray(j) ? j[0] : j;
+        const ok = !!(row && typeof row.state === 'string');
+        return { exists: ok, data: () => (ok ? { state: row.state, savedAt: +row.saved_at } : null) };
+      },
+      async set(d) {
+        const args = { code: fam, slot, state: d.state, saved_at: Math.round(+d.savedAt || Date.now()) };
+        // keepalive lets the last save still go up while the page closes (browsers allow it for bodies under 64 KB)
+        await rpc('drill_save', args, JSON.stringify(args).length < 60000);
+        badge(true);
+      },
+    };
+  }
+  const host = {
+    async use(what) {
+      if (what === 'user') return { id: async () => (fam ? 'family' : null) };
+      if (what === 'db') return { doc: path => doc(String(path).split('/').pop()) };
+      return null;
+    },
+  };
+  // the games call this when they are not on claude.ai: the cloud, or null when it is not set up on this device
+  const cloud = () => (cloudOn() && fam ? host : null);
+  async function connect(code) { const c = tidy(code); await rpc('drill_list', { code: c }); keepFam(c); }
+
   const stamp = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const CSS = `.sk-back{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
 .sk-back[hidden]{display:none}
@@ -9224,15 +9616,27 @@ const SaveKit = (() => {
 .sk textarea{width:100%;box-sizing:border-box;min-height:74px;resize:vertical;padding:8px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:12px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
 .sk .sk-msg{min-height:1.35em;color:var(--text,#f2ead8);font-weight:600}
 .sk .sk-msg.bad{color:#ff8a7a}
-.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}`;
+.sk .btn.sk-warn{border-color:#ff8a7a;color:#ffb3a8}
+.sk .sk-cl{display:grid;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid rgba(143,199,255,.45);background:rgba(90,160,255,.08)}
+.sk .sk-cl b{color:#cfe8ff}
+.sk .sk-cl input{flex:1 1 160px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--line,#3a322a);background:rgba(0,0,0,.35);color:inherit;font:inherit}
+.sk .sk-cl [hidden]{display:none}
+.sk-cloud{position:fixed;left:8px;bottom:6px;z-index:40;padding:2px 9px;border-radius:10px;background:rgba(0,0,0,.5);color:#cfe8ff;font-size:12px;pointer-events:none}
+.sk-cloud.off{color:#ffb3a8}`;
+const css = () => { if (document.getElementById('save-kit-css')) return; const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); };
   // the Backups box. opts: root (where the box goes), game, title, getData() -> the save or null, putData(data) -> true once loaded
   function panel(opts) {
-    if (!document.getElementById('save-kit-css')) { const st = document.createElement('style'); st.id = 'save-kit-css'; st.textContent = CSS; document.head.append(st); }
+    css();
     const app = !!window.Capacitor; // the phone apps cannot download files, so they get the code only
     const back = document.createElement('div');
     back.className = 'sk-back'; back.hidden = true;
     back.innerHTML = `<div class="sk" role="dialog" aria-modal="true" aria-label="${opts.title}">
   <h3>💾 ${opts.title}</h3>
+  ${cloudOn() ? `<div class="sk-cl">
+    <div><b>☁️ Drill Cloud</b> <span class="sk-cl-say"></span></div>
+    <div class="sk-row sk-cl-in"><input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Family code" aria-label="Family code"><button class="btn" type="button" data-sk="connect">Connect</button></div>
+    <div class="sk-row sk-cl-out" hidden><button class="btn" type="button" data-sk="disconnect">Stop cloud saves on this device</button></div>
+  </div>` : ''}
   <p>Keep a copy of your progress outside this browser. You can load it on any computer or phone, in any browser.</p>
   <div class="sk-row">${app ? '' : '<button class="btn" type="button" data-sk="file">💾 Save to file</button>'}<button class="btn" type="button" data-sk="copy">📋 Copy save code</button></div>
   <textarea class="sk-code" spellcheck="false" aria-label="Save code" placeholder="Your save code shows up here. To load a save, paste its code here."></textarea>
@@ -9244,6 +9648,13 @@ const SaveKit = (() => {
     opts.root.append(back);
     const $k = s => back.querySelector(s), ta = $k('.sk-code'), msg = $k('.sk-msg'), file = $k('input[type=file]');
     const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+    // the Drill Cloud part: without a family code it asks for one; with one it says the cloud is on
+    function showCloud() {
+      if (!cloudOn()) return;
+      $k('.sk-cl-say').textContent = fam ? 'is on. Progress saves to the cloud by itself and opens on every family device that has the family code.'
+        : 'saves progress to the cloud by itself, so it is never lost. A grown-up types the family code once on this device.';
+      $k('.sk-cl-in').hidden = !!fam; $k('.sk-cl-out').hidden = !fam;
+    }
     let armed = null, armT = 0;
     const disarm = () => { if (armed) { armed.btn.textContent = armed.label; armed.btn.classList.remove('sk-warn'); armed = null; } };
     async function current() { const d = opts.getData(); if (!d) { say('There is no progress to save yet. Play a little first!', true); return null; } return encode(opts.game, d); }
@@ -9270,6 +9681,20 @@ const SaveKit = (() => {
       const act = b.dataset.sk;
       if (act !== 'paste' && act !== 'open') disarm();
       if (act === 'close') return close();
+      if (act === 'connect' || act === 'disconnect') {
+        b.disabled = true;
+        try {
+          if (act === 'connect') {
+            const code = $k('.sk-cl-in input').value;
+            if (!tidy(code)) { say('Type the family code first.', true); return; }
+            await connect(code);
+            say('Connected! Getting your cloud saves...'); showCloud();
+            location.reload(); // start again, so the game picks up the newest save from the cloud
+          } else { keepFam(null); say('Cloud saves are off on this device. Progress saves here only.'); showCloud(); }
+        } catch (e) { say(e.message, true); }
+        finally { b.disabled = false; }
+        return;
+      }
       if (act === 'file') {
         const code = await current(); if (!code) return;
         const a = document.createElement('a');
@@ -9290,11 +9715,11 @@ const SaveKit = (() => {
       ta.value = await f.text();
       say('File opened. Press "Load this code" to load it.');
     });
-    function open() { disarm(); say(''); ta.value = ''; back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
+    function open() { disarm(); say(''); ta.value = ''; showCloud(); back.hidden = false; const b = $k('.btn'); if (b) b.focus({ preventScroll: true }); }
     function close() { disarm(); back.hidden = true; if (opts.onClose) opts.onClose(); }
     return { open, close, get isOpen() { return !back.hidden; }, el: back };
   }
-  return { rotate, rescue, encode, decode, panel };
+  return { rotate, rescue, encode, decode, panel, cloud };
 })();
 /* save-kit:end */
 const SAVE_KEY = 'drillfull.c3', PREV_KEY = 'drillfull.c3.prev', CKPT_KEY = 'drillfull.c3.ckpt';
@@ -9332,8 +9757,10 @@ function backupSave() {
 let cloud = null, cloudPrev = null, cloudCk = null, cloudOk = false, cloudDirty = false, cloudBusy = false, cloudSettled = false, cloudReady = Promise.resolve();
 async function cloudInit() {
   try {
-    if (!window.claude || typeof window.claude.use !== 'function') return;
-    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    // on claude.ai the account keeps the saves; everywhere else Drill Cloud does, on devices that have the family code
+    const host = window.claude && typeof window.claude.use === 'function' ? window.claude : SaveKit.cloud();
+    if (!host) return;
+    const [db, user] = await Promise.all([host.use('db'), host.use('user')]);
     const id = user ? await user.id() : null;
     if (!db || !id) return;
     const doc = db.doc(`data/users/${id}/drillfull-c3`), prevDoc = db.doc(`data/users/${id}/drillfull-c3-prev`), ckDoc = db.doc(`data/users/${id}/drillfull-c3-ckpt`);
