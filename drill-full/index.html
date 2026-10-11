@@ -3585,7 +3585,7 @@ const Coop = (() => {
   C.join = (code) => {
     if (C.on || ws) return;
     const url = serverUrl();
-    if (!url) { say('Public play is not switched on yet. Ask Dad to start the server.'); return; }
+    if (!url) { say('Play together from the website is not switched on yet. At home, open the game from the Play together address on the laptop.'); return; }
     say('Connecting…');
     try { ws = new WebSocket(url); } catch (e) { say('Could not connect.'); ws = null; return; }
     const seedMine = H.seed();
@@ -7135,7 +7135,7 @@ const Coop = (() => {
   C.join = (code) => {
     if (C.on || ws) return;
     const url = serverUrl();
-    if (!url) { say('Public play is not switched on yet. Ask Dad to start the server.'); return; }
+    if (!url) { say('Play together from the website is not switched on yet. At home, open the game from the Play together address on the laptop.'); return; }
     say('Connecting…');
     try { ws = new WebSocket(url); } catch (e) { say('Could not connect.'); ws = null; return; }
     const seedMine = H.seed();
@@ -10461,7 +10461,7 @@ const Coop = (() => {
   C.join = (code) => {
     if (C.on || ws) return;
     const url = serverUrl();
-    if (!url) { say('Public play is not switched on yet. Ask Dad to start the server.'); return; }
+    if (!url) { say('Play together from the website is not switched on yet. At home, open the game from the Play together address on the laptop.'); return; }
     say('Connecting…');
     try { ws = new WebSocket(url); } catch (e) { say('Could not connect.'); ws = null; return; }
     const seedMine = H.seed();
