@@ -67,6 +67,43 @@ button{font:inherit;color:inherit}
 
 .toast{position:absolute;z-index:5;left:50%;top:12px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);background:rgba(23,19,15,.94);border:1px solid var(--line);border-radius:4px;padding:8px 14px;font-size:17px;line-height:1.25;text-align:center;text-wrap:balance;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.show{opacity:1}
+/* a milestone: a gold trophy sign that bounces in under the toast */
+.trophy{position:absolute;z-index:6;left:50%;top:60px;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 24px);padding:10px 20px 10px 14px;border-radius:14px;
+  background:linear-gradient(180deg,#ffe98f,#f4b400 58%,#c98a00);color:#2a1a00;box-shadow:0 12px 32px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.65),inset 0 -3px 0 rgba(120,70,0,.35);
+  transform:translate(-50%,-40px) scale(.6);opacity:0;pointer-events:none;transition:opacity .25s,transform .45s cubic-bezier(.3,1.7,.5,1);overflow:hidden}
+.trophy.show{opacity:1;transform:translate(-50%,0) scale(1)}
+/* with the depot panel open on a wide screen, the sign moves into the part of the view that is still showing */
+@media (min-width:961px) and (min-height:541px){.stage.dock .trophy{left:max(160px,calc((100% - 474px) / 2))}}
+.trophy::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.75) 50%,transparent 65%);transform:translateX(-120%)}
+.trophy.show::after{animation:shine 1.1s .35s ease-out}
+@keyframes shine{to{transform:translateX(120%)}}
+.tr-cup{flex:none;width:44px;margin-right:4px;text-align:center;font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.trophy.show .tr-cup{animation:cup .6s .2s ease-in-out 3 alternate}
+@keyframes cup{from{transform:rotate(-12deg) scale(1)}to{transform:rotate(12deg) scale(1.15)}}
+.tr-text{position:relative;z-index:1;display:grid;line-height:1.1}
+.tr-kicker{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.8}
+.trophy b{font-size:24px;letter-spacing:.02em}
+#trCount{font-size:13px;font-weight:600;opacity:.8}
+.tr-icon{font-size:26px;line-height:1}
+@media (prefers-reduced-motion:reduce){.trophy{transition:opacity .25s}.trophy.show::after,.trophy.show .tr-cup{animation:none}}
+/* milestones: one line in the side panel, the full list at the depot */
+/* the upgrade sign is steel; a fully upgraded part gets the gold one */
+.trophy.up{background:linear-gradient(180deg,#f4f8fa,#b9c4cc 58%,#7d8a94);color:#14191d}
+.trophy.up .tr-kicker{color:#8a5a00;opacity:1}
+/* the depot's view of the ship, where the robot arm fits the upgrades */
+.garage{display:block;width:100%;height:124px;border-radius:6px;border:1px solid var(--line);background:#14110f}
+.garage[hidden]{display:none}
+.ms-line{display:flex;gap:6px;align-items:baseline;margin-top:6px;font-size:14px;line-height:1.25;color:var(--dim);text-transform:none;letter-spacing:0}
+.ms-line b{color:var(--rig);white-space:nowrap}
+.mslist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.mslist li{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:2px 8px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;color:var(--dim)}
+.mslist li span:first-child{grid-row:span 2;font-size:22px;text-align:center;filter:grayscale(1);opacity:.45}
+.mslist li b{font-size:15px;font-weight:600}
+.mslist li small{font-size:12px}
+.mslist li.done{border-color:rgba(134,196,106,.6);background:rgba(134,196,106,.08);color:var(--text)}
+.mslist li.done span:first-child{filter:none;opacity:1}
+.mslist li.done b::after{content:" ✓";color:var(--good)}
+.ms-note{margin:0 0 8px;font-size:15px;color:var(--dim)}
 
 /* ship: hold + smelter */
 .ship{grid-area:ship;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -88,6 +125,33 @@ button{font:inherit;color:inherit}
 .recipes{list-style:none;margin:0;padding:0;display:grid;gap:2px;font-size:14px;color:var(--dim)}
 .recipes li.ready{color:var(--text)}
 .recipes li.active{color:var(--rig)}
+.recipes li{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.recipes .rv{margin-left:auto;font-variant-numeric:tabular-nums}
+/* pictures of the goods: a lump of ore, and a bar */
+.lump,.ingot{display:inline-block;flex:none;vertical-align:middle}
+.lump{width:11px;height:11px;border-radius:45% 55% 50% 40%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.6),rgba(255,255,255,0) 48%),var(--c);box-shadow:inset 0 -2px 2px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.18)}
+.ingot{width:15px;height:9px;clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,0) 45%),var(--c)}
+/* the hold as a picture: one slot per space, filling up with what you carry */
+.bay{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px}
+.bay > i{width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--line);display:grid;place-items:center}
+.bay > i[hidden]{display:none}
+.bay > i.full{background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.bay > i.pop{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(1.9)}100%{transform:scale(1)}}
+.bay .lump{width:11px;height:11px}
+.bay .ingot{width:12px;height:8px}
+.items li.head{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.items li.head small{font-weight:500;letter-spacing:0;text-transform:none;font-size:12px}
+.fly{position:fixed;z-index:20;left:0;top:0;pointer-events:none}
+.fly.lump{width:14px;height:14px}
+/* the satellite's 7 parts as tubes that fill to the goal */
+.tubes{display:flex;justify-content:space-between;gap:4px;margin-top:4px}
+.tube{display:grid;justify-items:center;gap:3px;flex:1 1 0;min-width:0;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--dim)}
+.tube .glass{position:relative;width:16px;height:34px;border-radius:8px 8px 4px 4px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+.tube .glass > i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,0) 50%),var(--c);transition:height .5s}
+.tube.done{color:var(--good)}
+.tube.done .glass{box-shadow:inset 0 0 0 1px var(--good),0 0 8px rgba(134,196,106,.55)}
+.tube.pop .glass{animation:pop .45s ease-out}
 
 .cine{position:absolute;z-index:7;inset:0;width:100%;height:100%;display:block;background:#05060d;cursor:pointer}
 
@@ -109,6 +173,9 @@ button{font:inherit;color:inherit}
 .raw{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px;color:var(--dim)}
 .raw .btn{flex:none;color:var(--text)}
 .raw-btns{display:flex;flex-direction:column;gap:6px;flex:none}
+.raw .sm-line{display:block;margin-top:4px;font-size:13px}
+.raw .btn.smelt{border-color:#ff8a2a;color:#ffd0a0}
+.raw .btn kbd{font-size:.8em;padding:0 .35em;margin-right:.2em}
 .shop-note{margin:0 0 4px;font-size:14px;color:var(--dim)}
 .shop{display:flex;flex-direction:column}
 .shop-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;align-items:center;gap:8px 10px;padding-block:7px}
@@ -257,6 +324,9 @@ kbd{display:inline-block;min-width:24px;padding:1px 6px;border:1px solid var(--l
   .items li{display:flex;gap:5px;font-size:15px}
   .items li.zero{display:none}
   .items li.sep{border:0;margin:0;padding:0}
+  .items li.head{display:none}
+  .bay{margin-top:0}
+  .tube .glass{height:24px}
   .smelter{border:0;padding:0;display:flex;align-items:center;gap:10px;flex:1 1 220px;min-width:0}
   .sm-head .lbl{display:none}
   .sm-status{flex:1;min-width:0;font-size:14px}
@@ -272,7 +342,7 @@ kbd{display:inline-block;min-width:24px;padding:1px 6px;border:1px solid var(--l
 }
 /* short desktop screens: the hold goes into two columns (ore | bars) so the core log keeps room for its layer names */
 @media (min-width:721px) and (max-height:900px){
-  .items{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:3px 14px;font-size:15px}
+  .items{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(5,auto);grid-auto-flow:column;gap:3px 14px;font-size:15px}
   .items li{gap:6px}
   .items li > span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .items li.sep{border-top:0;margin-top:0;padding-top:0}
@@ -359,6 +429,12 @@ kbd{border-radius:9px}
   .items li{grid-template-columns:14px minmax(0,1fr) auto;gap:6px;line-height:1.2}
   .items li > span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .items li.sep{border-top:1px solid var(--line);margin-top:3px;padding-top:3px}
+  .items li.head{display:none}
+  .bay{gap:2px}
+  .bay > i{width:12px;height:12px}
+  .bay .lump{width:9px;height:9px}
+  .bay .ingot{width:10px;height:7px}
+  .tube .glass{width:12px;height:24px}
   .smelter{padding-top:6px;gap:5px}
   .sm-status{font-size:13px;line-height:1.2}
   .recipes{display:none}
@@ -395,6 +471,7 @@ kbd{border-radius:9px}
     <canvas id="view" aria-label="Drill game view. Use the arrow keys to drive and drill."></canvas>
     <canvas id="cine" class="cine" hidden aria-label="Opening cutscene: an asteroid from the ring of planet 1.7305.d destroys your satellite and only the drill ship survives."></canvas>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="trophy" id="trophy" role="status" aria-live="polite"><span class="tr-cup" aria-hidden="true">🏆</span><span class="tr-text"><span class="tr-kicker">Milestone!</span><b id="trName"></b><span id="trCount"></span></span><span class="tr-icon" id="trIcon" aria-hidden="true"></span></div>
 
     <section class="depot" id="depot" hidden aria-label="Depot">
       <div class="depot-head">
@@ -409,14 +486,20 @@ kbd{border-radius:9px}
       <div class="tabs" role="tablist" aria-label="Depot sections">
         <button class="tab" type="button" role="tab" id="tabUps" data-tab="ups" aria-controls="ups" aria-selected="true">Upgrades</button>
         <button class="tab" type="button" role="tab" id="tabShop" data-tab="shop" aria-controls="shopPane" aria-selected="false">Shop</button>
+        <button class="tab" type="button" role="tab" id="tabMs" data-tab="ms" aria-controls="msPane" aria-selected="false">Milestones</button>
       </div>
+      <canvas class="garage" id="garage" aria-label="Your ship in the depot"></canvas>
       <div class="ups" id="ups" role="tabpanel" aria-labelledby="tabUps"></div>
       <div id="shopPane" role="tabpanel" aria-labelledby="tabShop" hidden>
         <p class="shop-note" id="shopNote"></p>
         <div class="shop" id="shop"></div>
       </div>
+      <div id="msPane" role="tabpanel" aria-labelledby="tabMs" hidden>
+        <p class="ms-note" id="msNote"></p>
+        <ul class="mslist" id="msList"></ul>
+      </div>
       <div>
-        <h3>Satellite parts sold or bought (need 100 of each)</h3>
+        <h3>Satellite parts sold or bought (need 20 of each)</h3>
         <table class="assay parts" id="parts"></table>
       </div>
       <div>
@@ -438,7 +521,7 @@ kbd{border-radius:9px}
       <div class="card">
         <p class="kicker">Expedition to planet 1.7305.d</p>
         <h2>DRILL</h2>
-        <p class="lede">Your satellite was wrecked over planet 1.7305.d and only the drill ship survived. Your main objective: rebuild the satellite by selling or buying 100 of every ore (coal, copper, iron and sulfur) and 100 of every bar (copper, iron and sulfur) at the depot. Dig the ore out of the rock. Drilling to the center, 800 m down, is a side goal. The ship’s smelter turns ore into bars while you drill, and bars sell for far more at the depot. The ship has no fuel tank, so the drill and thrusters never run dry.</p>
+        <p class="lede">Your satellite was wrecked over planet 1.7305.d and only the drill ship survived. Your main objective: rebuild the satellite by selling or buying 20 of every ore (coal, copper, iron and sulfur) and 20 of every bar (copper, iron and sulfur) at the depot. Dig the ore out of the rock. Drilling to the center, 800 m down, is a side goal. The smelter beside the depot melts ore into bars, and bars sell for far more than raw ore. The ship has no fuel tank, so the drill and thrusters never run dry.</p>
         <dl class="keys keys-key">
           <div><dt><kbd>←</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>Drive and drill (or A, D, S)</dd></div>
           <div><dt><kbd>↑</kbd></dt><dd>Thrusters, or drill up (or W)</dd></div>
@@ -464,10 +547,11 @@ kbd{border-radius:9px}
           <div><dt><kbd>Menu</kbd> <kbd>View</kbd></dt><dd>This screen, and sound</dd></div>
         </dl>
         <ul class="tips">
-          <li><b>Objective.</b> The satellite is rebuilt once you have sold or bought 100 of each of the 7 items. Ore is sold with the “Sell raw” button at the depot. Bars are sold automatically when you dock, and bars cast while you are parked there sell straight away.</li>
+          <li><b>Milestones.</b> There are trophies to win on the way to the satellite: your first ore and bar, digging deeper, upgrades, and each step of the satellite. The side panel shows the next one, and the depot's Milestones tab lists them all.</li>
+          <li><b>Objective.</b> The satellite is rebuilt once you have sold or bought 20 of each of the 7 items. At the depot, choose for your ore: “Sell raw”, or “Smelt it” to turn it into bars. The satellite needs both, 20 raw of each ore and 20 of each bar.</li>
           <li><b>Crash site.</b> Your ship came down with the wreck of the satellite. Drive over all 6 pieces of debris on the surface to build the depot from them.</li>
           <li><b>Shop.</b> The Shop tab at the depot sells coal, copper, iron, sulfur and all 3 bars, at twice the price it pays for them. Bought goods count toward the satellite as soon as you buy them, and they go into the hold, so you can also buy the coal a recipe is missing. Selling them again only gets you cash.</li>
-          <li><b>Smelting.</b> 2 copper + 1 coal makes a copper bar, 2 iron + 1 coal makes an iron bar, and 2 sulfur makes a sulfur bar.</li>
+          <li><b>Smelting.</b> The smelter stands beside the depot. 2 copper + 1 coal makes a copper bar, 2 iron + 1 coal makes an iron bar, and 2 sulfur makes a sulfur bar. A bar is worth much more than the ore it is made from. The smelter keeps working while you drill, and its bars are sold when you come back. Its window glows and its lamp is green while it is lit; F switches it on and off.</li>
           <li><b>Two limits on the way down.</b> Your bit cuts rock up to its Mohs hardness, and your heat shield handles layers up to its temperature. The core log shows which layers are still out of reach.</li>
           <li><b>Hazards.</b> Violet blocks are gas pockets, and they explode when you drill into them. Magma, liquid iron and drops of more than 8 m dent the hull.</li>
         </ul>
@@ -491,8 +575,8 @@ kbd{border-radius:9px}
   </main>
 
   <section class="ship" aria-label="Ship hold and smelter">
-    <div class="objective"><div class="obj-head"><span class="lbl">Rebuild the satellite</span><span class="obj-count" id="objCount">0 / 700</span></div><span class="meter wide"><i id="mObj"></i></span></div>
-    <div class="lbl hold-lbl">In the hold<ul class="items" id="items"></ul></div>
+    <div class="objective"><div class="obj-head"><span class="lbl">Rebuild the satellite</span><span class="obj-count" id="objCount">0 / 700</span></div><span class="meter wide"><i id="mObj"></i></span><div class="tubes" id="tubes" aria-label="Satellite parts"></div><div class="ms-line" id="msLine"></div></div>
+    <div class="lbl hold-lbl">In the hold<div class="bay" id="bay" aria-hidden="true"></div><ul class="items" id="items"></ul></div>
     <div class="smelter">
       <div class="sm-head"><span class="lbl">Smelter</span><button class="sm-toggle" id="bSmelt" type="button" aria-pressed="true">On</button></div>
       <div class="sm-status" id="smStatus">Idle</div>
@@ -526,6 +610,7 @@ const BOTTOM_M = GROUND * MPT, LOG_M = BOTTOM_M + 14, CORE_TOP = 580;
 const DEPOT_X = 3, DEPOT_W = 4, START_X = 10;
 // pieces of the wrecked satellite lying on the surface; salvage them all to build the depot
 const SAT_X = 16; // where the satellite is rebuilt
+const SMELT_X = 8.9; // the depot's smelter stands beside it, between the depot and the crash site (centre, in tiles)
 const DEBRIS = [
   { x: 8,  name: 'solar panel' }, { x: 14, name: 'dish' }, { x: 19, name: 'hull plate' },
   { x: 24, name: 'antenna mast' }, { x: 29, name: 'battery pack' }, { x: 33, name: 'control module' },
@@ -565,7 +650,7 @@ const ORES = [
   { id: 'sulfur', name: 'Sulfur', mohs: 2,   price: 14, bands: [[180, 270, .03], [270, 700, .06]], col: '#e9d321', hi: '#fff8a8' },
 ];
 const COAL = 0, COPPER = 1, IRON = 2, SULFUR = 3;
-const GOAL = 100; // of every ore and every bar must be sold to rebuild the satellite
+const GOAL = 20; // of every ore and every bar must be sold to rebuild the satellite
 const MARKUP = 2; // the depot shop charges twice what the assay office pays, so buying and smelting never turns a profit
 // smelter recipes, tried in this order: [ore index, amount]
 const BARS = [
@@ -677,7 +762,7 @@ function generate(seed) {
 let S = null;
 const G = { act: null, fx: START_X, fy: SURF - 1, face: 'R', body: 'R', fallN: 0, climbN: 0, thrust: false,
   docked: false, depotTab: 'ups', breach: null, shake: 0, overlay: 'intro', started: false, puff: 0, smoke: 0, saveT: 0,
-  beamA: 0, fade: 0, tipHeat: 0, dmgT: 0, trackT: 0, exhT: 0, boom: null, capS: -2, cap: null, launch: null }; // the last line is only for looks
+  beamA: 0, fade: 0, tipHeat: 0, dmgT: 0, trackT: 0, exhT: 0, boom: null, capS: -2, cap: null, launch: null, pour: 0, feed: 0, feedCols: [], roar: 0 }; // the last line is only for looks
 let parts = [], floats = [], saleLine = '';
 
 const L = id => UP[id].lv[S.up[id]];
@@ -689,11 +774,76 @@ const hullMax = () => L('hull').v;
 const lampR = () => L('lamp').v;
 const smeltTime = () => L('smelter').v;
 const rawN = () => S.cargo.reduce((a, b) => a + b, 0);
-const cargoN = () => rawN() + S.bars.reduce((a, b) => a + b, 0) + (S.smelt.job ? 1 : 0);
+const cargoN = () => rawN() + S.bars.reduce((a, b) => a + b, 0);
 const depthOf = y => Math.max(0, (y - (SURF - 1)) * MPT);
 const canMake = b => BARS[b].needs.every(([k, n]) => S.cargo[k] >= n);
+// how many of each bar some ore makes, filling the recipes in order (copper and iron bars share the coal)
+function planBars(ore) {
+  const left = ore.slice(), n = BARS.map(() => 0);
+  BARS.forEach((b, i) => { while (b.needs.every(([k, m]) => left[k] >= m)) { for (const [k, m] of b.needs) left[k] -= m; n[i]++; } });
+  return n;
+}
+const barValue = n => n.reduce((a, c, i) => a + c * BARS[i].price, 0);
+const queueN = () => S.smelt.queue.reduce((a, b) => a + b, 0) + (S.smelt.job ? 1 : 0);
 const GOAL_TOTAL = (ORES.length + BARS.length) * GOAL;
 const soldTotal = () => S.sold.ore.concat(S.sold.bar).reduce((a, n) => a + Math.min(GOAL, n), 0);
+/* ---------- milestones ----------
+   Trophies on the way to the satellite, in roughly the order they come. The side panel shows the first one not yet won. */
+const MILES = [
+  { id: 'depot', icon: '🏗️', name: 'Depot built',        hint: 'Drive over all 6 pieces of wreckage', ok: () => S.depotBuilt },
+  { id: 'ore',   icon: '⛏️', name: 'First ore',          hint: 'Dig out a lump of ore', ok: () => S.mined > 0 },
+  { id: 'bar',   icon: '🔥', name: 'First bar',          hint: 'Smelt ore into a bar at the depot', ok: () => S.cast > 0 },
+  { id: 'up',    icon: '🔧', name: 'First upgrade',      hint: 'Fit an upgrade at the depot', ok: () => UPG.some(u => S.up[u.id] > 0) },
+  { id: 'd100',  icon: '⬇️', name: '100 m down',         hint: 'Dig down to 100 m', ok: () => S.maxDepth >= 100 },
+  { id: 'sat1',  icon: '🛰️', name: 'Satellite frame built', hint: `Sell or buy ${GOAL_TOTAL / 4} satellite parts`, ok: () => soldTotal() >= GOAL_TOTAL / 4, sat: true },
+  { id: 'd190',  icon: '⛰️', name: 'Granite reached',    hint: 'Dig down to 190 m', ok: () => S.maxDepth >= 190 },
+  { id: 'found', icon: '🔎', name: 'Every ore found',    hint: 'Find coal, copper, iron and sulfur', ok: () => S.found.every(Boolean) },
+  { id: 'cash',  icon: '💰', name: '$1,000 earned',      hint: 'Earn $1,000 in all', ok: () => S.earned >= 1000 },
+  { id: 'sat2',  icon: '☀️', name: 'Solar panels on',    hint: `Sell or buy ${GOAL_TOTAL / 2} satellite parts`, ok: () => soldTotal() >= GOAL_TOTAL / 2, sat: true },
+  ...ORES.map((o, k) => ({ id: 'ore' + k, icon: '✅', name: `${GOAL} ${o.name.toLowerCase()}`, hint: `Sell or buy ${GOAL} raw ${o.name.toLowerCase()}`, ok: () => S.sold.ore[k] >= GOAL })),
+  ...BARS.map((b, i) => ({ id: 'bar' + i, icon: '✅', name: `${GOAL} ${b.name.toLowerCase()}s`, hint: `Sell or buy ${GOAL} ${b.name.toLowerCase()}s`, ok: () => S.sold.bar[i] >= GOAL })),
+  { id: 'd350',  icon: '🌋', name: 'Into the mantle',    hint: 'Dig down to 350 m', ok: () => S.maxDepth >= 350 },
+  { id: 'max',   icon: '⭐', name: 'An upgrade maxed',   hint: 'Fit the top level of any upgrade', ok: () => UPG.some(u => S.up[u.id] === u.lv.length - 1) },
+  { id: 'sat3',  icon: '📡', name: 'Dish and antenna on', hint: `Sell or buy ${GOAL_TOTAL * 3 / 4} satellite parts`, ok: () => soldTotal() >= GOAL_TOTAL * 3 / 4, sat: true },
+  { id: 'lvl3',  icon: '🛠️', name: 'Every upgrade level 3', hint: 'Fit level 3 of all 7 upgrades', ok: () => UPG.every(u => S.up[u.id] >= 2) },
+  { id: 'd580',  icon: '🔆', name: 'The outer core',     hint: 'Dig down to 580 m', ok: () => S.maxDepth >= 580 },
+  { id: 'sat4',  icon: '🚀', name: 'Satellite rebuilt',  hint: `Sell or buy ${GOAL} of every ore and bar`, ok: () => S.rebuilt, sat: true },
+  { id: 'center', icon: '🌍', name: 'The center',        hint: 'Drill all the way down to 800 m', ok: () => S.center },
+];
+const msQueue = [];
+let msT = 0, msCheckT = 0;
+const msWon = () => MILES.filter(m => S.ms[m.id]).length;
+const msNext = () => MILES.find(m => !S.ms[m.id]);
+function checkMilestones() {
+  for (const m of MILES) {
+    if (S.ms[m.id] || !m.ok()) continue;
+    S.ms[m.id] = true;
+    if (!G.msQuiet) msQueue.push(m);
+  }
+  G.msQuiet = false;
+}
+function banner(kicker, name, sub, icon, cup, cls) {
+  trophyEl.querySelector('.tr-kicker').textContent = kicker; trophyEl.querySelector('.tr-cup').textContent = cup;
+  $('#trName').textContent = name; $('#trIcon').textContent = icon; $('#trCount').textContent = sub;
+  trophyEl.className = 'trophy' + (cls ? ' ' + cls : ''); void trophyEl.offsetWidth; trophyEl.classList.add('show');
+  msT = 3.4;
+}
+const CONFETTI = ['#ff5a5a', '#ffd23f', '#4fd1ff', '#7cff6b', '#ff7ad9', '#ffffff', '#ff9f1c'];
+function stepMilestones(dt) {
+  if ((msCheckT -= dt) <= 0) { msCheckT = .25; checkMilestones(); }
+  if (msT > 0) { msT -= dt; if (msT <= .45) trophyEl.classList.remove('show'); return; }
+  if (!msQueue.length) return;
+  if (G.upFx && G.upFx.t < UP_FIT) return; // let the robot arm finish first
+  const m = msQueue.shift();
+  banner('Milestone!', m.name, `${msWon()} of ${MILES.length} milestones`, m.icon, '🏆', '');
+  sfx.trophy();
+  // confetti bursts out of the ship, with a few sparks that glow in the dark
+  emit(G.fx + .5, G.fy + .2, 50, () => CONFETTI[Math.random() * CONFETTI.length | 0], 7.5, 1.8, 7, 'chip');
+  emit(G.fx + .5, G.fy + .2, 18, () => Math.random() < .5 ? '#fff1b8' : '#ffd23f', 6, .8, 5, 'spark');
+  if (m.sat) emit(SAT_X + .5, SURF - 2, 30, () => Math.random() < .5 ? '#bfe3ff' : '#fff1b8', 5, 1, 4, 'spark'); // the new part is fitted
+  if (!depotEl.hidden && G.depotTab === 'ms') renderDepot();
+  save();
+}
 function checkRebuild() {
   if (S.rebuilt || soldTotal() < GOAL_TOTAL) return;
   S.rebuilt = true; G.launch = 0; save(); // it lifts off once the win card is closed
@@ -713,16 +863,17 @@ function tileColor(t, x, y) {
 
 function freshState(seed) {
   return { v: 2, seed, tiles: null, x: START_X, y: SURF - 1, cash: 0, hull: 100,
-    cargo: ORES.map(() => 0), bars: BARS.map(() => 0), smelt: { on: true, job: null }, debris: DEBRIS.map(() => false), depotBuilt: false,
+    cargo: ORES.map(() => 0), bars: BARS.map(() => 0), smelt: { on: true, job: null, queue: BARS.map(() => 0), stack: BARS.map(() => 0) }, debris: DEBRIS.map(() => false), depotBuilt: false,
     up: { bit: 0, heat: 0, motor: 0, hold: 0, hull: 0, smelter: 0, lamp: 0 },
     maxDepth: 0, earned: 0, mined: 0, cast: 0, recoveries: 0, found: ORES.map(() => false), time: 0, center: false,
-    sold: { ore: ORES.map(() => 0), bar: BARS.map(() => 0) }, bought: { ore: ORES.map(() => 0), bar: BARS.map(() => 0) }, rebuilt: false };
+    sold: { ore: ORES.map(() => 0), bar: BARS.map(() => 0) }, bought: { ore: ORES.map(() => 0), bar: BARS.map(() => 0) }, rebuilt: false, ms: {} };
 }
 function newGame() {
   const seed = (Math.random() * 0x7fffffff) | 0;
   S = freshState(seed);
   S.tiles = generate(seed);
   S.dug = new Uint8Array(COLS * ROWS);
+  G.msQuiet = false; msQueue.length = 0;
   resetDynamic();
 }
 function resetDynamic() {
@@ -730,8 +881,9 @@ function resetDynamic() {
   Object.assign(G, { act: null, fx: S.x, fy: S.y, fallN: 0, climbN: 0, thrust: false, breach: null, shake: 0, tipHeat: 0, boom: null, capS: -2, cap: null, launch: null });
   parts = []; floats = []; snapCam = true;
   G.docked = atDepot();
-  depotEl.hidden = true;
+  depotEl.hidden = true; stage.classList.remove('dock');
   bDock.hidden = !G.docked;
+  G.upFx = null;
   syncLog();
 }
 function serialize() {
@@ -751,6 +903,9 @@ function restore(o) {
     if (!Array.isArray(S.bars) || S.bars.length !== BARS.length) S.bars = BARS.map(() => 0);
     if (!Array.isArray(S.found) || S.found.length !== ORES.length) S.found = ORES.map(() => false);
     if (S.smelt.job && !BARS[S.smelt.job.b]) S.smelt.job = null;
+    G.msQuiet = !o.ms || typeof o.ms !== 'object'; // a save from before milestones: what it has already done is ticked off without a party
+    if (G.msQuiet) S.ms = {};
+    for (const key of ['queue', 'stack']) if (!Array.isArray(S.smelt[key]) || S.smelt[key].length !== BARS.length) S.smelt[key] = BARS.map(() => 0); else S.smelt[key] = S.smelt[key].map(n => Math.max(0, n | 0));
     if (!S.sold || !Array.isArray(S.sold.ore) || S.sold.ore.length !== ORES.length || !Array.isArray(S.sold.bar) || S.sold.bar.length !== BARS.length) S.sold = { ore: ORES.map(() => 0), bar: BARS.map(() => 0) };
     if (!S.bought || !Array.isArray(S.bought.ore) || S.bought.ore.length !== ORES.length || !Array.isArray(S.bought.bar) || S.bought.bar.length !== BARS.length) S.bought = { ore: ORES.map(() => 0), bar: BARS.map(() => 0) };
     S.bought.ore = S.bought.ore.map((n, k) => clamp(n | 0, 0, S.cargo[k])); S.bought.bar = S.bought.bar.map((n, i) => clamp(n | 0, 0, S.bars[i]));
@@ -873,6 +1028,29 @@ const sfx = {
   boom() { noise(.8, 110, .3, .6); tone(95, .5, 'sawtooth', .05, -55); },
   hurt() { tone(240, .22, 'square', .045, -160); },
   bump() { tone(110, .07, 'square', .03, -40); },
+  // each upgrade has its own sound, then a short fanfare (a bigger one for the top level)
+  fitted(id, max) {
+    const S2 = {
+      bit()     { tone(260, .55, 'sawtooth', .035, 1100); tone(2200, .1, 'square', .03, 0, .5); tone(2900, .14, 'square', .025, 0, .58); },
+      heat()    { noise(.7, 2200, .06, .6); tone(1100, .5, 'sine', .035, -700); tone(1500, .25, 'triangle', .02, 0, .3); },
+      motor()   { tone(70, .8, 'sawtooth', .06, 190); tone(105, .8, 'square', .025, 260); noise(.6, 200, .05, .8); },
+      hold()    { tone(80, .16, 'square', .09, -30); tone(70, .16, 'square', .09, -30, .2); tone(95, .2, 'square', .07, -40, .4); },
+      hull()    { [[1400, 0], [1250, .14], [1550, .28]].forEach(([f, d]) => { tone(f, .14, 'square', .04, -300, d); tone(f * 2.7, .08, 'sine', .02, 0, d); }); },
+      smelter() { noise(.9, 320, .16, .5); tone(55, .7, 'sawtooth', .05, 70); tone(880, .3, 'triangle', .02, 400, .3); },
+      lamp()    { tone(1760, .45, 'sine', .05); tone(2637, .55, 'sine', .04, 0, .09); tone(3520, .6, 'sine', .025, 0, .18); },
+    };
+    S2[id]();
+    const at = .55, notes = max ? [523, 659, 784, 1047, 1319] : [659, 784, 1047];
+    notes.forEach((f, i) => tone(f, max && i === notes.length - 1 ? .7 : .14, 'triangle', .05, 0, at + i * .09));
+    if (max) [2093, 2637, 3136, 3520, 4186].forEach((f, i) => tone(f, .1, 'sine', .025, 0, at + .5 + i * .06));
+  },
+  weld() { noise(.05, 2800 + Math.random() * 2400, .035, 2.5); },
+  trophy() { // ta-da: a pick-up note, a big bright chord, and a twinkle on top
+    tone(784, .1, 'square', .035); tone(988, .1, 'square', .035, 0, .09);
+    for (const f of [523, 659, 784, 1047]) tone(f, .75, 'triangle', .05, 0, .2);
+    tone(1047, .75, 'square', .018, 0, .2);
+    [2093, 2637, 3136, 2637, 3520].forEach((f, i) => tone(f, .09, 'sine', .025, 0, .32 + i * .07));
+  },
 };
 const unlockAudio = () => { if (!muted) audio(); };
 
@@ -1105,7 +1283,7 @@ function checkDebris() {
   emit(DEPOT_X + DEPOT_W / 2, SURF - 1, 40, () => ['#fff1b8', RIG][Math.random() * 2 | 0], 6, 1, 16, 'spark');
   emit(DEPOT_X + DEPOT_W / 2, SURF - .6, 24, () => Math.random() < .5 ? '#b9ad98' : '#8d949b', 2.5, 1.4, -.5, 'dust');
   sfx.cast(); sfx.buy();
-  toast('All pieces salvaged. The depot is built from the wreckage. Now sell 100 of every ore and bar to rebuild the satellite.');
+  toast('All pieces salvaged. The depot is built from the wreckage. Now sell 20 of every ore and bar to rebuild the satellite.');
   checkDock(); save();
 }
 
@@ -1217,6 +1395,7 @@ function collect(k, tx, ty) {
   S.cargo[k]++;
   floats.push({ x: tx + .5, y: ty + .2, text: `+ ${o.name}`, col: k === COAL ? '#b9b2aa' : o.col, age: 0 });
   sfx.ore(k);
+  flyToBay('ore', k);
 }
 
 function finish() {
@@ -1241,41 +1420,176 @@ function finish() {
   if (d >= BOTTOM_M && !S.center) { S.center = true; save(); showWin(); }
 }
 
-/* ---------- smelter ---------- */
+/* ---------- smelter ----------
+   The smelter stands at the depot. Ore is put in at the depot ("Smelt it"); it works through that queue while the ship is
+   away, stacks the bars beside it, and they are sold the next time the ship docks (straight away while it is parked). */
+const nearSmelter = () => S.y < SURF + 2 && Math.abs(G.fx - SMELT_X) < 9;
 function stepSmelter(dt) {
   const sm = S.smelt;
+  if (!S.depotBuilt) return;
   if (!sm.job) {
     if (!sm.on) return;
-    for (let b = 0; b < BARS.length; b++) {
-      if (!canMake(b)) continue;
-      for (const [k, n] of BARS[b].needs) { S.cargo[k] -= n; S.bought.ore[k] = Math.max(0, S.bought.ore[k] - n); }
-      sm.job = { b, t: 0 };
-      break;
-    }
+    const b = sm.queue.findIndex(n => n > 0);
+    if (b < 0) return;
+    sm.queue[b]--; sm.job = { b, t: 0 };
     return;
   }
   sm.job.t += dt;
-  G.smoke -= dt;
-  if (G.smoke <= 0) {
-    G.smoke = .22;
-    emit(G.fx + (G.body === 'L' ? .78 : .22), G.fy + .02, 1, () => Math.random() < .5 ? '#8a8178' : '#6e665f', .5, 1.5, -1.4, 'smoke');
-    if (Math.random() < .3) emit(G.fx + (G.body === 'L' ? .78 : .22), G.fy + .02, 1, () => '#ffb347', 1.2, .6, -1, 'fire');
+  if (G.fy < SURF + 14) { // smoke from the stack and sparks at the window, only worth making while the surface is in view
+    G.smoke -= dt;
+    if (G.smoke <= 0) {
+      G.smoke = .2;
+      emit(SMELT_X + .44, SURF - 2.55, 1, () => Math.random() < .5 ? '#8a8178' : '#6e665f', .5, 1.8, -1.5, 'smoke');
+      if (Math.random() < .35) emit(SMELT_X, SURF - .9, 1, () => Math.random() < .5 ? '#ffb347' : '#ffd27a', 1.6, .5, 4, 'spark');
+    }
+    if (nearSmelter() && (G.roar -= dt) <= 0) { G.roar = .9 + Math.random() * .5; noise(.8, 260, .012, .7); }
   }
   if (sm.job.t < smeltTime()) return;
   const b = sm.job.b, bar = BARS[b];
   sm.job = null;
   S.cast++;
-  floats.push({ x: G.fx + .5, y: G.fy - .1, text: `+ ${bar.name}`, col: bar.col, age: 0 });
-  sfx.cast();
+  G.pour = 1;
+  if (nearSmelter()) { floats.push({ x: SMELT_X - 1.2, y: SURF - 1.6, text: `+ ${bar.name}`, col: bar.col, age: 0 }); sfx.cast(); }
+  if (!S.barTip) { S.barTip = true; toast(`Your first ${bar.name.toLowerCase()}! Bars sell for much more than raw ore, and the satellite needs ${GOAL} of each kind.`); }
   if (G.docked) {
     S.cash += bar.price; S.earned += bar.price; S.sold.bar[b]++;
-    saleLine = `Cast and sold 1 ${bar.name.toLowerCase()} for $${bar.price}.`;
+    saleLine = `The smelter cast and sold 1 ${bar.name.toLowerCase()} for $${bar.price}.`;
     checkRebuild();
-  } else S.bars[b]++;
+  } else sm.stack[b]++;
 }
 function toggleSmelter() {
   S.smelt.on = !S.smelt.on;
-  toast(S.smelt.on ? 'Smelter on.' : (S.smelt.job ? 'Smelter off after this bar.' : 'Smelter off. Ore stays raw.'));
+  toast(S.smelt.on ? 'Smelter on. The fire is lit.' : (S.smelt.job ? 'Smelter off after this bar.' : 'Smelter off. The fire is out.'));
+}
+// put every full recipe in the hold into the smelter; ore that makes no full bar stays aboard to sell raw
+function smeltOre() {
+  const n = planBars(S.cargo);
+  if (!n.some(Boolean)) { hint('No full recipe aboard. 2 copper + 1 coal, 2 iron + 1 coal, or 2 sulfur.'); sfx.bump(); return; }
+  const cols = [];
+  BARS.forEach((b, i) => {
+    if (!n[i]) return;
+    for (const [k, m] of b.needs) { S.cargo[k] -= m * n[i]; S.bought.ore[k] = Math.max(0, S.bought.ore[k] - m * n[i]); for (let j = 0; j < m * n[i]; j++) cols.push(ORES[k].col); }
+    S.smelt.queue[i] += n[i];
+  });
+  S.bought.ore = S.bought.ore.map((x, k) => Math.min(x, S.cargo[k]));
+  G.feed = 2.4; G.feedCols = cols.slice(0, 24);
+  const what = BARS.map((b, i) => n[i] ? plural(n[i], b.name.toLowerCase()) : '').filter(Boolean);
+  saleLine = `Into the smelter: ore for ${andList(what)}.` + (S.smelt.on ? '' : say(' The smelter is off. Press F to light it.', ' The smelter is off. Tap its switch to light it.', ' The smelter is off. Press X to light it.'));
+  sfx.buy(); renderDepot(); save();
+}
+function smeltLine() {
+  const sm = S.smelt, q = BARS.map((b, i) => sm.queue[i] ? plural(sm.queue[i], b.name.toLowerCase()) : '').filter(Boolean);
+  if (!sm.on) return (sm.job || q.length ? 'Off. Ore is waiting. ' : 'Off. ') + say('Press F to light it.', 'Tap the switch to light it.', 'Press X to light it.');
+  if (sm.job) return `Casting a ${BARS[sm.job.b].name.toLowerCase()} at ${BARS[sm.job.b].melt}` + (q.length ? `, then ${andList(q)}` : '') + '.';
+  return 'Lit and waiting for ore.';
+}
+
+/* ---------- the upgrade show ----------
+   A robot arm comes down from the depot's ceiling and welds the new part on. When it is fitted, the part flashes, the
+   ship hops, sparks burst out, its own sound plays and a sign says what it is. The smelter's upgrade happens at the
+   smelter instead. The ship keeps showing the old part until the arm has finished. */
+const UP_EXT = .45, UP_FIT = 1.6, UP_END = 2.3;
+const UP_ICON = { bit: '🔩', heat: '🛡️', motor: '⚙️', hold: '📦', hull: '🛡️', smelter: '🔥', lamp: '💡' };
+// where the arm welds, in the ship's 16-unit box
+function upTarget(id, face = G.face) {
+  if (id === 'bit') return face === 'D' ? [8, 14] : face === 'U' ? [8, -1] : [15.2, 7.9];
+  return { heat: [12.9, 7.5], motor: [5.4, 12.6], hold: [3, 3.4], hull: [8.5, 10.2], lamp: [12.4, 2.4] }[id] || [8, 6];
+}
+// the level each part is drawn at: the old one while the arm is still working on it
+function shownUp() {
+  const lv = Object.assign({}, S.up), f = G.upFx;
+  if (f && !f.fitted && f.id !== 'smelter') lv[f.id] = Math.max(0, lv[f.id] - 1);
+  return lv;
+}
+function shipToWorld([ux, uy]) { return [G.fx + (G.body === 'L' ? 16 - ux : ux) / 16, G.fy + uy / 16]; }
+function stepUpgrade(dt) {
+  const f = G.upFx; if (!f) return;
+  f.t += dt;
+  const atSmelter = f.id === 'smelter', [wx, wy] = atSmelter ? [SMELT_X, SURF - 1.4] : shipToWorld(upTarget(f.id));
+  if (f.t > UP_EXT && f.t < UP_FIT) { // welding
+    if ((f.weldT -= dt) <= 0) {
+      f.weldT = .035;
+      emit(wx, wy, 2, () => Math.random() < .6 ? '#fff6c8' : '#9fd8ff', 6, .35, 14, 'spark');
+      if (Math.random() < .35) sfx.weld();
+    }
+  }
+  if (!f.fitted && f.t >= UP_FIT) {
+    f.fitted = true;
+    const u = UP[f.id], l = u.lv[S.up[f.id]];
+    G.hop = atSmelter ? 0 : .5; G.flash = 1;
+    sfx.fitted(f.id, f.max);
+    const gold = f.max ? ['#ffd23f', '#fff1b8', '#ffb000'] : ['#ffffff', '#bfe3ff', '#ffd27a'];
+    emit(wx, wy, f.max ? 40 : 22, () => gold[Math.random() * 3 | 0], f.max ? 8 : 6, .8, 3, 'spark');
+    if (f.max) emit(G.fx + .5, G.fy + .3, 40, () => CONFETTI[Math.random() * CONFETTI.length | 0], 7, 1.6, 7, 'chip');
+    banner(f.max ? 'Fully upgraded!' : 'Upgraded!', u.name, u.fmt(l), UP_ICON[f.id], f.max ? '⭐' : '🔧', f.max ? '' : 'up');
+  }
+  if (f.t >= UP_END) G.upFx = null;
+}
+// the robot arm, drawn in the ship's 16-unit box: it hangs from the depot ceiling (5.6 units above the ship's roof)
+function paintArm(c, f, now, face) {
+  if (!f || f.id === 'smelter') return;
+  const [tx, ty] = upTarget(f.id, face), t = f.t;
+  const e = t < UP_EXT ? t / UP_EXT : t < UP_FIT ? 1 : t < UP_END - .2 ? 1 - (t - UP_FIT) / (UP_END - .2 - UP_FIT) : 0;
+  if (e <= 0) return;
+  const k = e * e * (3 - 2 * e), bx = 7, by = -5.6, rx = 8.5, ry = -4.4;
+  const jit = t > UP_EXT && t < UP_FIT ? Math.sin(now / 23) * .15 : 0;
+  const px = rx + (tx - rx) * k + jit, py = ry + (ty - 1.1 - ry) * k; // the torch tip stops just short of the part
+  // two links with an elbow that bends toward the back of the ship
+  const L = 9.5, dx = px - bx, dy = py - by, d = Math.min(Math.hypot(dx, dy), L * 1.98), mx = (bx + px) / 2, my = (by + py) / 2;
+  const h = Math.sqrt(Math.max(0, L * L - d * d / 4)), nx = -dy / (Math.hypot(dx, dy) || 1), ny = dx / (Math.hypot(dx, dy) || 1);
+  const ex = mx - nx * h * .9, ey = my - ny * h * .9;
+  c.lineCap = 'round';
+  c.fillStyle = '#2c3236'; c.fillRect(bx - 2.2, by - .6, 4.4, 1.4); // ceiling mount
+  for (const [x0, y0, x1, y1, w] of [[bx, by, ex, ey, 1.7], [ex, ey, px, py, 1.3]]) {
+    c.strokeStyle = '#1b1406'; c.lineWidth = w + .5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+    c.strokeStyle = RIG; c.lineWidth = w; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = w * .3; c.beginPath(); c.moveTo(x0 - .2, y0 - .2); c.lineTo(x1 - .2, y1 - .2); c.stroke();
+  }
+  for (const [x, y, r] of [[bx, by, 1.2], [ex, ey, 1.1]]) { c.fillStyle = '#2c3236'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.fillStyle = '#8f9ba3'; c.beginPath(); c.arc(x, y, r * .45, 0, 7); c.fill(); }
+  // the welding torch, and its blue-white flame while it works
+  c.fillStyle = '#4a535a'; c.beginPath(); c.arc(px, py, .9, 0, 7); c.fill();
+  c.strokeStyle = '#2c3236'; c.lineWidth = .6; c.beginPath(); c.moveTo(px, py); c.lineTo(px + (tx - px) * .6, py + (ty - py) * .6); c.stroke();
+  if (t > UP_EXT && t < UP_FIT) {
+    const fx = tx - (tx - px) * .2, fy = ty - (ty - py) * .2, r = 1.6 + Math.random() * .9;
+    const g = c.createRadialGradient(fx, fy, 0, fx, fy, r * 2.2); g.addColorStop(0, '#ffffff'); g.addColorStop(.25, 'rgba(170,220,255,.95)'); g.addColorStop(1, 'rgba(120,190,255,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(fx, fy, r * 2.2, 0, 7); c.fill();
+  }
+}
+// the flash on the new part once it is fitted
+function paintFlash(c, f, face) {
+  if (!f || !f.fitted || f.id === 'smelter' || !(G.flash > 0)) return;
+  const [x, y] = upTarget(f.id, face), r = 3 + (1 - G.flash) * 6;
+  const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,255,255,${G.flash})`); g.addColorStop(.5, `rgba(255,236,160,${G.flash * .6})`); g.addColorStop(1, 'rgba(255,236,160,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+}
+const hopY = () => G.hop > 0 ? Math.sin((1 - G.hop / .5) * Math.PI) * 5 : 0; // in ship units
+// the depot panel's own view of the ship (on phones the panel covers the game view)
+let garageCtx = null;
+function drawGarage(now) {
+  const cvG = $('#garage'), w = cvG.clientWidth, h = cvG.clientHeight; if (!w || !h) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cvG.width !== Math.round(w * dpr) || cvG.height !== Math.round(h * dpr)) { cvG.width = Math.round(w * dpr); cvG.height = Math.round(h * dpr); garageCtx = null; }
+  const c = garageCtx || (garageCtx = cvG.getContext('2d')), W = cvG.width, H = cvG.height, s = H * .6 / 16, floor = H - 7 * dpr, ox = W / 2 - 8 * s, oy = floor - 16 * s;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = vgradC(c, 0, H, [[0, '#14110f'], [1, '#2c2621']]); c.fillRect(0, 0, W, H);
+  const lit = c.createRadialGradient(W / 2, floor, 0, W / 2, floor, W * .45); lit.addColorStop(0, 'rgba(255,214,120,.18)'); lit.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = lit; c.fillRect(0, 0, W, H);
+  // ceiling beam with hazard stripes, and the concrete floor
+  const cy0 = oy - 5.6 * s - 3 * s;
+  c.save(); c.beginPath(); c.rect(0, cy0, W, 3 * s); c.clip(); c.fillStyle = RIG; c.fillRect(0, cy0, W, 3 * s); c.fillStyle = '#1b1406';
+  for (let x = -3 * s; x < W + 3 * s; x += 4 * s) { c.beginPath(); c.moveTo(x, cy0 + 3 * s); c.lineTo(x + 2 * s, cy0 + 3 * s); c.lineTo(x + 5 * s, cy0); c.lineTo(x + 3 * s, cy0); c.fill(); }
+  c.restore();
+  c.fillStyle = '#8d8a84'; c.fillRect(0, floor, W, H - floor); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, floor, W, Math.max(1, dpr));
+  c.setTransform(s, 0, 0, s, ox, oy - hopY() * s);
+  const lv = shownUp();
+  paintRig(c, { now, down: false, up: false, thrust: false, bit: BITCOL[lv.bit], spin: 0, roll: 0, load: binLoad(), lv });
+  paintFlash(c, G.upFx, 'R');
+  c.setTransform(s, 0, 0, s, ox, oy);
+  paintArm(c, G.upFx, now, 'R');
+  if (G.upFx && G.upFx.t > UP_EXT && G.upFx.t < UP_FIT && G.upFx.id !== 'smelter') { // a few sparks off the weld
+    const [tx, ty] = upTarget(G.upFx.id, 'R'); c.strokeStyle = '#fff1b8'; c.lineWidth = .3;
+    for (let i = 0; i < 7; i++) { const a = Math.random() * 6.28, r0 = 1 + Math.random(), r1 = r0 + 1 + Math.random() * 3; c.beginPath(); c.moveTo(tx + Math.cos(a) * r0, ty + Math.sin(a) * r0); c.lineTo(tx + Math.cos(a) * r1, ty + Math.sin(a) * r1); c.stroke(); }
+  }
+  c.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 /* ---------- depot ---------- */
@@ -1288,9 +1602,12 @@ function sell() {
   let total = 0;
   const sold = [];
   BARS.forEach((b, i) => { const n = S.bars[i]; if (n) { total += n * b.price; sold.push(plural(n, b.name.toLowerCase())); S.sold.bar[i] += n - S.bought.bar[i]; } S.bars[i] = 0; S.bought.bar[i] = 0; });
+  const stacked = [];
+  BARS.forEach((b, i) => { const n = S.smelt.stack[i]; if (n) { total += n * b.price; stacked.push(plural(n, b.name.toLowerCase())); S.sold.bar[i] += n; } S.smelt.stack[i] = 0; });
+  const what = [andList(sold), stacked.length ? `${andList(stacked)} from the smelter` : ''].filter(Boolean).join(', and ');
   const repaired = S.hull < hullMax();
   S.hull = hullMax(); S.cash += total; S.earned += total;
-  saleLine = (total ? `Sold ${andList(sold)} for $${fmt(total)}.` : 'No bars to sell yet.') + (repaired ? ' Hull repaired.' : '');
+  saleLine = (total ? `Sold ${what} for $${fmt(total)}.` : 'No bars to sell yet.') + (repaired ? ' Hull repaired.' : '');
   if (total) sfx.sell();
   save();
   checkRebuild();
@@ -1313,7 +1630,7 @@ function buy(id) {
   S.cash -= next.cost; S.up[id]++;
   if (id === 'hull') S.hull = hullMax();
   sfx.buy();
-  toast(`Fitted: ${u.name.toLowerCase()}, ${u.fmt(next)}.`);
+  G.upFx = { id, t: 0, max: S.up[id] === u.lv.length - 1, fitted: false, weldT: 0 };
   renderDepot(); syncLog(); save();
 }
 
@@ -1334,7 +1651,7 @@ function sellBars() { sell(); renderDepot(); }
 
 function recover() {
   const d = G.breach.d;
-  S.cargo = ORES.map(() => 0); S.bars = BARS.map(() => 0); S.smelt.job = null; S.bought = { ore: ORES.map(() => 0), bar: BARS.map(() => 0) };
+  S.cargo = ORES.map(() => 0); S.bars = BARS.map(() => 0); S.bought = { ore: ORES.map(() => 0), bar: BARS.map(() => 0) };
   S.hull = hullMax(); S.recoveries++;
   S.x = START_X; S.y = SURF - 1;
   resetDynamic(); G.fade = 1;
@@ -1370,6 +1687,8 @@ function stepFx(dt) {
   for (const f of floats) { f.age += dt; f.y -= dt * .9; }
   floats = floats.filter(f => f.age < 1.2);
   G.shake = Math.max(0, G.shake - dt * 2.4);
+  G.pour = Math.max(0, G.pour - dt * 1.4); G.feed = Math.max(0, G.feed - dt);
+  G.hop = Math.max(0, (G.hop || 0) - dt); G.flash = Math.max(0, (G.flash || 0) - dt * 1.6);
 }
 
 /* ---------- update ---------- */
@@ -1420,6 +1739,8 @@ function update(dt) {
     if (Math.random() < .2) emit(G.fx + .5, G.fy + .5, 2, () => '#ffcf6a', 3, .25, 10, 'spark');
   }
   stepSmelter(dt);
+  stepUpgrade(dt);
+  stepMilestones(dt);
   G.saveT += dt;
   if (G.saveT > 5) { G.saveT = 0; save(); }
 }
@@ -1831,14 +2152,15 @@ function drawSatelliteSite(cx, gy) {
       for (const [sx, sy, w, h, , r] of shapes) { ctx.beginPath(); ctx.roundRect(sx, sy, w, h, r); ctx.stroke(); }
       ctx.setLineDash([]);
     }
-    // the built part fills up from the bottom as parts are sold
-    const top = -11, bottom = 5, cut = done ? top - 1 : bottom - (bottom - top) * frac;
-    ctx.save(); ctx.beginPath(); ctx.rect(-30, cut, 60, 30); ctx.clip();
-    for (const [sx, sy, w, h, col, r] of shapes) {
+    // it goes together in four steps, one for each quarter of the parts (the satellite milestones):
+    // the body, then the solar panels on their arms, then the mast and dish, then lift-off
+    const stage = done ? 4 : Math.min(3, Math.floor(frac * 4)), STEP = [2, 2, 2, 2, 1, 1, 3, 3];
+    shapes.forEach(([sx, sy, w, h, col, r], j) => {
+      if (STEP[j] > stage) return;
       ctx.fillStyle = vgrad(sy, sy + h, [[0, col], [1, 'rgba(0,0,0,.35)']]); ctx.beginPath(); ctx.roundRect(sx, sy, w, h, r); ctx.fill();
       ctx.lineWidth = .25; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
-    }
-    ctx.restore(); ctx.restore();
+    });
+    ctx.restore();
   }
   ctx.fillStyle = '#e8dcc6'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `600 ${Math.round(U * 3)}px "Barlow Condensed", sans-serif`;
   const label = gone ? 'SATELLITE IN ORBIT' : done ? 'SATELLITE REBUILT' : `SATELLITE ${soldTotal()} / ${GOAL_TOTAL}`, lw = ctx.measureText(label).width + U * 4;
@@ -1921,7 +2243,107 @@ function drawSurface(cx, cy) {
   ctx.fillStyle = vgrad(-9, -3, [[0, '#f2f5f7'], [1, '#8d949b']]); ctx.beginPath(); ctx.ellipse(0, -5.5, 6, 3.6, -.3, 0, Math.PI); ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#c9d0d6'; ctx.beginPath(); ctx.ellipse(0, -5.5, 5.3, 1.6, -.3, 0, 7); ctx.fill();
   ctx.restore();
+  drawSmelter(cx, gy);
   drawSign(cx, gy);
+}
+// the depot's smelter: a riveted steel furnace in the depot's colours. Off: cold glass and a red lamp. Lit but idle: a
+// small blue pilot flame. Working: fire in the window, smoke from the stack, a gauge filling, and each bar poured onto the pallet.
+function drawSmelter(cx, gy) {
+  const sm = S.smelt, sx = SMELT_X * T - cx, on = sm.on, work = !!sm.job, fl = work ? .75 + .25 * Math.sin(NOW / 70) * Math.sin(NOW / 23 + 1) : 0;
+  const lgH = (x0, x1, stops) => { const g = ctx.createLinearGradient(x0, 0, x1, 0); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const bolt = (x, y) => { ctx.fillStyle = 'rgba(30,34,38,.75)'; ctx.beginPath(); ctx.arc(x, y, U * .45, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(x - U * .12, y - U * .12, U * .2, 0, 7); ctx.fill(); };
+  // the light it throws on the ground and the depot wall
+  if (work) puff(sx, gy - U * 13, U * 26, '255,140,50', .16 + fl * .12);
+  // conveyor from the depot wall up to the hopper, with ore riding up it after "Smelt it"
+  const c0x = DEPOT_X * T + DEPOT_W * T - cx - U * .5, c0y = gy - U * 23, c1x = sx - U * 7, c1y = gy - U * 33;
+  ctx.strokeStyle = '#2c3236'; ctx.lineWidth = U * 2.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(c0x, c0y); ctx.lineTo(c1x, c1y); ctx.stroke();
+  ctx.strokeStyle = '#59636a'; ctx.lineWidth = U * 1.3; ctx.beginPath(); ctx.moveTo(c0x, c0y); ctx.lineTo(c1x, c1y); ctx.stroke();
+  ctx.setLineDash([U * .8, U * 1.4]); ctx.lineDashOffset = G.feed > 0 ? -NOW / 30 : 0; ctx.strokeStyle = '#1d2226'; ctx.lineWidth = U * .5;
+  ctx.beginPath(); ctx.moveTo(c0x, c0y); ctx.lineTo(c1x, c1y); ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = 'butt';
+  ctx.fillStyle = '#4a5157'; ctx.fillRect(c0x + (c1x - c0x) * .45 - U * .5, c0y + (c1y - c0y) * .45, U, gy - (c0y + (c1y - c0y) * .45)); // a leg
+  if (G.feed > 0) G.feedCols.forEach((col, i) => {
+    const t = ((2.4 - G.feed) * 1.1 - i * .09); if (t < 0 || t > 1) return;
+    const x = c0x + (c1x - c0x) * t, y = c0y + (c1y - c0y) * t - U * 1.3;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, U * .9, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = U * .25; ctx.stroke();
+  });
+  // pallet of finished bars waiting to be sold, between the depot and the smelter
+  const px = sx - U * 27, pw = U * 13;
+  ctx.fillStyle = '#6a4f35'; ctx.fillRect(px, gy - U * 1.6, pw, U * 1.6); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(px + U * 2, gy - U * .7, U * 2, U * .7); ctx.fillRect(px + pw - U * 4, gy - U * .7, U * 2, U * .7);
+  const bars = []; sm.stack.forEach((n, i) => { for (let j = 0; j < n && bars.length < 15; j++) bars.push(BARS[i].col); });
+  let row = 0, inRow = 0, perRow = 4;
+  bars.forEach(col => {
+    const bw = U * 3, bh = U * 1.5, x = px + U * .6 + (pw - U * 1.2 - perRow * bw) / 2 + inRow * bw + row * bw * .5, y = gy - U * 1.6 - (row + 1) * bh;
+    ctx.fillStyle = vgrad(y, y + bh, [[0, '#fff8'], [.25, col], [1, col]]); ctx.beginPath(); ctx.moveTo(x + U * .4, y); ctx.lineTo(x + bw - U * .4, y); ctx.lineTo(x + bw - U * .1, y + bh); ctx.lineTo(x + U * .1, y + bh); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = U * .2; ctx.stroke();
+    if (++inRow >= perRow) { inRow = 0; row++; perRow = Math.max(1, perRow - 1); }
+  });
+  // steel base plate
+  ctx.fillStyle = vgrad(gy - U * 2.2, gy, [[0, '#6b727a'], [1, '#3d4348']]); rrect(sx - U * 13, gy - U * 2.2, U * 26, U * 2.2, U * .6); ctx.fill();
+  // the stack (behind the body), with a rain cap
+  ctx.fillStyle = lgH(sx + U * 4.6, sx + U * 8.6, [[0, '#4a535a'], [.4, '#8f9ba3'], [1, '#353c41']]); ctx.fillRect(sx + U * 4.6, gy - U * 41, U * 4, U * 16);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(sx + U * 4.6, gy - U * 35, U * 4, U * .6); ctx.fillRect(sx + U * 4.6, gy - U * 30, U * 4, U * .6);
+  ctx.fillStyle = '#2c3236'; ctx.fillRect(sx + U * 3.8, gy - U * 42.6, U * 5.6, U * 1.2);
+  if (work) puff(sx + U * 6.6, gy - U * 42.6, U * 4, '255,170,80', .25 * fl);
+  // the hopper on top, rimmed in the depot's yellow
+  ctx.fillStyle = lgH(sx - U * 10, sx + U * 4, [[0, '#4d565c'], [.45, '#94a0a8'], [1, '#3b4247']]);
+  ctx.beginPath(); ctx.moveTo(sx - U * 10.5, gy - U * 33.5); ctx.lineTo(sx + U * 3.5, gy - U * 33.5); ctx.lineTo(sx + U * 1, gy - U * 27); ctx.lineTo(sx - U * 8, gy - U * 27); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = RIG; ctx.fillRect(sx - U * 10.8, gy - U * 34.3, U * 14.6, U * 1.2);
+  // the riveted body, shaded like a steel drum
+  ctx.fillStyle = lgH(sx - U * 11, sx + U * 11, [[0, '#3f484e'], [.3, '#a3afb7'], [.55, '#7d8992'], [1, '#353c41']]); rrect(sx - U * 11, gy - U * 27.5, U * 22, U * 25.5, U * 2.2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = U * .35; ctx.stroke();
+  for (const y of [gy - U * 24, gy - U * 6.5]) {
+    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(sx - U * 11, y, U * 22, U * .9); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(sx - U * 11, y - U * .35, U * 22, U * .35);
+    for (let k = 0; k < 6; k++) bolt(sx - U * 9 + k * U * 3.6, y + U * .45);
+  }
+  // hazard stripes along the foot, like the depot door
+  ctx.save(); rrect(sx - U * 11, gy - U * 5.5, U * 22, U * 2.6, 0); ctx.clip();
+  ctx.fillStyle = RIG; ctx.fillRect(sx - U * 11, gy - U * 5.5, U * 22, U * 2.6); ctx.fillStyle = '#1b1406';
+  for (let i = -1; i < 7; i++) { const x = sx - U * 11 + i * U * 4; ctx.beginPath(); ctx.moveTo(x, gy - U * 2.9); ctx.lineTo(x + U * 2, gy - U * 2.9); ctx.lineTo(x + U * 4.6, gy - U * 5.5); ctx.lineTo(x + U * 2.6, gy - U * 5.5); ctx.fill(); }
+  ctx.restore();
+  // name plate
+  ctx.fillStyle = vgrad(gy - U * 23, gy - U * 19.6, [[0, '#ffd75a'], [1, '#d99f00']]); rrect(sx - U * 7.5, gy - U * 23, U * 15, U * 3.4, U * .6); ctx.fill();
+  ctx.fillStyle = '#1b1406'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${Math.round(U * 2.5)}px "Saira Stencil One", Impact, sans-serif`;
+  ctx.fillText('SMELTER', sx, gy - U * 21.2);
+  for (let i = 0; i < UP.smelter.lv.length - 1; i++) { // one light per smelter upgrade
+    const on2 = i < S.up.smelter, x = sx - U * 3 + i * U * 3;
+    ctx.fillStyle = '#1d2226'; ctx.beginPath(); ctx.arc(x, gy - U * 25.8, U * .9, 0, 7); ctx.fill();
+    if (on2) { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, gy - U * 25.8, U * .6, 0, 7); ctx.fill(); puff(x, gy - U * 25.8, U * 2, '255,210,63', .4); }
+  }
+  // the round furnace window: cold glass, a blue pilot flame, or fire
+  const wx = sx, wy = gy - U * 13.2, wr = U * 4.6;
+  ctx.fillStyle = '#23292d'; ctx.beginPath(); ctx.arc(wx, wy, wr + U * 1.5, 0, 7); ctx.fill();
+  for (let k = 0; k < 8; k++) bolt(wx + Math.cos(k * Math.PI / 4 + .39) * (wr + U * .8), wy + Math.sin(k * Math.PI / 4 + .39) * (wr + U * .8));
+  if (work) {
+    const g = ctx.createRadialGradient(wx, wy + wr * .3, 0, wx, wy, wr);
+    g.addColorStop(0, '#fff6c8'); g.addColorStop(.35 * fl + .1, '#ffc04a'); g.addColorStop(.75, '#ff6a1f'); g.addColorStop(1, '#8a2208');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(wx, wy, wr, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(wx, wy, wr, 0, 7); ctx.clip(); ctx.fillStyle = 'rgba(255,248,210,.75)';
+    for (let k = 0; k < 4; k++) { const fx = wx + (k - 1.5) * U * 2.1, h = U * (3 + 2.4 * Math.abs(Math.sin(NOW / (90 + k * 23) + k))); ctx.beginPath(); ctx.moveTo(fx - U, wy + wr); ctx.quadraticCurveTo(fx - U * .6, wy + wr - h * .6, fx, wy + wr - h); ctx.quadraticCurveTo(fx + U * .6, wy + wr - h * .6, fx + U, wy + wr); ctx.fill(); }
+    ctx.restore();
+    puff(wx, wy, wr * 2.4, '255,160,60', .3 * fl);
+  } else {
+    ctx.fillStyle = '#14181b'; ctx.beginPath(); ctx.arc(wx, wy, wr, 0, 7); ctx.fill();
+    if (on) { // pilot flame
+      const h = U * (1.6 + .3 * Math.sin(NOW / 120));
+      ctx.fillStyle = '#5ab4ff'; ctx.beginPath(); ctx.moveTo(wx - U * .9, wy + wr * .7); ctx.quadraticCurveTo(wx - U * .5, wy + wr * .7 - h * .6, wx, wy + wr * .7 - h); ctx.quadraticCurveTo(wx + U * .5, wy + wr * .7 - h * .6, wx + U * .9, wy + wr * .7); ctx.fill();
+      puff(wx, wy + wr * .5, U * 3, '90,170,255', .35);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.beginPath(); ctx.moveTo(wx - wr * .6, wy - wr * .5); ctx.lineTo(wx - wr * .1, wy - wr * .85); ctx.lineTo(wx + wr * .5, wy + wr * .1); ctx.lineTo(wx, wy + wr * .45); ctx.closePath(); ctx.fill();
+  }
+  // gauge under the window: how far along the bar in the furnace is
+  ctx.fillStyle = '#1d2226'; rrect(sx - U * 6, gy - U * 9, U * 12, U * 1.6, U * .5); ctx.fill();
+  if (work) { ctx.fillStyle = '#ff8a2a'; rrect(sx - U * 5.6, gy - U * 8.6, U * 11.2 * Math.min(1, sm.job.t / smeltTime()), U * .8, U * .3); ctx.fill(); }
+  // status lamp: red off, green on (blinking while it works)
+  const lx = sx + U * 7.6, ly = gy - U * 17.5, lit = on && (!work || (NOW / 400 | 0) % 2 === 0);
+  ctx.fillStyle = '#1d2226'; ctx.beginPath(); ctx.arc(lx, ly, U * 1.5, 0, 7); ctx.fill();
+  ctx.fillStyle = on ? (lit ? '#5fe07a' : '#2c6a39') : '#ff4a3a'; ctx.beginPath(); ctx.arc(lx, ly, U * 1, 0, 7); ctx.fill();
+  if (!on || lit) puff(lx, ly, U * 3.4, on ? '95,224,122' : '255,74,58', .45);
+  // the pour spout on the left, and the molten stream when a bar has just been cast
+  ctx.fillStyle = '#2c3236'; ctx.beginPath(); ctx.moveTo(sx - U * 11, gy - U * 11.5); ctx.lineTo(sx - U * 14.5, gy - U * 10.2); ctx.lineTo(sx - U * 14.5, gy - U * 9.2); ctx.lineTo(sx - U * 11, gy - U * 9.6); ctx.closePath(); ctx.fill();
+  if (G.pour > 0) {
+    ctx.fillStyle = `rgba(255,${150 + 60 * G.pour | 0},60,${G.pour})`; ctx.fillRect(sx - U * 15, gy - U * 9.6, U * 1.1, U * 6.8 * Math.min(1, G.pour * 2));
+    puff(sx - U * 14.4, gy - U * 4, U * 5, '255,170,70', .5 * G.pour);
+  }
 }
 function drawSign(cx, gy) {
   const dx = (START_X + 3) * T - cx + T / 2;
@@ -1961,16 +2383,30 @@ function paintRig(ctx, o) {   // the drill ship in a 16-unit box at the current 
   // tracks
   ctx.fillStyle = lg(0, 11, 0, 14.6, [[0, '#4a443d'], [1, '#1d1a17']]); rrect(.6, 11, 14.8, 3.6, 1.8); ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = .3; ctx.stroke();
-  const roll = o.roll;
+  const roll = o.roll, lv = o.lv || {};
+  // the motor's level shows on the wheel hubs: grey, rust, red, orange, then chrome
+  const HUB = ['#6b625a', '#8a6a4a', '#b8463a', '#e07b26', '#e4e9ec'][lv.motor | 0];
   for (let i = 0; i < 5; i++) {
     const wx = 2.8 + i * 2.55;
-    ctx.fillStyle = '#6b625a'; ctx.beginPath(); ctx.arc(wx, 12.8, 1.15, 0, 7); ctx.fill();
+    ctx.fillStyle = HUB; ctx.beginPath(); ctx.arc(wx, 12.8, 1.15, 0, 7); ctx.fill();
     ctx.strokeStyle = '#2b2622'; ctx.lineWidth = .3; ctx.beginPath(); ctx.moveTo(wx, 12.8); ctx.lineTo(wx + Math.cos(roll * 2 + i) * 1, 12.8 + Math.sin(roll * 2 + i) * 1); ctx.stroke();
   }
   if (up) cone(8, 1.4, 8, -4.6, 2.5);
-  // smelter stack
-  ctx.fillStyle = lg(1.8, 0, 4.4, 0, [[0, '#6a625a'], [.5, '#4a433c'], [1, '#2c2723']]); rrect(1.8, .8, 2.6, 4.8, .4); ctx.fill();
-  ctx.fillStyle = o.smelting ? ((now / 120 | 0) & 1 ? '#ffb347' : '#ff6a1f') : '#5d554d'; ctx.beginPath(); ctx.ellipse(3.1, .8, 1.3, .5, 0, 0, 7); ctx.fill();
+  // ore bin on the back, heaped with what is in the hold; a bigger cargo hold makes it bigger
+  ctx.save(); const sb = 1 + (lv.hold | 0) * .07; ctx.translate(3, 5.4); ctx.scale(sb, sb); ctx.translate(-3, -5.4);
+  const LUMPS = [[1.7, 2.35], [2.7, 2.4], [3.7, 2.35], [4.55, 2.45], [2.2, 1.35], [3.2, 1.3], [4.1, 1.45], [2.7, .4], [3.65, .35]];
+  if (o.load) o.load.forEach((col, j) => {
+    const [x, y] = LUMPS[j], r = .78 + ((j * 37) % 5) * .05;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, y, r * 1.08, r, j * .7, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x - r * .3, y - r * .35, r * .32, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = .18; ctx.beginPath(); ctx.ellipse(x, y, r * 1.08, r, j * .7, 0, 7); ctx.stroke();
+  });
+  ctx.fillStyle = lg(0, 2.7, 0, 5.4, [[0, '#6a625a'], [1, '#2c2723']]);
+  ctx.beginPath(); ctx.moveTo(.9, 2.7); ctx.lineTo(5.1, 2.7); ctx.lineTo(4.8, 5.4); ctx.lineTo(1.2, 5.4); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = .25; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fillRect(.9, 2.7, 4.2, .35);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; for (const x of [2.3, 3.7]) ctx.fillRect(x, 3.1, .25, 2.1);
+  ctx.restore();
   // hull
   ctx.fillStyle = lg(0, 5, 0, 11.4, [[0, '#ffd75a'], [.3, '#f4b400'], [1, '#a87500']]); rrect(.8, 5, 12.8, 6.4, 1.4); ctx.fill();
   ctx.strokeStyle = 'rgba(60,40,0,.55)'; ctx.lineWidth = .3; ctx.stroke();
@@ -1979,11 +2415,29 @@ function paintRig(ctx, o) {   // the drill ship in a 16-unit box at the current 
   ctx.strokeStyle = 'rgba(100,66,0,.45)'; ctx.lineWidth = .25; for (const x of [6.6, 10.4]) { ctx.beginPath(); ctx.moveTo(x, 5.6); ctx.lineTo(x, 10.8); ctx.stroke(); }
   ctx.fillStyle = '#1b1406'; rrect(2, 7.1, .8, 2.3, .3); ctx.fill(); rrect(3.7, 7.1, .8, 2.3, .3); ctx.fill();
   ctx.fillStyle = 'rgba(70,46,0,.7)'; for (const [x, y] of [[1.7, 5.9], [12.7, 5.9], [1.7, 10.4], [12.7, 10.4]]) { ctx.beginPath(); ctx.arc(x, y, .28, 0, 7); ctx.fill(); }
+  // a fast motor earns a racing stripe
+  if ((lv.motor | 0) >= 3) { ctx.fillStyle = '#c0392b'; ctx.fillRect(5, 8.25, 8.4, .55); ctx.fillStyle = '#f2f2f2'; ctx.fillRect(5, 8.8, 8.4, .2); }
+  // hull plating: one bolted steel armour plate along the skirt for each level
+  for (let i = 0; i < (lv.hull | 0); i++) {
+    const x = 1.2 + i * 2.45;
+    ctx.fillStyle = lg(0, 9.7, 0, 11.3, [[0, '#c3cbd1'], [1, '#6c767d']]); rrect(x, 9.7, 2.3, 1.6, .35); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = .2; ctx.stroke();
+    ctx.fillStyle = 'rgba(30,34,38,.8)'; for (const bx of [x + .45, x + 1.85]) { ctx.beginPath(); ctx.arc(bx, 10.5, .18, 0, 7); ctx.fill(); }
+  }
+  // heat shield: a plate on the nose that turns from steel to glowing blue
+  const hs = lv.heat | 0;
+  if (hs) {
+    ctx.fillStyle = lg(12.1, 0, 13.8, 0, [[0, ['', '#9aa3aa', '#86aec4', '#5f9fd8', '#a8e4ff'][hs]], [1, ['', '#d5dbe0', '#c4e1ef', '#a9d4ff', '#e8f8ff'][hs]]]);
+    rrect(12.1, 5.3, 1.7, 5.9, .6); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = .2; ctx.stroke();
+    if (hs >= 3) { ctx.strokeStyle = `rgba(150,215,255,${.45 + .25 * Math.sin(now / 300)})`; ctx.lineWidth = .35; rrect(12.1, 5.3, 1.7, 5.9, .6); ctx.stroke(); }
+  }
   // cab
   ctx.fillStyle = lg(0, 1, 0, 5.4, [[0, '#3a3530'], [1, '#1f1b18']]); rrect(5, 1, 7.6, 4.5, 1.3); ctx.fill();
   ctx.fillStyle = lg(0, 1.7, 0, 4.9, [[0, '#d8f4ff'], [1, '#4b93b4']]); rrect(5.6, 1.6, 6.4, 3.3, 1); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.beginPath(); ctx.moveTo(6.5, 1.7); ctx.lineTo(8.6, 1.7); ctx.lineTo(7.3, 4.8); ctx.lineTo(6, 4.8); ctx.closePath(); ctx.fill();
-  const hg = ctx.createRadialGradient(12.4, 2.4, 0, 12.4, 2.4, 1.6); hg.addColorStop(0, 'rgba(255,241,184,.9)'); hg.addColorStop(1, 'rgba(255,241,184,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(12.4, 2.4, 1.6, 0, 7); ctx.fill();
+  const lr = 1.6 + (lv.lamp | 0) * .35; // a better headlamp is a bigger lamp
+  if (lv.lamp) { ctx.fillStyle = '#2c2723'; ctx.beginPath(); ctx.arc(12.4, 2.4, .55 + (lv.lamp | 0) * .14, 0, 7); ctx.fill(); }
+  const hg = ctx.createRadialGradient(12.4, 2.4, 0, 12.4, 2.4, lr); hg.addColorStop(0, 'rgba(255,241,184,.9)'); hg.addColorStop(1, 'rgba(255,241,184,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(12.4, 2.4, lr, 0, 7); ctx.fill();
   if (down) cone(8, 11.6, 8, 17.4, 2.9);
   else if (!up) cone(13.4, 7.9, 18.2, 7.9, 2.6);
 }
@@ -1995,8 +2449,11 @@ function drawPod(cx, cy, now) {
   if (busy && !reduced) { px += (Math.random() - .5) * U * .9; py += (Math.random() - .5) * U * .9; }
   const flip = G.body === 'L';
   G.podX = px; G.podY = py;
-  ctx.save(); ctx.translate(px + (flip ? T : 0), py); ctx.scale(flip ? -U : U, U);
-  paintRig(ctx, { now, down: G.face === 'D', up: G.face === 'U', thrust: G.thrust || (a && a.type === 'climb'), bit: BITCOL[S.up.bit], spin: a && a.type === 'drill' ? now / 60 : 0, roll: a && a.type === 'move' ? a.t / a.dur * 3 : 0, smelting: !!S.smelt.job });
+  const lv = shownUp(), hop = hopY() * U;
+  ctx.save(); ctx.translate(px + (flip ? T : 0), py - hop); ctx.scale(flip ? -U : U, U);
+  paintRig(ctx, { now, down: G.face === 'D', up: G.face === 'U', thrust: G.thrust || (a && a.type === 'climb'), bit: BITCOL[lv.bit], spin: a && a.type === 'drill' ? now / 60 : 0, roll: a && a.type === 'move' ? a.t / a.dur * 3 : 0, load: binLoad(), lv });
+  paintFlash(ctx, G.upFx);
+  if (G.docked) { ctx.translate(0, hop / U); paintArm(ctx, G.upFx, now); }
   ctx.restore();
 }
 // a point given in the ship's own 16-unit box, on screen (the ship is mirrored when it faces left)
@@ -2124,7 +2581,6 @@ function drawDark(cx, cy) {
     const px = (G.fx + .5) * T - cx, py = (G.fy + .5) * T - cy, r = lampR() * T;
     carve(d, px, py, r * .8, 1);
     drawBeam(d, px + Math.cos(G.beamA) * T * .3, py + Math.sin(G.beamA) * T * .3, G.beamA, r * 1.45);
-    if (S.smelt.job) { const [sx, sy] = podPt(3.1, .8); carve(d, sx, sy, T * (1 + Math.random() * .12), .45); }
     if (G.tipHeat > .05) { const [tx, ty] = tipPt(); carve(d, tx, ty, T * (.6 + G.tipHeat * .5), G.tipHeat * .5); }
   }
   for (let i = 0; i < glow.length; i += 5) carve(d, glow[i] + T / 2, glow[i + 1] + T / 2, T * (glow[i + 4] ? 1.5 : 2.1), glow[i + 4] ? .4 : .62);
@@ -2225,6 +2681,7 @@ function render(now, dt) {
   drawGlowParts(cx, cy);
   drawOreGlints(cx, cy, dk);
   drawShipGlow(dk);
+  if (!depotEl.hidden && G.depotTab === 'ups') drawGarage(now);
   if (floats.length) {
     ctx.font = `600 ${Math.round(T * .36)}px "Barlow Condensed", sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = Math.max(2, U); ctx.strokeStyle = 'rgba(0,0,0,.85)';
@@ -2249,6 +2706,7 @@ function render(now, dt) {
 /* ---------- HUD, ship panel, depot, core log ---------- */
 const gDepth = $('#gDepth'), gCash = $('#gCash'), gHold = $('#gHold'), gHull = $('#gHull'), gTemp = $('#gTemp'), gBit = $('#gBit');
 const objCount = $('#objCount'), mObj = $('#mObj');
+const trophyEl = $('#trophy'), msLine = $('#msLine');
 const mHold = $('#mHold'), mHull = $('#mHull'), mTemp = $('#mTemp'), mSmelt = $('#mSmelt'), smStatus = $('#smStatus'), bSmelt = $('#bSmelt');
 const you = $('#you'), best = $('#best'), logRec = $('#logRec');
 const toastEl = $('#toast'), depotEl = $('#depot'), bDock = $('#bDock');
@@ -2259,14 +2717,86 @@ function buildShip() {
   const ul = $('#items');
   const defs = ORES.map((o, k) => ({ name: o.name, col: o.col, ingot: false, get: () => S.cargo[k] }))
     .concat(BARS.map((b, i) => ({ name: b.name, col: b.col, ingot: true, get: () => S.bars[i] })));
+  const head = (html, sep) => { const li = document.createElement('li'); li.className = 'head' + (sep ? ' sep' : ''); li.innerHTML = html; ul.append(li); };
   defs.forEach((d, i) => {
+    if (i === 0) head('Raw ore <small>· dug up</small>');
+    if (i === ORES.length) head('Bars <small>· from the smelter</small>', true);
     const li = document.createElement('li');
-    if (i === ORES.length) li.classList.add('sep');
     li.innerHTML = `<span class="sw${d.ingot ? ' ingot' : ''}" style="background:${d.col}"></span><span>${d.name}</span><b>0</b>`;
     ul.append(li); itemRows.push([li, li.querySelector('b'), d.get]);
   });
   const rl = $('#recipes');
-  BARS.forEach(b => { const li = document.createElement('li'); li.textContent = `${needsText(b)} → ${b.name.toLowerCase()}`; rl.append(li); recipeRows.push(li); });
+  BARS.forEach(b => {
+    const li = document.createElement('li'), ore = b.needs.reduce((a, [k, n]) => a + n * ORES[k].price, 0);
+    li.title = `${needsText(b)} → ${b.name.toLowerCase()}`;
+    li.innerHTML = b.needs.map(([k, n]) => goodsIcon('ore', k).repeat(n)).join('<span>+</span>') + `<span>→</span>${goodsIcon('bar', BARS.indexOf(b))}<span>${b.name.toLowerCase()}</span><span class="rv">$${ore} → $${b.price}</span>`;
+    rl.append(li); recipeRows.push(li);
+  });
+  // the hold's slots and the satellite's tubes
+  const bay = $('#bay');
+  for (let i = 0; i < UP.hold.lv[UP.hold.lv.length - 1].v; i++) bay.append(document.createElement('i'));
+  $('#tubes').innerHTML = ORES.map((o, k) => ['ore', k, o]).concat(BARS.map((b, i) => ['bar', i, b]))
+    .map(([kind, i, it]) => `<div class="tube" title="${it.name}"><span class="glass"><i style="--c:${goodsCol(kind, i)};height:0"></i></span>${goodsIcon(kind, i)}<span>0</span></div>`).join('');
+}
+// coal is drawn a little lighter so it shows up on the dark panel
+const goodsCol = (kind, i) => kind === 'ore' ? (i === COAL ? '#4d4640' : ORES[i].col) : BARS[i].col;
+const goodsIcon = (kind, i) => `<i class="${kind === 'ore' ? 'lump' : 'ingot'}" style="--c:${goodsCol(kind, i)}"></i>`;
+// what is in the hold, slot by slot: ore first, then bars
+function holdList() {
+  const out = [];
+  ORES.forEach((o, k) => { for (let j = 0; j < S.cargo[k]; j++) out.push(['ore', k]); });
+  BARS.forEach((b, i) => { for (let j = 0; j < S.bars[i]; j++) out.push(['bar', i]); });
+  return out;
+}
+let bayPrev = [];
+function renderBay() {
+  const list = holdList(), cap = holdCap(), slots = $('#bay').children, first = !bayPrev.length;
+  for (let j = 0; j < slots.length; j++) {
+    const el = slots[j], it = list[j], key = j >= cap ? 'x' : it ? it.join(':') : '';
+    if (el.dataset.k === key) continue;
+    el.dataset.k = key; el.hidden = j >= cap;
+    el.className = it && j < cap ? 'full' : '';
+    el.innerHTML = it && j < cap ? goodsIcon(it[0], it[1]) : '';
+    if (it && !first && bayPrev[j] !== key && !reduced) el.classList.add('pop');
+  }
+  bayPrev = Array.from(slots, el => el.dataset.k);
+}
+let tubesShown = false;
+function renderTubes() {
+  const tubes = $('#tubes').children, n = S.sold.ore.concat(S.sold.bar);
+  n.forEach((c, j) => {
+    const t = tubes[j], v = Math.min(GOAL, c), label = t.lastElementChild, was = +label.textContent;
+    t.querySelector('.glass > i').style.height = (v / GOAL * 100) + '%';
+    label.textContent = v; t.classList.toggle('done', v >= GOAL);
+    t.title = `${t.title.split(':')[0]}: ${v} of ${GOAL}`;
+    if (v > was && tubesShown && !reduced) { t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); }
+  });
+  tubesShown = true;
+}
+// a lump of ore (or a bar) flies from the ship into its slot in the hold
+function flyToBay(kind, i) {
+  if (reduced || G.podX == null) return;
+  const sum = a => a.reduce((x, y) => x + y, 0), idx = kind === 'ore' ? sum(S.cargo.slice(0, i + 1)) - 1 : rawN() + sum(S.bars.slice(0, i + 1)) - 1;
+  const slot = $('#bay').children[idx];
+  if (!slot || !slot.checkVisibility || !slot.checkVisibility()) return;
+  const r = cv.getBoundingClientRect(), k = r.width / cv.width, to = slot.getBoundingClientRect();
+  const x0 = r.left + (G.podX + T * .5) * k - 7, y0 = r.top + (G.podY + T * .2) * k - 7, x1 = to.left + to.width / 2 - 7, y1 = to.top + to.height / 2 - 7;
+  const el = document.createElement('i');
+  el.className = 'fly ' + (kind === 'ore' ? 'lump' : 'ingot'); el.style.setProperty('--c', goodsCol(kind, i));
+  appEl.append(el);
+  const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 60;
+  const an = el.animate([
+    { transform: `translate(${x0}px,${y0}px) scale(1.5)` },
+    { transform: `translate(${mx}px,${my}px) scale(1.3)`, offset: .45 },
+    { transform: `translate(${x1}px,${y1}px) scale(.8)` }], { duration: 700, easing: 'ease-in-out' });
+  an.onfinish = () => el.remove(); an.oncancel = () => el.remove();
+}
+// what the ship's ore bin shows: up to 9 lumps, mixed in proportion to the load
+function binLoad() {
+  const list = holdList(), cap = holdCap();
+  if (!list.length) return null;
+  const n = Math.max(1, Math.min(9, Math.ceil(list.length / cap * 9)));
+  return Array.from({ length: n }, (_, j) => { const [kind, i] = list[Math.floor(j / n * list.length)]; return goodsCol(kind, i); });
 }
 function tempHere() { return S.y < SURF ? 15 : STRATA[strataOf(S.x, Math.round(G.fy))].temp; }
 function hud() {
@@ -2279,17 +2809,18 @@ function hud() {
   setIf('b', S.up.bit, () => { gBit.textContent = `${L('bit').short} · Mohs ${bitMohs()}`; });
   setIf('r', S.maxDepth, v => { logRec.textContent = `Record ${v} m`; best.style.top = pct(v); });
   setIf('obj', soldTotal(), v => { objCount.textContent = `${v} / ${GOAL_TOTAL}`; mObj.style.width = (v / GOAL_TOTAL * 100) + '%'; });
+  setIf('tubes', S.sold.ore.join() + '|' + S.sold.bar.join(), renderTubes);
+  setIf('ms', msWon(), v => { const nx = msNext(); msLine.innerHTML = `<b>🏆 ${v} / ${MILES.length}</b><span>${nx ? 'Next: ' + nx.hint.toLowerCase().replace(/^./, c => c.toUpperCase()) : 'Every milestone won!'}</span>`; });
+  setIf('bay', S.cargo.join() + '|' + S.bars.join() + '|' + holdCap(), renderBay);
   const job = S.smelt.job;
-  setIf('ship', S.cargo.join() + '|' + S.bars.join() + '|' + (job ? job.b : -1) + '|' + S.smelt.on, () => {
+  setIf('ship', S.cargo.join() + '|' + S.bars.join() + '|' + (job ? job.b : -1) + '|' + S.smelt.on + '|' + S.smelt.queue.join(), () => {
     for (const [li, b, get] of itemRows) { const c = get(); b.textContent = c; li.classList.toggle('zero', !c); }
     recipeRows.forEach((li, i) => { li.classList.toggle('active', !!job && job.b === i); li.classList.toggle('ready', canMake(i)); });
     bSmelt.textContent = S.smelt.on ? 'On' : 'Off'; bSmelt.setAttribute('aria-pressed', String(S.smelt.on));
-    smStatus.textContent = job ? `Casting ${BARS[job.b].name.toLowerCase()} at ${BARS[job.b].melt}`
-      : !S.smelt.on ? say('Off. Tap the switch or press F to turn it on.', 'Off. Tap the switch to turn it on.', 'Off. Press X to turn it on.')
-      : 'Idle until the hold has a full recipe.';
+    smStatus.textContent = smeltLine();
   });
   setIf('sm', job ? Math.round(job.t / smeltTime() * 50) : -1, v => { mSmelt.style.width = (v < 0 ? 0 : v * 2) + '%'; });
-  if (!depotEl.hidden) setIf('dep', [S.cash, S.cargo.join(), S.bars.join(), !!S.smelt.job, holdCap(), saleLine, S.smelt.on, S.sold.ore.join(), S.sold.bar.join()].join('|'), renderDepot);
+  if (!depotEl.hidden) setIf('dep', [S.cash, S.cargo.join(), S.bars.join(), !!S.smelt.job, holdCap(), saleLine, S.smelt.on, S.smelt.queue.join(), S.sold.ore.join(), S.sold.bar.join()].join('|'), renderDepot);
 }
 
 let toastT = 0, lastHint = '', lastHintT = 0;
@@ -2304,18 +2835,29 @@ function renderDepot() {
   const focusId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.id : null;
   $('#saleLine').textContent = saleLine;
   $('#depotCash').textContent = '$' + fmt(S.cash);
-  const raw = $('#raw'), aboard = [];
+  const raw = $('#raw'), ores = [], bars = [];
   let rawTotal = 0, barTotal = 0;
-  ORES.forEach((o, k) => { const n = S.cargo[k]; if (n) { aboard.push(`${n} ${o.name.toLowerCase()}`); rawTotal += n * o.price; } });
-  BARS.forEach((b, i) => { const n = S.bars[i]; if (n) { aboard.push(plural(n, b.name.toLowerCase())); barTotal += n * b.price; } });
-  raw.hidden = !rawTotal && !barTotal;
-  if (!raw.hidden) raw.innerHTML = `<span>Still aboard: ${andList(aboard)}.${rawTotal ? (S.smelt.on ? ' The smelter keeps working while you are parked.' : ' The smelter is off.') : ''}</span><span class="raw-btns">`
-    + (rawTotal ? `<button class="btn" type="button" data-id="raw">Sell raw $${fmt(rawTotal)}</button>` : '')
+  ORES.forEach((o, k) => { const n = S.cargo[k]; if (n) { ores.push(`${n} ${o.name.toLowerCase()}`); rawTotal += n * o.price; } });
+  BARS.forEach((b, i) => { const n = S.bars[i]; if (n) { bars.push(plural(n, b.name.toLowerCase())); barTotal += n * b.price; } });
+  const plan = planBars(S.cargo), smeltWorth = barValue(plan), kb = k => inputMode === 'key' ? `<kbd>${k}</kbd> ` : '';
+  const used = ORES.map((o, k) => BARS.reduce((a, b, i) => a + plan[i] * (b.needs.find(([kk]) => kk === k) || [0, 0])[1], 0));
+  const usedWorth = used.reduce((a, n, k) => a + n * ORES[k].price, 0);
+  const q = queueN();
+  raw.hidden = !rawTotal && !barTotal && !q;
+  if (!raw.hidden) raw.innerHTML = `<span>${ores.length ? `Ore aboard: ${andList(ores)}.` : ''}${bars.length ? ` Bars aboard: ${andList(bars)}.` : ''}`
+    + (smeltWorth ? ` <b>Sell it raw</b> for $${fmt(usedWorth)}, or <b>smelt it</b> into bars worth $${fmt(smeltWorth)}.` : '')
+    + `<span class="sm-line">Smelter: ${smeltLine()}</span></span><span class="raw-btns">`
+    + (rawTotal ? `<button class="btn" type="button" data-id="raw">${kb('R')}Sell raw $${fmt(rawTotal)}</button>` : '')
+    + (smeltWorth ? `<button class="btn smelt" type="button" data-id="smelt">${kb('B')}Smelt it 🔥</button>` : '')
     + (barTotal ? `<button class="btn" type="button" data-id="bars">Sell bars $${fmt(barTotal)}</button>` : '') + '</span>';
-  const shop = G.depotTab === 'shop';
-  $('#tabUps').setAttribute('aria-selected', String(!shop)); $('#tabShop').setAttribute('aria-selected', String(shop));
-  $('#ups').hidden = shop; $('#shopPane').hidden = !shop;
-  $('#depotFoot').textContent = shop ? say('Press 1–7 to buy one, or Shift + 1–7 to buy 10. Drive off the pad to get back to work.',
+  const shop = G.depotTab === 'shop', msTab = G.depotTab === 'ms';
+  $('#tabUps').setAttribute('aria-selected', String(!shop && !msTab)); $('#tabShop').setAttribute('aria-selected', String(shop)); $('#tabMs').setAttribute('aria-selected', String(msTab));
+  $('#ups').hidden = shop || msTab; $('#garage').hidden = shop || msTab; $('#shopPane').hidden = !shop; $('#msPane').hidden = !msTab;
+  if (msTab) {
+    $('#msNote').textContent = `${msWon()} of ${MILES.length} milestones won.`;
+    $('#msList').innerHTML = MILES.map(m => `<li class="${S.ms[m.id] ? 'done' : ''}"><span>${m.icon}</span><b>${m.name}</b><small>${m.hint}</small></li>`).join('');
+  }
+  $('#depotFoot').textContent = msTab ? say('Drive off the pad to get back to work.', 'Close the depot and drive off the pad to get back to work.', 'LB and RB switch tabs, B closes the depot.') : shop ? say('Press 1–7 to buy one, or Shift + 1–7 to buy 10. Drive off the pad to get back to work.',
       'Tap Buy 1 or Buy 10. Close the depot and drive off the pad to get back to work.',
       'Pick a button with the D-pad and press A to buy. LB and RB switch tabs, B closes the depot.')
     : say('Press 1–7 to buy upgrades. Drive off the pad to get back to work.',
@@ -2346,8 +2888,8 @@ function renderDepot() {
     + '</tbody>';
   if (focusId) { const b = depotEl.querySelector(`[data-id="${focusId}"]`); if (b && !b.disabled) b.focus(); }
 }
-function openDepot() { if (G.overlay) return; renderDepot(); depotEl.hidden = false; bDock.hidden = true; }
-function closeDepot() { depotEl.hidden = true; bDock.hidden = !G.docked; }
+function openDepot() { if (G.overlay) return; renderDepot(); depotEl.hidden = false; bDock.hidden = true; stage.classList.add('dock'); }
+function closeDepot() { depotEl.hidden = true; bDock.hidden = !G.docked; stage.classList.remove('dock'); }
 
 const logRows = [];
 function buildLog() {
@@ -2411,7 +2953,7 @@ function begin() {
 }
 function resetNew() { confirmT = 0; bNew.textContent = 'New expedition'; bNew.classList.remove('warn'); }
 function showWin(kind = 'center') {
-  G.overlay = 'win'; held.length = 0; depotEl.hidden = true;
+  G.overlay = 'win'; held.length = 0; depotEl.hidden = true; stage.classList.remove('dock');
   $('#winKicker').textContent = kind === 'satellite' ? 'Mission complete' : '800 m · 5,400 °C';
   $('#winTitle').textContent = kind === 'satellite' ? 'Satellite rebuilt' : 'Center of 1.7305.d';
   if (kind === 'satellite') {
@@ -2549,7 +3091,7 @@ function drawCine(t) {
       if (p < 1) cineBurst(x, y - k * 3, 2, 50, ['#ffcf5a', '#ff7a2e', '#fff1b8'], .6);
     }
     g.save(); g.globalAlpha = clamp(sp / .4, 0, 1); g.translate(x, y); g.rotate((1 - p) * (1 - p) * Math.PI * 3); g.scale(k * .9, k * .9); g.translate(-8, -8);
-    paintRig(g, { now: t * 1000, down: true, up: false, thrust: p > .4 && p < 1, bit: BITCOL[0], spin: t * 15, roll: 0, smelting: false });
+    paintRig(g, { now: t * 1000, down: true, up: false, thrust: p > .4 && p < 1, bit: BITCOL[0], spin: t * 15, roll: 0 });
     g.restore();
   }
   // crash landing flash
@@ -2650,6 +3192,7 @@ depotEl.addEventListener('click', e => {
   if (!b) return;
   const id = b.dataset.id;
   if (id === 'raw') sellRaw();
+  else if (id === 'smelt') smeltOre();
   else if (id === 'bars') sellBars();
   else if (id.startsWith('s:')) { const [, kind, i, n] = id.split(':'); shopBuy(kind, +i, +n); }
   else buy(id);
@@ -2677,10 +3220,12 @@ addEventListener('keydown', e => {
   const digit = /^(?:Digit|Numpad)([1-7])$/.exec(e.code);
   if (!depotEl.hidden && digit) {
     if (G.depotTab === 'shop') { const it = SHOP[digit[1] - 1]; shopBuy(it.kind, it.i, e.shiftKey ? 10 : 1); }
-    else if (!e.shiftKey) buy(UPG[digit[1] - 1].id);
+    else if (G.depotTab === 'ups' && !e.shiftKey) buy(UPG[digit[1] - 1].id);
     return;
   }
-  if (k === 'f') toggleSmelter();
+  if (k === 'r' && !depotEl.hidden) sellRaw();
+  else if (k === 'b' && !depotEl.hidden) smeltOre();
+  else if (k === 'f') toggleSmelter();
   else if (k === 'm') toggleSound();
   else if (k === 'h' || k === '?') introMode('resume');
 });
@@ -2796,7 +3341,7 @@ function pollPad(dt) {
     if (hit(0)) padConfirm(menu);
     else if (hit(1)) padBack();
     else if (hit(9)) { if (menu === intro) padConfirm(menu); else if (menu === depotEl) introMode('resume'); }
-    else if (menu === depotEl && (hit(3) || hit(4) || hit(5))) { G.depotTab = G.depotTab === 'shop' ? 'ups' : 'shop'; renderDepot(); }
+    else if (menu === depotEl && (hit(3) || hit(4) || hit(5))) { const tabs = ['ups', 'shop', 'ms']; G.depotTab = tabs[(tabs.indexOf(G.depotTab) + (hit(4) ? 2 : 1)) % 3]; renderDepot(); }
     else if (menu === depotEl && hit(2)) toggleSmelter();
     if (hit(8)) toggleSound();
     return;
