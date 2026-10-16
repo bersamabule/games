@@ -702,7 +702,7 @@ function generate(seed) {
 /* ---------- state ---------- */
 let S = null;
 const G = { act: null, fx: START_X, fy: SURF - 1, face: 'R', body: 'R', fallN: 0, climbN: 0, thrust: false,
-  docked: false, depotTab: 'ups', breach: null, shake: 0, overlay: 'intro', started: false, puff: 0, smoke: 0, saveT: 0,
+  docked: false, depotTab: 'ups', breach: null, shake: 0, overlay: 'intro', started: false, puff: 0, beamA: 0, smoke: 0, saveT: 0,
   over: null, atB: -1, gate: 0, introMode: 'new' };
 let parts = [], floats = [], smokes = [], wrecks = [], flashes = [], saleLine = '';
 
@@ -1478,7 +1478,7 @@ function ambience(dt) {
 
 /* ---------- textures (procedural and smooth, 64 px per tile) ---------- */
 const TS = 64, ATILES = 6, ATL = TS * ATILES;
-const TX = { rock: [], ore: [], gas: null, crack: [], concrete: null };
+const TX = { rock: [], ore: [], oreT: [], gas: null, crack: [], concrete: null, fleck: [] };
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
 // value noise on a wrapping lattice, so every texture repeats seamlessly across tiles
 function lattice(cells, seed) { const R = mulberry(seed), a = new Float32Array(cells * cells); for (let i = 0; i < a.length; i++) a[i] = R(); return a; }
@@ -1497,18 +1497,104 @@ function makeFbm(base, octs, seed) {
 function wrapped(x, y, r, draw) {
   for (const dx of x < r ? [0, ATL] : x > ATL - r ? [0, -ATL] : [0]) for (const dy of y < r ? [0, ATL] : y > ATL - r ? [0, -ATL] : [0]) draw(x + dx, y + dy);
 }
-function buildRock(s) {
-  const st = STRATA[s], sty = STYLE[s], c = mkCanvas(ATL, ATL), g = c.getContext('2d'), im = g.createImageData(ATL, ATL), d = im.data;
-  const f1 = makeFbm(6, 4, 100 + s * 31), f2 = makeFbm(12, 3, 900 + s * 13), f3 = makeFbm(3, 2, 1700 + s * 7);
-  const bf = sty.band ? ATILES * Math.max(1, Math.round(12 / sty.band[0])) : 0;
+
+/* ---------- the look of real rock ----------
+   per layer: band (strength of the sedimentary beds), seams (thin dark bedding lines), stones, stoneK (how light or dark they are,
+   as multiples of the layer's colour), damp (dark wet patches), roots, cracks, grain (fine speckle), holes (gas bubbles in lava rock),
+   crystals (glittering grains), veins (white mineral veins) */
+const REAL = [
+  { band: .05, seams: 2, stones: 30, stoneK: [.62, 1.35], damp: .5,  roots: 6, cracks: 7,  grain: .05 },   // fill and topsoil
+  { band: .07, seams: 3, stones: 16, stoneK: [.7, 1.25],  damp: .4,  roots: 2, cracks: 8,  grain: .05 },   // clay
+  { band: .1,  seams: 5, stones: 12, stoneK: [.8, 1.15],  damp: .22, cracks: 10, veins: 4, grain: .045 },  // sandstone
+  { band: .12, seams: 7, stones: 8,  stoneK: [.7, 1.25],  damp: .16, cracks: 12, grain: .04 },            // limestone
+  { band: .08, seams: 4, stones: 6,  stoneK: [.65, 1.3],  damp: 0,   cracks: 12, crystals: 70, grain: .05 }, // shale
+  { band: .03, seams: 0, stones: 10, stoneK: [.55, 1.2],  damp: 0,   cracks: 14, crystals: 150, grain: .06 }, // granite
+  { band: .03, seams: 1, stones: 8,  stoneK: [.6, 1.3],   damp: 0,   cracks: 14, holes: 70, grain: .05 },   // basalt
+];
+const LIGHT_A = -2.35; // the light in the pictures comes from the upper left
+const shade = (c, f, a = 1) => `rgba(${clamp(c[0] * f, 0, 255) | 0},${clamp(c[1] * f, 0, 255) | 0},${clamp(c[2] * f, 0, 255) | 0},${a})`;
+// a faceted lump (a crystal, a nugget, a pebble): points round a centre, each wedge shaded by how it faces the light.
+// o: n points, rot, jag (how uneven), sq (squash), metal (random bright flashes), spec (a white glint), line (outline strength)
+function facets(g, cx, cy, r, R, col, o = {}) {
+  const n = o.n || 8, rot = o.rot !== undefined ? o.rot : R() * 6.28, jag = o.jag === undefined ? .3 : o.jag, sq = o.sq || 1, metal = o.metal || 0, ln = o.line === undefined ? 1 : o.line, pts = [];
+  for (let j = 0; j < n; j++) { const a = rot + j / n * 6.283, rr = r * (1 - jag * R()); pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * sq]); }
+  for (let j = 0; j < n; j++) {
+    const p = pts[j], q = pts[(j + 1) % n], lit = (Math.cos(rot + (j + .5) / n * 6.283 - LIGHT_A) + 1) / 2;
+    let f = .5 + lit * .62; if (metal) f = .34 + Math.pow(lit, 1.5) * 1.05 + (R() - .45) * metal * .8;
+    g.fillStyle = shade(col, f); g.beginPath(); g.moveTo(cx - lit + .5, cy - lit + .5); g.lineTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.closePath(); g.fill();
+  }
+  g.lineJoin = 'round'; g.lineWidth = .6; g.strokeStyle = `rgba(0,0,0,${.14 * ln})`;
+  for (const p of pts) { g.beginPath(); g.moveTo(cx, cy); g.lineTo(p[0], p[1]); g.stroke(); }
+  g.lineWidth = .9; g.strokeStyle = `rgba(0,0,0,${.42 * ln})`; g.beginPath(); pts.forEach((p, j) => j ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.stroke();
+  if (o.spec) { g.fillStyle = `rgba(255,255,255,${o.spec})`; g.beginPath(); g.ellipse(cx - r * .32, cy - r * .36, r * .26, r * .12, -.7, 0, 7); g.fill(); }
+}
+// a chunk of mineral: a lumpy outline lit from the upper left, cut by flat faces of different brightness (random planes), with a bright rim
+// on the lit side; metal makes some faces flash almost white
+function lump(g, cx, cy, r, R, col, o = {}) {
+  const n = o.n || 10, jag = o.jag === undefined ? .3 : o.jag, sq = o.sq || 1, metal = o.metal || 0, rot = R() * 6.28, pts = [];
+  for (let j = 0; j < n; j++) { const a = rot + j / n * 6.283, rr = r * (1 - jag * R()); pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * sq]); }
+  const path = () => { g.beginPath(); pts.forEach((q, j) => j ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); };
+  g.save(); path(); g.clip();
+  const lg = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+  lg.addColorStop(0, shade(col, 1.45)); lg.addColorStop(.5, shade(col, 1.1)); lg.addColorStop(1, shade(col, .62));
+  g.fillStyle = lg; g.fillRect(cx - r - 2, cy - r - 2, r * 2 + 4, r * 2 + 4);
+  for (let i = 0; i < 6; i++) {
+    const q = [0, 1, 2].map(() => [cx + (R() - .5) * r * 2.2, cy + (R() - .5) * r * 2.2]), f = R() < .5 ? .6 + R() * .3 : 1.1 + R() * (.3 + metal * .5);
+    g.fillStyle = shade(col, f, .5 + metal * .15); g.beginPath(); g.moveTo(q[0][0], q[0][1]); g.lineTo(q[1][0], q[1][1]); g.lineTo(q[2][0], q[2][1]); g.closePath(); g.fill();
+    g.strokeStyle = f > 1 ? `rgba(255,255,255,${.2 * (o.edge === undefined ? 1 : o.edge)})` : 'rgba(0,0,0,.22)'; g.lineWidth = .6; g.stroke();
+  }
+  g.restore();
+  g.lineJoin = 'round'; g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = .9; path(); g.stroke();
+  g.save(); path(); g.clip(); g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1.2; g.translate(.9, .9); path(); g.stroke(); g.restore();
+  if (o.spec) { g.fillStyle = `rgba(255,255,255,${o.spec})`; g.beginPath(); g.ellipse(cx - r * .3, cy - r * .36, r * .3, r * .11, -.7, 0, 7); g.fill(); }
+}
+// draw a polyline with a given look at the picture's edges as well, so it carries on from the other side
+function wrapLine(g, pts, w, col, ox = 0, oy = 0) {
+  g.lineWidth = w; g.strokeStyle = col;
+  for (const dx of [-ATL, 0, ATL]) for (const dy of [-ATL, 0, ATL]) { g.beginPath(); pts.forEach(([px, py], j) => j ? g.lineTo(px + dx + ox, py + dy + oy) : g.moveTo(px + dx + ox, py + dy + oy)); g.stroke(); }
+}
+
+// a layer of rock takes a few hundred milliseconds to paint, so it is made in small steps (a generator): the game gives it a few
+// milliseconds each frame (see pumpBuild), and only waits for the whole thing if the ship gets there first
+function buildRock(s) { const it = buildRockGen(s); let r; while (!(r = it.next()).done); return r.value; }
+function* buildRockGen(s) {
+  const st = STRATA[s], sty = STYLE[s], rl = REAL[s], c = mkCanvas(ATL, ATL), g = c.getContext('2d'), im = g.createImageData(ATL, ATL), d = im.data;
+  const f1 = makeFbm(6, 4, 100 + s * 31), f2 = makeFbm(12, 3, 900 + s * 13), f3 = makeFbm(3, 2, 1700 + s * 7), f4 = makeFbm(4, 2, 2300 + s * 11);
+  const bf = sty.band ? ATILES * Math.max(1, Math.round(12 / sty.band[0])) : 0, hgt = new Float32Array(ATL * ATL), PR = mulberry(77 + s * 19);
+  const tilt = 1 + (s % 2), TAU = Math.PI * 2, lumK = (st.col[0] + st.col[1] + st.col[2]) / 450;
   for (let y = 0; y < ATL; y++) for (let x = 0; x < ATL; x++) {
+    if (x === 0 && (y & 3) === 3) yield;
     const u = x / ATL, v = y / ATL, n = f1(u, v), m = f2(u, v), big = f3(u, v);
     let k = 1 + (n - .5) * sty.n * 4.5 + (m - .5) * sty.n * 3 + (big - .5) * .22;
     if (bf) k += Math.sin(v * Math.PI * 2 * bf + (n - .5) * 7) * sty.band[1] * .8;
+    // beds of rock: wavy, slightly tilted bands that change in brightness and hue, with thin dark seams between some of them
+    let warm = 0;
+    if (rl.band) {
+      const w = (n - .5) * 3 + (big - .5) * 2, b1 = Math.sin((v * 5 + u * tilt) * TAU + w), b2 = Math.sin((v * 11 - u * tilt) * TAU + w * 1.4), b3 = Math.sin((v * 23 + u) * TAU + w * 2);
+      k += rl.band * .75 * (b1 * .6 + b2 * .3 + b3 * .2); warm = (b2 * 7 + b1 * 3) * lumK;
+      if (rl.seams) { // thin dark seams: q to the 30th power is a sharp line
+        const q = Math.max(0, Math.sin((v * rl.seams * 3 + u * tilt) * TAU + w * 1.6)), q2 = q * q, q4 = q2 * q2, q8 = q4 * q4; k -= q8 * q8 * q8 * q4 * q2 * .22; }
+    }
+    // darker, damp patches
+    let wet = 0;
+    if (rl.damp) { wet = clamp((f4(u, v) - .52) * 6, 0, 1) * rl.damp; k *= 1 - wet * .42; }
+    k += (PR() - .5) * rl.grain * 2;
+    let r = st.col[0] * k + warm, gg = st.col[1] * k + warm * .55, b = st.col[2] * k - warm * .7 + wet * 9;
+    if (st.glow) { const vein = Math.pow(1 - Math.abs(m * 2 - 1), 7); r += vein * 190; gg += vein * 80; b += vein * 10; }
     const i = (y * ATL + x) * 4;
-    d[i] = clamp(st.col[0] * k, 0, 255); d[i + 1] = clamp(st.col[1] * k, 0, 255); d[i + 2] = clamp(st.col[2] * k, 0, 255); d[i + 3] = 255;
+    d[i] = clamp(r, 0, 255); d[i + 1] = clamp(gg, 0, 255); d[i + 2] = clamp(b, 0, 255); d[i + 3] = 255;
+    hgt[y * ATL + x] = n * .55 + m * .35 + big * .1 + PR() * .015;
+  }
+  // relief: the light from the upper left brightens the slopes that face it and darkens the others
+  const relief = s >= 8 ? 1.2 : 2;
+  for (let y = 0; y < ATL; y++) for (let x = 0; x < ATL; x++) {
+    if (x === 0 && (y & 15) === 15) yield;
+    const x0 = (x + ATL - 1) % ATL, x1 = (x + 1) % ATL, y0 = (y + ATL - 1) % ATL, y1 = (y + 1) % ATL;
+    const sl = (hgt[y0 * ATL + x0] * 1.2 + hgt[y * ATL + x0] + hgt[y0 * ATL + x] - hgt[y1 * ATL + x1] * 1.2 - hgt[y * ATL + x1] - hgt[y1 * ATL + x]) * relief, f = 1 + clamp(sl, -.4, .4), i = (y * ATL + x) * 4;
+    d[i] = clamp(d[i] * f, 0, 255); d[i + 1] = clamp(d[i + 1] * f, 0, 255); d[i + 2] = clamp(d[i + 2] * f, 0, 255);
   }
   g.putImageData(im, 0, 0);
+  yield;
   const R = mulberry(400 + s * 53);
   for (const [p, m, tint] of sty.specks) {
     const n = Math.round(p * ATL * ATL / 34), col = tint || st.col;
@@ -1519,42 +1605,113 @@ function buildRock(s) {
     }
   }
   g.lineCap = 'round'; g.lineJoin = 'round';
-  for (let i = 0; i < 14; i++) {
-    let x = 40 + R() * (ATL - 80), y = 40 + R() * (ATL - 80), a = R() * 6.28;
-    g.beginPath(); g.moveTo(x, y);
-    for (let j = 0; j < 7; j++) { a += (R() - .5) * 1.1; x += Math.cos(a) * 7; y += Math.sin(a) * 7; g.lineTo(x, y); }
-    g.strokeStyle = 'rgba(0,0,0,.26)'; g.lineWidth = 1.2; g.stroke();
+  // white mineral veins (calcite), thin and wandering, with a faint shadow beside them
+  for (let i = 0; i < (rl.veins || 0); i++) {
+    let x = R() * ATL, y = R() * ATL, a = R() * 6.28; const pts = [[x, y]];
+    for (let j = 0; j < 16; j++) { a += (R() - .5) * .8; x += Math.cos(a) * 8; y += Math.sin(a) * 8; pts.push([x, y]); }
+    wrapLine(g, pts, 2.6, 'rgba(0,0,0,.16)', 1.2, 1.2); wrapLine(g, pts, 1.5, 'rgba(250,246,232,.62)'); wrapLine(g, pts, .6, 'rgba(255,255,255,.55)');
   }
+  yield;
+  // stones and pebbles set in the rock: a soft shadow under each, a shaded body and a glint
+  const kk = rl.stoneK || [1, 1], grey = (st.col[0] + st.col[1] + st.col[2]) / 3, scol = st.col.map(q => lerp(q, grey, .4));
+  for (let i = 0; i < rl.stones; i++) {
+    const x = R() * ATL, y = R() * ATL, r = 2.2 + Math.pow(R(), 2) * 6.5, k = kk[0] + R() * (kk[1] - kk[0]), sq = .62 + R() * .3, rot = R() * 3.14;
+    wrapped(x, y, r + 3, (px, py) => {
+      g.save(); g.translate(px, py); g.rotate(rot);
+      g.fillStyle = 'rgba(0,0,0,.34)'; g.beginPath(); g.ellipse(r * .18, r * .3, r * 1.12, r * sq * 1.12, 0, 0, 7); g.fill();
+      const gr = g.createRadialGradient(-r * .35, -r * .4 * sq, r * .1, 0, 0, r * 1.05);
+      gr.addColorStop(0, shade(scol, k * 1.3)); gr.addColorStop(.6, shade(scol, k * .95)); gr.addColorStop(1, shade(scol, k * .55));
+      g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, r, r * sq, 0, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = .7; g.stroke();
+      g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(-r * .3, -r * sq * .38, r * .34, r * sq * .15, -.4, 0, 7); g.fill();
+      g.restore();
+    });
+  }
+  // glittering grains: little crystals with a bright face (granite, the mantle and the core)
+  const tints = sty.specks.filter(q => q[2]);
+  for (let i = 0; i < (rl.crystals || 0); i++) {
+    const x = R() * ATL, y = R() * ATL, r = 1.3 + R() * 2.2, pick = tints.length ? tints[i % tints.length][2] : st.col;
+    wrapped(x, y, r + 2, (px, py) => facets(g, px, py, r, R, pick, { n: 5 + (R() * 2 | 0), jag: .25, metal: .5, spec: .3 + R() * .3 }));
+  }
+  // bubbles in volcanic rock: dark pits with a bright lower lip
+  for (let i = 0; i < (rl.holes || 0); i++) {
+    const x = R() * ATL, y = R() * ATL, r = 1 + R() * 2.6, sq = .6 + R() * .4;
+    wrapped(x, y, r + 2, (px, py) => {
+      g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(px + .5, py + r * .35 + .5, r, r * sq, 0, 0, 7); g.fill();
+      g.fillStyle = 'rgba(6,6,10,.72)'; g.beginPath(); g.ellipse(px, py, r, r * sq, 0, 0, 7); g.fill();
+    });
+  }
+  yield;
+  // cracks: long and branching, dark with a thin bright edge on the lower side
+  const crack = (x, y, a, len, w) => {
+    const pts = [[x, y]];
+    for (let j = 0; j < len; j++) { a += (R() - .5) * 1.1; x += Math.cos(a) * 6.5; y += Math.sin(a) * 6.5; pts.push([x, y]); }
+    wrapLine(g, pts, w * 3, 'rgba(0,0,0,.14)'); wrapLine(g, pts, w * .9, 'rgba(255,240,220,.16)', .7, 1); wrapLine(g, pts, w, 'rgba(8,5,3,.7)');
+    return pts;
+  };
+  for (let i = 0; i < rl.cracks; i++) {
+    const pts = crack(R() * ATL, R() * ATL, R() * 6.28, 6 + (R() * 8 | 0), 1.1 + R() * .5);
+    if (R() < .6) { const q = pts[2 + (R() * (pts.length - 4) | 0)]; crack(q[0], q[1], R() * 6.28, 3 + (R() * 4 | 0), .8); }
+  }
+  // roots near the surface: brown tendrils with a few side roots, thinning as they go
+  const root = (x0, y0, a0, len, w0) => {
+    let rx = x0, ry = y0, ra = a0;
+    for (let j = 0; j < len; j++) {
+      ra += (R() - .5) * .7; const nx = rx + Math.cos(ra) * 5, ny = ry + Math.sin(ra) * 5, w = Math.max(.6, w0 * (1 - j / len * .8));
+      wrapLine(g, [[rx, ry], [nx, ny]], w + 1.2, 'rgba(20,12,6,.35)', .8, .8);
+      wrapLine(g, [[rx, ry], [nx, ny]], w, j % 3 ? 'rgb(92,64,40)' : 'rgb(110,80,52)');
+      if (j > 2 && j % 4 === 0 && len > 6) root(nx, ny, ra + (R() < .5 ? .9 : -.9), Math.floor(len * .45), w * .6);
+      rx = nx; ry = ny;
+    }
+  };
+  for (let i = 0; i < (rl.roots || 0); i++) root(R() * ATL, R() * ATL * .9, 1.1 + R() * 1.9, 9 + (R() * 7 | 0), 2.2);
   return c;
 }
+
+// ore looks like real mineral: ragged veins running through the rock, a rubble of broken rock round the nodule, and shiny faceted lumps
+// (coal is dull black with a few glints, copper orange metal with a green crust, iron grey-red, sulfur a cluster of yellow crystals)
 function buildOre(k, v) {
-  const o = ORES[k], c = mkCanvas(TS, TS), g = c.getContext('2d'), R = mulberry(7001 + k * 31 + v * 5), base = hex(o.col), hi = hex(o.hi);
-  const rgb = (a, t = 1) => `rgb(${a.map(q => clamp(q * t, 0, 255) | 0).join(',')})`;
-  const n = k === SULFUR ? 4 : 5;
-  g.lineJoin = 'round';
+  const o = ORES[k], S2 = 2, c = mkCanvas(TS * S2, TS * S2), g = c.getContext('2d'), R = mulberry(7001 + k * 31 + v * 5), base = hex(o.col), hi = hex(o.hi);
+  g.scale(S2, S2); g.lineJoin = 'round'; g.lineCap = 'round';
+  // dark rubble where the nodule was broken out of the rock
+  for (let i = 0; i < 9; i++) {
+    const x = 8 + R() * 48, y = 8 + R() * 48, r = 2 + R() * 4;
+    g.fillStyle = `rgba(14,10,8,${.18 + R() * .15})`; g.beginPath(); g.ellipse(x, y + 1, r * 1.2, r * .8, R() * 3, 0, 7); g.fill();
+  }
+  // a scatter of small broken-off pieces of the ore in the rock round the nodules
+  for (let i = 0; i < 7; i++) {
+    const x = 6 + R() * 52, y = 6 + R() * 52, r = .9 + R() * 1.4;
+    lump(g, x, y, r, R, k === IRON ? [128, 108, 108] : base, { n: 6, jag: .4, metal: .5, edge: .4 });
+  }
+  // one big nodule and a few smaller ones round it
+  const n = 5, c0 = [24 + R() * 16, 24 + R() * 16];
   for (let i = 0; i < n; i++) {
-    const cx = 11 + R() * 42, cy = 11 + R() * 42, r = 5.5 + R() * 5;
+    const big = i === 0, cx = big ? c0[0] : clamp(c0[0] + (R() - .5) * 44, 12, 52), cy = big ? c0[1] : clamp(c0[1] + (R() - .5) * 44, 12, 52), r = big ? 11.5 + R() * 3 : 6.5 + R() * 3;
     g.save(); g.translate(cx, cy);
-    g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 4; g.shadowOffsetY = 2;
+    g.shadowColor = 'rgba(0,0,0,.65)'; g.shadowBlur = 4; g.shadowOffsetY = 2;
     if (k === SULFUR) {
-      const tilt = (R() - .5) * 1.2, w = r * .55, h = r * 1.25, rot = (px, py) => [px * Math.cos(tilt) - py * Math.sin(tilt), px * Math.sin(tilt) + py * Math.cos(tilt)];
-      const face = (col, pts) => { g.fillStyle = col; g.beginPath(); pts.forEach(([px, py], j) => { const [qx, qy] = rot(px, py); if (j) g.lineTo(qx, qy); else g.moveTo(qx, qy); }); g.closePath(); g.fill(); };
-      face(rgb(base, .78), [[-w, -h * .55], [0, -h * .3], [0, h], [-w, h * .7]]);
+      // yellow crystals: a hexagonal prism with a lit face, a shaded face and a pointed, glassy tip, leaning this way and that
+      const tilt = (R() - .5) * 1.5, w = r * .5, h = r * 1.3, ca = Math.cos(tilt), sa = Math.sin(tilt), T2 = (px, py) => [px * ca - py * sa, px * sa + py * ca];
+      const face = (col, pts) => { g.fillStyle = col; g.beginPath(); pts.forEach(([px, py], j) => { const q = T2(px, py); j ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); g.fill(); };
+      face(shade(base, .66), [[-w, -h * .55], [-w * .3, -h * .35], [-w * .3, h], [-w, h * .7]]);
       g.shadowColor = 'transparent';
-      face(rgb(base, 1.08), [[0, -h * .3], [w, -h * .55], [w, h * .7], [0, h]]);
-      face(rgb(hi), [[-w, -h * .55], [0, -h], [w, -h * .55], [0, -h * .3]]);
+      face(shade(base, 1.02), [[-w * .3, -h * .35], [w * .45, -h * .5], [w * .45, h * .75], [-w * .3, h]]);
+      face(shade(base, 1.2), [[w * .45, -h * .5], [w, -h * .45], [w, h * .6], [w * .45, h * .75]]);
+      face(shade(hi, 1), [[-w, -h * .55], [-w * .3, -h * .95], [w * .45, -h * 1.02], [w, -h * .45], [w * .45, -h * .5], [-w * .3, -h * .35]]);
+      g.strokeStyle = 'rgba(90,70,0,.55)'; g.lineWidth = .7; g.beginPath(); for (const [px, py, qx, qy] of [[-w * .3, -h * .35, -w * .3, h], [w * .45, -h * .5, w * .45, h * .75]]) { const a2 = T2(px, py), b2 = T2(qx, qy); g.moveTo(a2[0], a2[1]); g.lineTo(b2[0], b2[1]); } g.stroke();
+      g.fillStyle = 'rgba(255,255,230,.85)'; const sp = T2(-w * .1, -h * .75); g.beginPath(); g.ellipse(sp[0], sp[1], w * .22, h * .1, tilt, 0, 7); g.fill();
     } else {
-      const rot = R() * 6.28, cnt = 8 + (R() * 3 | 0), pts = [];
-      for (let j = 0; j < cnt; j++) { const a = rot + j / cnt * 6.283, rr = r * (.72 + R() * .5); pts.push([Math.cos(a) * rr, Math.sin(a) * rr]); }
-      const lg = g.createLinearGradient(-r, -r, r, r);
-      lg.addColorStop(0, rgb(hi)); lg.addColorStop(.45, rgb(base)); lg.addColorStop(1, rgb(base, .42));
-      g.fillStyle = lg; g.beginPath(); pts.forEach(([px, py], j) => j ? g.lineTo(px, py) : g.moveTo(px, py)); g.closePath(); g.fill();
+      const metal = k === COAL ? .5 : k === COPPER ? .6 : .45;
+      if (k === COAL) { g.fillStyle = 'rgba(205,195,185,.1)'; g.beginPath(); g.ellipse(0, 0, r * 1.25, r * 1.15, 0, 0, 7); g.fill(); } // a pale halo so black coal shows on dark rock
+      lump(g, 0, 0, r, R, k === IRON ? [212, 82, 46] : k === COPPER ? [226, 112, 42] : base, { n: 9 + (R() * 3 | 0), jag: .3, metal, edge: k === COAL ? .7 : 1, spec: k === COAL ? .5 : .45, sq: .85 + R() * .2 });
       g.shadowColor = 'transparent';
-      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = .9; g.stroke();
-      g.fillStyle = k === COAL ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.55)';
-      g.beginPath(); g.ellipse(-r * .3, -r * .35, r * .28, r * .13, -.7, 0, 7); g.fill();
-      if (k === COPPER) { g.fillStyle = 'rgba(79,176,138,.85)'; g.beginPath(); g.arc(r * .3, r * .25, r * .16, 0, 7); g.arc(-r * .1, r * .45, r * .1, 0, 7); g.fill(); }
-      if (k === IRON) { g.fillStyle = 'rgba(70,26,12,.55)'; g.beginPath(); g.arc(r * .25, r * .1, r * .2, 0, 7); g.arc(-r * .35, r * .3, r * .12, 0, 7); g.fill(); }
+      if (k === COAL) { // layered, dull and black with a few bright glints
+        g.strokeStyle = 'rgba(120,114,108,.16)'; g.lineWidth = .6;
+        for (let q = -2; q <= 2; q++) { g.beginPath(); g.moveTo(-r * .7, q * r * .25); g.lineTo(r * .6, q * r * .25 + (R() - .5) * 2); g.stroke(); }
+        g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(r * .1, -r * .15, r * .22, r * .06, -.5, 0, 7); g.fill();
+      }
+      if (k === COPPER) { g.fillStyle = 'rgba(70,170,134,.85)'; g.beginPath(); g.arc(r * .3, r * .3, r * .13, 0, 7); g.arc(-r * .15, r * .5, r * .08, 0, 7); g.fill(); }
+      if (k === IRON) { g.fillStyle = 'rgba(122,40,20,.55)'; g.beginPath(); g.ellipse(r * .25, r * .1, r * .26, r * .2, .5, 0, 7); g.ellipse(-r * .35, r * .3, r * .15, r * .1, 0, 0, 7); g.fill(); }
     }
     g.restore();
   }
@@ -1603,11 +1760,37 @@ function buildCracks() {
     return c;
   });
 }
+function buildFleck(seed) {
+  const c = mkCanvas(256, 256), g = c.getContext('2d'), R = mulberry(seed);
+  for (let i = 0; i < 150; i++) {
+    const x = R() * 256, y = R() * 256, r = .5 + R() * 1.1, a = .35 + R() * .65;
+    wrapped256(x, y, 5, (px, py) => {
+      g.fillStyle = `rgba(255,${236 + (R() * 19 | 0)},${200 + (R() * 55 | 0)},${a})`; g.beginPath(); g.arc(px, py, r, 0, 7); g.fill();
+      if (r > 1.1) { g.strokeStyle = `rgba(255,244,214,${a * .5})`; g.lineWidth = .6; g.beginPath(); g.moveTo(px - r * 3, py); g.lineTo(px + r * 3, py); g.moveTo(px, py - r * 3); g.lineTo(px, py + r * 3); g.stroke(); }
+    });
+  }
+  return c;
+}
+function wrapped256(x, y, r, draw) { for (const dx of x < r ? [0, 256] : x > 256 - r ? [0, -256] : [0]) for (const dy of y < r ? [0, 256] : y > 256 - r ? [0, -256] : [0]) draw(x + dx, y + dy); }
+// the rock and lava pictures take a moment to paint, so each is made the first time it is needed (a layer of rock when it comes into view,
+// a frame of the lava when it first flows past)
+const rockTex = s => TX.rock[s] || (TX.rock[s] = buildRock(s));
+const rockJobs = []; // [layer, generator] still being painted in the background
+function pumpBuild(ms) {
+  const t0 = performance.now();
+  while (rockJobs.length && performance.now() - t0 < ms) {
+    const j = rockJobs[0];
+    if (TX.rock[j[0]]) { rockJobs.shift(); continue; }
+    const r = j[1].next();
+    if (r.done) { TX.rock[j[0]] = r.value; rockJobs.shift(); }
+  }
+}
 function buildTextures() {
-  STRATA.forEach((_, s) => { TX.rock[s] = buildRock(s); });
   ORES.forEach((_, k) => { TX.ore[k] = [buildOre(k, 0), buildOre(k, 1)]; });
   TX.gas = [buildGas(0), buildGas(1)];
   TX.concrete = buildConcrete();
+  for (let q = 1; q < STRATA.length; q++) rockJobs.push([q, buildRockGen(q)]); // the deeper layers are painted in the background
+  TX.fleck = [buildFleck(8101), buildFleck(8102), buildFleck(8103)];
   TX.crack = buildCracks();
 }
 
@@ -2211,7 +2394,7 @@ function rebuildOutline() {
   sharpAll = false; sharpTiles = [];
 }
 const strataMasks = [], rockPats = [];
-let concretePat = null;
+let concretePat = null, oreTS = 0;
 function makeMask(fn, blur) {
   const w = (COLS + MPAD * 2) * MS, h = (ROWS + MPAD * 2) * MS, raw = mkCanvas(w, h), g = raw.getContext('2d');
   for (let y = -MPAD; y < ROWS + MPAD; y++) for (let x = -MPAD; x < COLS + MPAD; x++) {
@@ -2249,9 +2432,13 @@ function drawWorld(cx, cy, gy) {
   const xa = clamp(Math.floor(cx / T), 0, COLS - 1), xb = clamp(Math.floor((cx + VW) / T), 0, COLS - 1);
   const ya = clamp(Math.floor(cy / T), SURF, ROWS - 1), yb = clamp(Math.floor((cy + VH) / T), SURF, ROWS - 1);
   if (masksDirty) rebuildMasks();
+  if (oreTS !== T) { // the ore pictures are made twice as big as the biggest tile; they are shrunk to the tile size once, not every frame
+    oreTS = T;
+    ORES.forEach((_, k) => { TX.oreT[k] = TX.ore[k].map(src => { const c = mkCanvas(T, T), g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(src, 0, 0, T, T); return c; }); });
+  }
   let smin = 99, smax = 0;
   for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) { const s = STRAT[y * COLS + x]; if (s < smin) smin = s; if (s > smax) smax = s; }
-  const rockPat = s => setPat(rockPats[s] || (rockPats[s] = ctx.createPattern(TX.rock[s], 'repeat')), cx, cy);
+  const rockPat = s => setPat(rockPats[s] || (rockPats[s] = ctx.createPattern(rockTex(s), 'repeat')), cx, cy);
   ctx.fillStyle = rockPat(smin); ctx.fillRect(0, top, VW, VH - top);
   for (let s = smin + 1; s <= smax; s++) {
     lctx.globalCompositeOperation = 'source-over'; lctx.clearRect(0, 0, VW, VH);
@@ -2259,15 +2446,17 @@ function drawWorld(cx, cy, gy) {
     lctx.globalCompositeOperation = 'destination-in'; blit(lctx, strataMask(s), cx, cy);
     ctx.drawImage(LAYER, 0, 0);
   }
+  if (!G.breach && darkness() > .12) drawLitRock(cx, cy, rockPat);
   drawUtilities(cx, cy);
-  // ore and gas sit in the rock as separate objects; bedrock is a dark, glassy floor
+  // ore and gas sit in the rock as separate objects, drawn last of all (below), so nothing in the rock (cracks, roots, shading, light)
+  // ever covers them; bedrock is a dark, glassy floor
+  const oreList = [];
   for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
     const t = S.tiles[y * COLS + x];
     if (t === AIR || t === ROCK || t === CONCRETE) continue;
     const sx = x * T - cx, sy = y * T - cy;
     if (t === BEDROCK) { ctx.fillStyle = vgrad(sy, sy + T, [[0, 'rgba(14,12,16,.7)'], [1, 'rgba(6,5,8,.95)']]); ctx.fillRect(sx, sy, T + 1, T); continue; }
-    const v = hash(x, y) & 1;
-    if (t >= ORE0) ctx.drawImage(TX.ore[t - ORE0][v], sx, sy, T, T); else if (t === GAS) ctx.drawImage(TX.gas[v], sx, sy, T, T);
+    if (t >= ORE0 || t === GAS) oreList.push(x, y, t, sx, sy);
   }
   // depth: the soil darkens the further it is from the open air, starting with the shadow right under the road slab,
   // and at night the ground near the street takes the cold blue of the sky
@@ -2288,6 +2477,21 @@ function drawWorld(cx, cy, gy) {
   tinted('rgb(86,56,32)', dugMask, .3);
   tinted('rgb(214,176,132)', floorMask, .42);
   ctx.restore();
+  const dkO = G.breach ? 0 : darkness(), lr = lampR() * 1.3;
+  for (let i = 0; i < oreList.length; i += 5) {
+    const x = oreList[i], y = oreList[i + 1], t = oreList[i + 2], sx = oreList[i + 3], sy = oreList[i + 4], v = hash(x, y) & 1;
+    if (t === GAS) { ctx.drawImage(TX.gas[v], sx, sy, T, T); continue; }
+    const oi = TX.oreT[t - ORE0][v];
+    ctx.drawImage(oi, sx, sy, T, T);
+    // ore in the lamp light shines: the picture is added to itself, more strongly in the beam and near the lamp
+    if (dkO > .15) {
+      const dx = x - G.fx, dy = y - G.fy, dist = Math.hypot(dx, dy);
+      if (dist < lr) {
+        const cone = Math.max(0, Math.cos(Math.atan2(dy, dx) - G.beamA)), al = Math.pow(1 - dist / lr, 1.6) * (.5 + cone * .5) * dkO * (t === COAL + ORE0 ? .7 : 1);
+        if (al > .02) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = al; ctx.drawImage(oi, sx, sy, T, T); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+      }
+    }
+  }
 }
 // deep down, past the reach of the headlamp, the tunnels you dug still show as a faint trace, so you can find your way back
 // what runs under any city street: a cast-iron water main, cut wherever the ground is dug away
@@ -2324,7 +2528,8 @@ function drawTunnelRim(cx, cy, gy) {
   if (gy >= VH || a <= 0) return;
   const top = Math.max(0, gy);
   lctx.globalCompositeOperation = 'source-over'; lctx.clearRect(0, 0, VW, VH);
-  lctx.fillStyle = 'rgb(255,208,150)'; lctx.fillRect(0, top, VW, VH - top);
+  const heat = clamp((depthOf(G.fy) - 60) / 140, 0, 1); // deep down the rock is hot, and the workings glow a deeper red
+  lctx.fillStyle = `rgb(255,${Math.round(208 - heat * 80)},${Math.round(150 - heat * 80)})`; lctx.fillRect(0, top, VW, VH - top);
   lctx.globalCompositeOperation = 'destination-in'; blit(lctx, dugWide, cx, cy);
   lctx.globalCompositeOperation = 'destination-out'; blit(lctx, airSharp, cx, cy, SK);
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a; ctx.drawImage(LAYER, 0, 0); ctx.restore();
@@ -2938,6 +3143,8 @@ function startMove(tx, ty, dur, type) { G.act = { type, fromX: S.x, fromY: S.y, 
 function bump(msg) {
   if (msg) hint(msg);
   sfx.bump();
+  { const dv = G.face === 'U' ? [0, -1] : G.face === 'D' ? [0, 1] : G.body === 'L' ? [-1, 0] : [1, 0]; // a puff where the nose hit
+    dustHit(S.x + .5 + dv[0] * .62, S.y + .5 + dv[1] * .62, Math.atan2(-dv[1], -dv[0]), 5, 1.5); }
   G.act = { type: 'bump', fromX: S.x, fromY: S.y, toX: S.x, toY: S.y, t: 0, dur: .32 };
 }
 function decide() {
@@ -2989,7 +3196,7 @@ function explode(gx, gy, byBot) {
     if (x < 0 || x >= COLS || y < SURF || y >= SURF + GROUND) continue;
     const t = tileAt(x, y);
     if (t === CONCRETE || t === BEDROCK) continue;
-    if (t !== AIR) emit(x + .5, y + .5, 5, () => tileColor(t, x, y), 5, .8);
+    if (t !== AIR) emit(x + .5, y + .5, 5, () => chipCol(t, x, y), 5, .8, 16, 'chip');
     setTile(x, y, AIR, !byBot);
   }
   emit(gx + .5, gy + .5, 60, () => ['#fff1b8', '#ffb02e', '#ff6a1f', '#6b5a4c'][Math.random() * 4 | 0], 9, .7, 4);
@@ -3018,9 +3225,13 @@ function hurt(n, why) {
 }
 function land() {
   const n = G.fallN; G.fallN = 0;
-  if (n > 1) {
-    emit(S.x + .5, S.y + .95, Math.min(14, n * 2), () => tileColor(ROCK, S.x, S.y + 1), 2.5, .5);
-    G.shake = Math.max(G.shake, Math.min(.5, n * .05));
+  if (n > 0) {
+    const dc = () => S.y === SURF - 1 ? '#a39d92' : dustCol(S.x, S.y + 1);
+    if (n > 1) emit(S.x + .5, S.y + .95, Math.min(14, n * 2), () => chipCol(ROCK, S.x, S.y + 1), 2.5, .5, 16, 'chip');
+    // a ring of dust rolls out along the ground both ways
+    emit(S.x + .5, S.y + .96, Math.min(7, n * 2 + 1), dc, 2.4, 1.1, -.25, 'dust', { ang: 0, spread: .5 });
+    emit(S.x + .5, S.y + .96, Math.min(7, n * 2 + 1), dc, 2.4, 1.1, -.25, 'dust', { ang: Math.PI, spread: .5 });
+    if (n > 1) G.shake = Math.max(G.shake, Math.min(.5, n * .05));
   }
   if (n > 4 && S.y >= SURF - 1) hurt((n - 4) * 6, `Fell ${n * MPT} m`);
 }
@@ -3046,7 +3257,8 @@ function finish() {
     const t = tileAt(a.tx, a.ty);
     if (t === AIR) return;
     setTile(a.tx, a.ty, AIR);
-    emit(a.tx + .5, a.ty + .5, 10, () => tileColor(t, a.tx, a.ty), 4, .6);
+    emit(a.tx + .5, a.ty + .5, 12, () => chipCol(t, a.tx, a.ty), 4, .7, 16, 'chip');
+    emit(a.tx + .5, a.ty + .5, 6, () => dustCol(a.tx, a.ty), 1.8, 1.4, -.4, 'dust');
     if (t >= ORE0) collect(t - ORE0, a.tx, a.ty);
     if (botIdAt(a.tx, a.ty)) return;
     startMove(a.tx, a.ty, .1, 'enter');
@@ -3069,7 +3281,7 @@ function checkSpot() {
 /* ---------- ramming robots, and robots breaking ---------- */
 function hitBot(r, dx, dy) {
   const K = BOT[r.kind];
-  emit(S.x + .5 + dx * .55, S.y + .5 + dy * .55, 22, () => ['#fff6d0', '#ffd27a', '#ffb02e', '#c9d1d8'][Math.random() * 4 | 0], 7, .45, 14);
+  emit(S.x + .5 + dx * .55, S.y + .5 + dy * .55, 22, () => ['#fff6d0', '#ffd27a', '#ffb02e', '#c9d1d8'][Math.random() * 4 | 0], 7, .45, 14, 'spark');
   flash(S.x + .5 + dx * .55, S.y + .5 + dy * .55, .55, '255,226,180', .22);
   r.hp -= ramPower();
   G.shake = Math.max(G.shake, .35);
@@ -3526,13 +3738,28 @@ function recover() {
 }
 
 /* ---------- particles ---------- */
-function emit(x, y, n, colFn, spd, life, grav = 16) {
-  if (reduced) n = Math.ceil(n / 3);
+/* kinds: 'dot' (the old round speck: fireworks, blasts, the city), 'chip' (a flake of rock that bounces), 'dust' and 'smoke' (soft puffs),
+   'spark' (a bright streak that lights the rock), 'ember' (a glowing speck). o = { ang, spread } sprays the particles one way (an angle in
+   radians) instead of all round. Fewer are made on phones and tablets. */
+function emit(x, y, n, colFn, spd, life, grav = 16, kind = 'dot', o = null) {
+  if (reduced) n = Math.ceil(n / 3); else if (TOUCH && kind !== 'dot') n = Math.ceil(n * .65);
   for (let i = 0; i < n; i++) {
-    const ang = Math.random() * Math.PI * 2, v = spd * (.3 + Math.random());
-    parts.push({ x, y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - spd * .4, life: life * (.5 + Math.random() * .7), age: 0, col: colFn(i), g: grav, sz: Math.random() < .3 ? 2 : 1 });
+    const aimed = o && o.ang !== undefined, ang = aimed ? o.ang + (Math.random() - .5) * (o.spread || 1) : Math.random() * Math.PI * 2, v = spd * (.3 + Math.random());
+    parts.push({ x, y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - (aimed ? 0 : spd * .4), life: life * (.5 + Math.random() * .7), age: 0, col: colFn(i), g: grav, sz: Math.random() < .3 ? 2 : 1,
+      kind, rot: Math.random() * 6.28, vr: (Math.random() - .5) * 18, big: Math.random(), b: 0 });
   }
-  if (parts.length > 900) parts.splice(0, parts.length - 900);
+  if (parts.length > PART_CAP) parts.splice(0, parts.length - PART_CAP);
+}
+const PART_CAP = TOUCH ? 600 : 900; // fewer at once on phones and tablets
+// rock dust is paler than the rock it came from; a chip of rock is a lighter or darker piece of it
+const dustCol = (x, y) => { const st = STRATA[strataOf(x, y)]; return st.dust || (st.dust = `rgb(${st.col.map(v => Math.min(255, v * .5 + 112) | 0)})`); };
+const chipCol = (t, x, y) => {
+  const c = t >= ORE0 && Math.random() < .5 ? hex(ORES[t - ORE0].col) : STRATA[strataOf(x, y)].col, k = .62 + Math.random() * .7;
+  return `rgb(${clamp(c[0] * k, 0, 255) | 0},${clamp(c[1] * k, 0, 255) | 0},${clamp(c[2] * k, 0, 255) | 0})`;
+};
+// the puff of dust when the drill hits something, or the ship lands or bumps
+function dustHit(x, y, ang, n, spd = 1.6) {
+  emit(x, y, n, () => dustCol(Math.floor(x), Math.floor(y)), spd, 1.1, -.35, 'dust', { ang, spread: 2.2 });
 }
 // the light of a blast: a white-hot core, a fireball glow that lights up the rock round it, and a shock ring
 function flash(x, y, r, rgb = '255,170,90', life = .5, ring = true) {
@@ -3552,7 +3779,17 @@ function drawFlashes(cx, cy) {
   ctx.restore();
 }
 function stepFx(dt) {
-  for (const p of parts) { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  for (const p of parts) {
+    p.age += dt; p.vy += p.g * dt;
+    const k = p.kind;
+    if (k === 'dust' || k === 'smoke') { const dr = Math.exp(-dt * 2.6); p.vx = p.vx * dr + Math.sin(p.age * 4.3 + p.rot) * dt * .9; p.vy *= dr; }
+    else if (k === 'ember') p.vx += Math.sin(p.age * 6 + p.rot) * dt * 2.2;
+    const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
+    if ((k === 'chip' || k === 'spark') && p.vy > 0 && p.b < 3 && p.age > .06 && solidAt(Math.floor(nx), Math.floor(ny)) && !solidAt(Math.floor(p.x), Math.floor(p.y))) {
+      p.y = Math.floor(ny) - .02; p.x = nx; p.vy *= -.38; p.vx *= .72; p.vr *= .6; p.b++; // lands and hops
+    } else { p.x = nx; p.y = ny; }
+    p.rot += p.vr * dt;
+  }
   parts = parts.filter(p => p.age < p.life);
   for (const s of smokes) { s.age += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy *= 1 - dt * .15; }
   smokes = smokes.filter(s => s.age < s.life);
@@ -3586,15 +3823,32 @@ function update(dt) {
     if (a && a.type === 'drill') {
       G.puff -= dt;
       if (G.puff <= 0) {
-        G.puff = .05;
+        G.puff = .045;
         const t = tileAt(a.tx, a.ty), cx = (S.x + a.tx) / 2 + .5, cy = (S.y + a.ty) / 2 + .5;
-        emit(cx, cy, 2, () => tileColor(t, a.tx, a.ty), 3, .45);
-        if (a.m >= 6) emit(cx, cy, 1, () => '#ffd27a', 5, .25, 4);
+        // chips and dust spray back out of the hole the bit is making; hard rock and metal throw sparks
+        const back = a.ty > S.y ? -1.57 : a.ty < S.y ? 1.57 : a.tx > S.x ? -2.2 : -.94, metal = t === COPPER + ORE0 || t === IRON + ORE0;
+        emit(cx, cy, 3, () => chipCol(t, a.tx, a.ty), 3.8, .8, 16, 'chip', { ang: back, spread: 2.4 });
+        emit(cx, cy, 1 + (Math.random() < .7), () => dustCol(a.tx, a.ty), 2.1, 1.4, -.5, 'dust', { ang: back, spread: 3 });
+        if (a.m >= 5 || metal) emit(cx, cy, 1 + (Math.random() < (metal || a.m >= 6 ? .7 : .25)) + (metal && Math.random() < .5), () => ['#ffd27a', '#fff1b8', '#ffffff', '#ffb347'][Math.random() * 4 | 0], 7, .42, 11, 'spark', { ang: back, spread: 1.8 });
       }
     }
     if (a && a.type === 'ram') { const k = Math.sin(a.t / a.dur * Math.PI) * .3; G.fx = S.x + a.dx * k; G.fy = S.y + a.dy * k; }
-    else if (a && a.type !== 'drill' && a.type !== 'bump') { const k = a.t / a.dur; G.fx = a.fromX + (a.toX - a.fromX) * k; G.fy = a.fromY + (a.toY - a.fromY) * k; }
+    else if (a && a.type !== 'drill' && a.type !== 'bump') {
+      const k = a.t / a.dur; G.fx = a.fromX + (a.toX - a.fromX) * k; G.fy = a.fromY + (a.toY - a.fromY) * k;
+      // the tracks kick up a little dust on the ground
+      if (a.type === 'move' && solidAt(S.x, S.y + 1) && (G.trackT = (G.trackT || 0) - dt) <= 0) {
+        G.trackT = .09;
+        const under = tileAt(Math.round(G.fx), S.y + 1), col = under === CONCRETE ? '#9a958c' : S.y === SURF - 1 ? '#8c877e' : dustCol(S.x, S.y + 1);
+        emit(G.fx + (a.toX > a.fromX ? .15 : .85), S.y + .92, 1, () => col, .8, .7, -.4, 'dust');
+      }
+    }
     else { G.fx = S.x; G.fy = S.y; }
+    // the engine puffs grey exhaust while it works (more under load)
+    if ((G.exTick = (G.exTick || 0) - dt) <= 0) {
+      const busy = a && a.type !== 'bump' && a.type !== 'ram';
+      G.exTick = busy ? (a.type === 'drill' ? .09 : .13) : .7;
+      if (busy) emit(G.fx + (G.body === 'L' ? .8 : .2), G.fy + .12, 1, () => Math.random() < .5 ? '#8c847c' : '#6f6962', .7, 1.5, -1.1, 'smoke');
+    }
   }
   stepSmelter(dt);
   stepWaves(dt);
@@ -3644,22 +3898,245 @@ function drawRig(cx, cy, now) {
   paintRig(ctx, { now, down: G.face === 'D', up: G.face === 'U', thrust: G.thrust || (a && a.type === 'climb'), bit: BITCOL[S.up.bit], spin: a && (a.type === 'drill' || a.type === 'ram') ? now / 50 : 0, roll: a && a.type === 'move' ? a.t / a.dur * 3 : 0, smelting: !!S.smelt.job });
   ctx.restore();
 }
+// soft round puffs, one small sprite per colour, so dust and smoke have no hard edges
+const softSprites = new Map();
+function soft(col) {
+  let c = softSprites.get(col);
+  if (!c) {
+    c = mkCanvas(32, 32); const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    g.fillStyle = col; g.fillRect(0, 0, 32, 32);
+    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.45, 'rgba(0,0,0,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalCompositeOperation = 'destination-in'; g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+    if (softSprites.size > 80) softSprites.clear();
+    softSprites.set(col, c);
+  }
+  return c;
+}
+function drawParts(cx, cy, dots) { // dots: the old round specks (blasts, fireworks); otherwise the dust, smoke and chips
+  ctx.imageSmoothingQuality = 'low'; // soft puffs need no fancy scaling
+  for (const p of parts) {
+    const kd = p.kind;
+    if (kd === 'spark' || kd === 'ember' || (kd === 'dot') !== !!dots) continue;
+    if (dots) { ctx.globalAlpha = clamp(1 - p.age / p.life, 0, 1); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x * T - cx, p.y * T - cy, (p.sz * .55 + .35) * U, 0, 7); ctx.fill(); continue; }
+    const k = p.age / p.life, al = clamp(1 - k, 0, 1), x = p.x * T - cx, y = p.y * T - cy;
+    if (kd === 'dust' || kd === 'smoke') {
+      // puffs swell and thin out as they spread; a pale core sits inside a wider, fainter halo
+      const r = U * (kd === 'smoke' ? 1.5 + k * 6 : 1.6 + k * 5) * (p.sz === 2 ? 1.3 : 1) * (.8 + p.big * .4);
+      ctx.globalAlpha = al * (kd === 'smoke' ? .5 : .62) * Math.min(1, p.age * 9);
+      ctx.drawImage(soft(p.col), x - r, y - r, r * 2, r * 2);
+      if (kd === 'dust' && k < .3) { ctx.globalAlpha *= .6; ctx.drawImage(soft(p.col), x - r * .45 + U * p.big, y - r * .45, r * .9, r * .9); }
+    } else {
+      // a flake of rock: an uneven four-sided chip that tumbles as it flies; bigger ones are shaded, light on one face and dark on the other
+      const r = (.45 + p.big * 1.05) * U * (p.sz === 2 ? 1.25 : 1), c = Math.cos(p.rot) * r, s = Math.sin(p.rot) * r;
+      ctx.globalAlpha = al; ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.moveTo(x + c, y + s); ctx.lineTo(x - s * .7, y + c * .7); ctx.lineTo(x - c * 1.1, y - s * 1.1); ctx.lineTo(x + s * .8, y - c * .8); ctx.closePath(); ctx.fill();
+      if (r > U * .9) {
+        ctx.fillStyle = 'rgba(255,248,230,.3)'; ctx.beginPath(); ctx.moveTo(x + c, y + s); ctx.lineTo(x - s * .7, y + c * .7); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.moveTo(x - c * 1.1, y - s * 1.1); ctx.lineTo(x + s * .8, y - c * .8); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+  ctx.globalAlpha = 1; ctx.imageSmoothingQuality = 'high';
+}
+// sparks, embers and fire give off light: drawn over the darkness, added to what is under them
+function drawGlowParts(cx, cy) {
+  if (!parts.some(p => p.kind === 'spark' || p.kind === 'ember')) return;
+  ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.imageSmoothingQuality = 'low';
+  for (const p of parts) {
+    if (p.kind !== 'spark' && p.kind !== 'ember') continue;
+    const k = p.age / p.life, al = clamp(1 - k, 0, 1), x = p.x * T - cx, y = p.y * T - cy;
+    if (p.kind === 'spark') {
+      // a bright, short streak with a white-hot core, and a small glow round its head
+      const tx = x - p.vx * T * .028, ty = y - p.vy * T * .028;
+      ctx.globalAlpha = al * .55; ctx.strokeStyle = p.col; ctx.lineWidth = Math.max(1.5, U * .8 * p.sz);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.globalAlpha = al; ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = Math.max(1, U * .32 * p.sz);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - (x - tx) * .6, y - (y - ty) * .6); ctx.stroke();
+      const gr = U * (1.4 + p.sz * .5);
+      ctx.globalAlpha = al * .5; ctx.drawImage(soft('#ffa63a'), x - gr, y - gr, gr * 2, gr * 2);
+    } else if (p.kind === 'ember') {
+      const fl = .6 + .4 * Math.sin(p.age * 17 + p.rot), r = U * (.5 + p.big * .5);
+      ctx.globalAlpha = al * fl * .55; ctx.drawImage(soft('#ff7a2e'), x - r * 3.2, y - r * 3.2, r * 6.4, r * 6.4);
+      ctx.globalAlpha = al * fl; ctx.fillStyle = '#ffd27a'; ctx.beginPath(); ctx.arc(x, y, r * .55, 0, 7); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingQuality = 'high';
+}
+/* ---------- light ----------
+   Underground everything is dark except where light falls: a glow all round the ship, the headlamp's beam in the
+   direction you face (it swings round as you turn), blasts and sparks. The darkness is painted on its own half-size
+   canvas with the lit areas cut out of it. */
+const DARK = mkCanvas(1, 1), dctx = DARK.getContext('2d'), LMS = .5;
+const BEAM_DIR = { R: 0, D: Math.PI / 2, L: Math.PI, U: -Math.PI / 2 };
+// the shapes of light are drawn once into small sprites; each frame only stamps them onto the darkness
+const HOLE = (() => { // a round pool of light: full in the middle, fading out smoothly (a bit like real light, which thins out with distance)
+  const c = mkCanvas(64, 64), g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  [[0, 1], [.12, .93], [.28, .76], [.45, .52], [.62, .3], [.78, .13], [.9, .04], [1, 0]].forEach(([o, a]) => gr.addColorStop(o, `rgba(0,0,0,${a})`));
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c;
+})();
+// the round pool of light round the ship, exactly as wide and strong as before: clear to a fifth of the lamp's reach, still 65% lit at .64, nothing at the rim
+const POOL = (() => {
+  const c = mkCanvas(64, 64), g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  [[0, 1], [.2, 1], [.64, .65], [1, 0]].forEach(([o, a]) => gr.addColorStop(o, `rgba(0,0,0,${a})`));
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c;
+})();
+const BEAM_HALF = .5, BEAM_SPR = (() => { // the headlamp's cone pointing right from (0, 150): fades with distance and softly toward its edges
+  const c = mkCanvas(256, 300), g = c.getContext('2d'), oy = 150, len = 256;
+  const rg = g.createRadialGradient(0, oy, 0, 0, oy, len);
+  [[0, 1], [.2, .92], [.4, .72], [.6, .46], [.8, .2], [1, 0]].forEach(([o, a]) => rg.addColorStop(o, `rgba(0,0,0,${a})`));
+  g.fillStyle = rg; g.beginPath(); g.moveTo(0, oy); g.arc(0, oy, len, -BEAM_HALF, BEAM_HALF); g.closePath(); g.fill();
+  if (g.createConicGradient) {
+    const span = BEAM_HALF * 2 / (Math.PI * 2), cg = g.createConicGradient(-BEAM_HALF, 0, oy);
+    [[0, 0], [.2, .45], [.38, .96], [.5, 1], [.62, .96], [.8, .45], [1, 0]].forEach(([o, a]) => cg.addColorStop(o * span, `rgba(0,0,0,${a})`)); cg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalCompositeOperation = 'destination-in'; g.fillStyle = cg; g.fillRect(0, 0, 256, 300);
+  }
+  return c;
+})();
+const BEAM_WARM = (() => { // the same cone in the warm colour of the lamp, for the haze of light in the dusty air
+  const c = mkCanvas(256, 300), g = c.getContext('2d'); g.drawImage(BEAM_SPR, 0, 0);
+  g.globalCompositeOperation = 'source-in'; g.fillStyle = 'rgb(255,208,140)'; g.fillRect(0, 0, 256, 300); return c;
+})();
+// how dark it is at a depth (in metres): the surface is bright daylight, and it deepens smoothly (quickly at first, then easing off)
+// THE DARKNESS CURVE (the one place): how dark it is (0 to 1) at a depth d in metres (depthOf's measure: the ground is 2).
+// DARK_MODE = 'new' is the smooth, lighter ramp (about .6 dark at 50 m, nearly black by 100 m);
+// DARK_MODE = 'old' is how it was before the realism pass (nothing above 4 m, .92 dark at 50 m).
+const DARK_MODE = 'new';
+const darkAtDepth = d => DARK_MODE === 'old' ? clamp((d - 4) / 50, 0, .94) : .95 * (1 - Math.pow(1 - clamp((d - 2) / 110, 0, 1), 2));
+function darkness() {
+  let a = darkAtDepth(depthOf(G.fy));
+  return a;
+}
+function aimBeam(dt) {
+  const want = BEAM_DIR[G.face === 'U' || G.face === 'D' ? G.face : G.body];
+  const diff = Math.atan2(Math.sin(want - G.beamA), Math.cos(want - G.beamA));
+  G.beamA += diff * (snapCam ? 1 : 1 - Math.exp(-dt * 14));
+}
+function carve(d, x, y, r, a) {
+  if (!(r > 0) || !(a > 0)) return;
+  d.globalAlpha = Math.min(1, a); d.drawImage(HOLE, x - r, y - r, r * 2, r * 2); d.globalAlpha = 1;
+}
+function drawBeam(d, ox, oy, ang, len, spr = BEAM_SPR) {
+  const s = len / 256;
+  d.save(); d.translate(ox, oy); d.rotate(ang); d.drawImage(spr, 0, -150 * s, 256 * s, 300 * s); d.restore();
+}
 function drawDark(cx, cy) {
-  const a = Math.min(.94, Math.max(0, (depthOf(G.fy) - 4) / 50));
-  if (a <= 0) return;
+  const w = Math.max(1, Math.ceil(VW * LMS)), h = Math.max(1, Math.ceil(VH * LMS)), d = dctx;
+  // the darkness depends on how deep the rock is at each height on the screen, so the view fades from daylight at the ground to black below
+  const rows = 12, sg = d.createLinearGradient(0, 0, 0, h); let any = 0;
+  for (let i = 0; i <= rows; i++) {
+    const f = i / rows, ty = (cy + f * VH) / T, m = depthOf(ty);
+    let a = darkAtDepth(m);
+    const k = Math.min(1, m / 120);
+    sg.addColorStop(f, `rgba(${Math.round(lerp(16, 7, k))},${Math.round(lerp(11, 5, k))},${Math.round(lerp(8, 4, k))},${a.toFixed(3)})`);
+    if (a > any) any = a;
+  }
+  if (any < .01) return;
+  if (DARK.width !== w || DARK.height !== h) { DARK.width = w; DARK.height = h; }
+  d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'copy'; d.globalAlpha = 1;
+  d.fillStyle = sg; d.fillRect(0, 0, w, h);
+  d.setTransform(LMS, 0, 0, LMS, 0, 0); d.globalCompositeOperation = 'destination-out';
+  if (!G.breach) {
+    const px = (G.fx + .5) * T - cx, py = (G.fy + .5) * T - cy, r = lampR() * T;
+    const [lfx, lfy] = DIRS[G.face] || [0, 0], lk = Math.min(1, NOW_DT * 6);
+    G.lx = lerp(G.lx || 0, lfx, lk); G.ly = lerp(G.ly || 0, lfy, lk);
+    d.globalAlpha = 1; d.drawImage(POOL, px + G.lx * r * .28 - r, py + G.ly * r * .28 - r, r * 2, r * 2); // the old full-size pool
+    carve(d, px, py, r * .8, 1);
+    drawBeam(d, px + Math.cos(G.beamA) * T * .3, py + Math.sin(G.beamA) * T * .3, G.beamA, r * 1.45);
+  }
+  let nsp = 0; // sparks and flames light the rock round them
+  for (const p of parts) {
+    if (p.kind === 'spark' && nsp < 24) { nsp++; carve(d, p.x * T - cx, p.y * T - cy, T * .6, .34 * (1 - p.age / p.life)); }
+  }
+  for (const f of flashes) { const k = f.age / f.life; if (f.r > .5) carve(d, f.x * T - cx, f.y * T - cy, T * f.r * 2.4, .8 * (1 - k) * (1 - k)); } // a blast lights the rock round it
+  d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'source-over';
+  ctx.drawImage(DARK, 0, 0, VW, VH);
+}
+// the rock the lamp shines on: its texture is drawn over itself with 'overlay', which deepens the shadows in the cracks and brightens the
+// grains (what lit rock looks like), and flecks of mineral glitter in it. The shape of the light is drawn into a small canvas
+// round the ship; the rock texture is filled into that shape, and the result is stamped over the view.
+const LITA = mkCanvas(1, 1), lita = LITA.getContext('2d'), LITB = mkCanvas(1, 1), litb = LITB.getContext('2d');
+const SPARKLE = [.04, .08, .4, .45, .3, 1, .55]; // how much each layer's flecks glitter in the lamp light
+function drawLitRock(cx, cy, rockPat) {
+  const px = (G.fx + .5) * T - cx, py = (G.fy + .5) * T - cy, r = lampR() * T, ext = r * 1.45;
+  const x0 = Math.max(0, Math.floor(px - ext)), y0 = Math.max(0, Math.floor(py - ext)), x1 = Math.min(VW, Math.ceil(px + ext)), y1 = Math.min(VH, Math.ceil(py + ext)), w = x1 - x0, h = y1 - y0;
+  if (w < 8 || h < 8) return;
+  const dk = darkness(), sIdx = strataOf(S.x, Math.round(G.fy)), tw = NOW / 700;
+  const mask = c => {
+    if (c.canvas.width < w || c.canvas.height < h) { c.canvas.width = Math.max(c.canvas.width, w); c.canvas.height = Math.max(c.canvas.height, h); }
+    c.setTransform(1, 0, 0, 1, -x0, -y0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(x0, y0, w, h);
+    c.drawImage(HOLE, px - r * .8, py - r * .8, r * 1.6, r * 1.6);
+    c.drawImage(POOL, px + G.lx * r * .28 - r, py + G.ly * r * .28 - r, r * 2, r * 2);
+    drawBeam(c, px + Math.cos(G.beamA) * T * .3, py + Math.sin(G.beamA) * T * .3, G.beamA, r * 1.45);
+    c.globalCompositeOperation = 'source-atop';
+  };
+  mask(lita);
+  lita.fillStyle = rockPat(sIdx); lita.fillRect(x0, y0, w, h);
+  ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = Math.min(1, dk * .85);
+  ctx.drawImage(LITA, 0, 0, w, h, x0, y0, w, h);
+  const sp = SPARKLE[sIdx] * dk;
+  if (sp > .03 && !reduced) {
+    mask(litb);
+    for (let i = 0; i < 3; i++) {
+      const pat = litb.createPattern(TX.fleck[i], 'repeat'), off = G.fx * T * (.3 + i * .13), offy = G.fy * T * (.22 + i * .09);
+      pat.setTransform(new DOMMatrix([T / 40, 0, 0, T / 40, -cx + off + i * 53, -cy + offy + i * 31]));
+      litb.globalAlpha = Math.max(0, Math.sin(tw + i * 2.09)) * .9; litb.fillStyle = pat; litb.fillRect(x0, y0, w, h);
+    }
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, sp);
+    ctx.drawImage(LITB, 0, 0, w, h, x0, y0, w, h);
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
+// the haze of light in the dusty air along the beam, and a warm glow all round the ship
+function drawLampGlow(cx, cy, a) {
+  if (a <= .05 || G.breach) return;
   const px = (G.fx + .5) * T - cx, py = (G.fy + .5) * T - cy, r = lampR() * T;
-  // the headlamp throws its light ahead of the drill ship, turning with it
-  const [fx, fy] = DIRS[G.face] || [0, 0], k = Math.min(1, NOW_DT * 6);
-  G.lx = lerp(G.lx || 0, fx, k); G.ly = lerp(G.ly || 0, fy, k);
-  const g = ctx.createRadialGradient(px + G.lx * r * .28, py + G.ly * r * .28, r * .2, px, py, r);
-  g.addColorStop(0, 'rgba(9,6,4,0)'); g.addColorStop(.55, `rgba(9,6,4,${a * .35})`); g.addColorStop(1, `rgba(9,6,4,${a})`);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  ctx.globalCompositeOperation = 'lighter'; ctx.imageSmoothingQuality = 'low';
+  ctx.globalAlpha = .1 * a; drawBeam(ctx, px + Math.cos(G.beamA) * T * .3, py + Math.sin(G.beamA) * T * .3, G.beamA, r * 1.45, BEAM_WARM);
+  ctx.globalAlpha = .12 * a; ctx.drawImage(soft('#ffd9a0'), px - r * .7, py - r * .7, r * 1.4, r * 1.4);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingQuality = 'high';
+}
+// the lamp's light is a little warm, and its lens and a hot bit glow in the dark
+function drawLampTint(cx, cy, a) {
+  if (a <= .05 || G.breach) return;
+  const px = (G.fx + .5) * T - cx, py = (G.fy + .5) * T - cy, r = lampR() * T;
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .12 * a; ctx.drawImage(soft('#ffd696'), px - r, py - r, r * 2, r * 2);
+  ctx.globalAlpha = .16 * a; ctx.drawImage(soft('#ffe3b0'), px - T * 1.5, py - T * 1.5, T * 3, T * 3); // a soft glow close round the ship
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
+// ore catches the lamp light: a bright star of light flashes now and then on ore close to the ship, in the colour of the metal
+// (copper warm, iron silver, sulfur yellow, coal a small hard white glint); it comes more often and bigger in the beam
+const GLINT = ['#ffffff', '#ffd2a0', '#e6eeff', '#fff7a0'], GLINT_SZ = [.9, 1.7, 1.5, 1.3];
+function drawOreGlints(cx, cy, a) {
+  if (a < .2 || G.breach || reduced) return;
+  const r = lampR() * 1.1, x0 = Math.max(0, Math.floor(G.fx - r)), x1 = Math.min(COLS - 1, Math.ceil(G.fx + r)), y0 = Math.max(SURF, Math.floor(G.fy - r)), y1 = Math.min(ROWS - 1, Math.ceil(G.fy + r));
+  ctx.globalCompositeOperation = 'lighter'; ctx.imageSmoothingQuality = 'low';
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const t = S.tiles[y * COLS + x];
+    if (t < ORE0) continue;
+    const k = t - ORE0, dx = x - G.fx, dy = y - G.fy, d = Math.hypot(dx, dy) / r;
+    if (d > 1) continue;
+    const cone = Math.max(0, Math.cos(Math.atan2(dy, dx) - G.beamA));
+    for (let j = 0; j < (cone > .3 ? 2 : 1); j++) {
+      const h = hash(x + j * 31, y * 3 + 7), ph = (NOW / (1500 - cone * 500) + (h % 1000) / 1000) % 1, win = .2 + cone * .12;
+      if (ph > win) continue;
+      const al = Math.sin(ph / win * Math.PI) * (1 - d * .8) * (.55 + cone * .45), gx = x * T - cx + T * (.2 + ((h >>> 10) % 60) / 100), gy = y * T - cy + T * (.2 + ((h >>> 16) % 60) / 100);
+      const s = U * GLINT_SZ[k] * (1 + cone * .5) * (.7 + .3 * Math.sin(ph / win * Math.PI));
+      ctx.globalAlpha = al * .5; ctx.drawImage(soft(GLINT[k] === '#ffffff' ? '#e8e0d0' : GLINT[k]), gx - s * 1.6, gy - s * 1.6, s * 3.2, s * 3.2);
+      ctx.globalAlpha = al; ctx.fillStyle = '#fffaf0';
+      ctx.beginPath(); ctx.moveTo(gx, gy - s * 1.4); ctx.lineTo(gx + s * .16, gy); ctx.lineTo(gx, gy + s * 1.4); ctx.lineTo(gx - s * .16, gy); ctx.closePath();
+      ctx.moveTo(gx - s * 1.4, gy); ctx.lineTo(gx, gy - s * .16); ctx.lineTo(gx + s * 1.4, gy); ctx.lineTo(gx, gy + s * .16); ctx.closePath();
+      ctx.moveTo(gx - s * .5, gy - s * .5); ctx.lineTo(gx + s * .06, gy); ctx.lineTo(gx + s * .5, gy + s * .5); ctx.lineTo(gx - s * .06, gy); ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingQuality = 'high';
 }
 let NOW_DT = 0;
 function render(now, dt) {
   NOW_DT = dt;
+  pumpBuild(3);
   updateCam(dt);
   NOW = now;
+  aimBeam(dt);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const sh = reduced ? 0 : G.shake * T * .18;
   const cx = Math.round(cam.x + (Math.random() - .5) * sh), cy = Math.round(cam.y + (Math.random() - .5) * sh);
@@ -3675,19 +4152,21 @@ function render(now, dt) {
   const a = G.act;
   if (a && a.type === 'drill') ctx.drawImage(TX.crack[Math.min(2, a.t / a.dur * 3 | 0)], a.tx * T - cx, a.ty * T - cy, T, T);
   drawBots(cx, cy);
-  for (const p of parts) {
-    ctx.globalAlpha = clamp(1 - p.age / p.life, 0, 1); ctx.fillStyle = p.col;
-    ctx.beginPath(); ctx.arc(p.x * T - cx, p.y * T - cy, (p.sz * .55 + .35) * U, 0, 7); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
+  drawParts(cx, cy, true);
   drawRig(cx, cy, now);
   Coop.each(dt, (p, x, y) => Coop.drawShip(ctx, p, x * T - cx, y * T - cy, T));
+  drawParts(cx, cy, false);
   drawDrops(cx, cy);
   drawSmoke(cx, cy);
+  const dk = darkness();
+  drawLampTint(cx, cy, dk);
   drawDark(cx, cy);
+  drawLampGlow(cx, cy, dk);
   drawLights(cx, cy, gy);
   drawFlashes(cx, cy);
   drawTunnelRim(cx, cy, gy);
+  drawGlowParts(cx, cy);
+  drawOreGlints(cx, cy, dk);
   if (floats.length) {
     ctx.font = `600 ${Math.round(T * .36)}px "Barlow Condensed", sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = Math.max(2, U); ctx.strokeStyle = 'rgba(0,0,0,.85)';
