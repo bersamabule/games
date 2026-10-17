@@ -28,7 +28,7 @@
   #gl.on { opacity: 1; }
   .hidden { display: none !important; }
 
-  /* ---------- Menu: only Play and Settings ---------- */
+  /* ---------- Menu: Play, Settings and Battle ---------- */
   #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
           padding-top: 4vh; pointer-events: none; }
   .title { margin: 0; font-size: min(15vh, 13vw); font-weight: 700; letter-spacing: 0.02em;
@@ -46,6 +46,7 @@
   .big:active { transform: scale(1.05) translateY(0.1em); }
   #bPlay { background: var(--play); --d: var(--play-dark); }
   #bSet  { background: var(--set);  --d: var(--set-dark); }
+  #bBattle { background: #ff5c5c; --d: #c93a3a; }
   /* not a button: it only shows once unlimited space is unlocked */
   #spaceBadge { margin-top: 3vh; font-size: min(3.6vh, 4.6vw); font-weight: 600; color: #fff;
                 background: rgba(20, 16, 60, 0.6); border-radius: 999px; padding: 0.35em 0.9em;
@@ -65,10 +66,24 @@
   .opt { font: inherit; font-size: min(3.2vh, 4.2vw); font-weight: 600; border: 3px solid #d7d0e6;
          background: #fff; color: var(--ink); border-radius: 14px; padding: 0.3em 0.7em; cursor: pointer; }
   .opt.on { background: var(--pick); border-color: #e0a800; }
-  #bBack { font: inherit; font-size: min(4vh, 5vw); font-weight: 700; width: 100%; cursor: pointer;
+  #bBack, #bPickBack { font: inherit; font-size: min(4vh, 5vw); font-weight: 700; width: 100%; cursor: pointer;
            background: #ff8a3d; color: #fff; border: 4px solid transparent; border-radius: 18px;
            padding: 0.3em; box-shadow: 0 5px 0 #d1621b; }
-  #bBack.sel { border-color: var(--pick); }
+  #bBack.sel, #bPickBack.sel { border-color: var(--pick); }
+
+  /* ---------- Battle: pick who to battle, and the buttons after a battle ---------- */
+  #pick { position: fixed; inset: 0; display: flex; align-items: center; padding-left: 4vw; }
+  .foeRow { display: flex; align-items: center; gap: 1.2vw; width: 100%; font: inherit; color: var(--ink); background: #fff;
+            cursor: pointer; text-align: left; border-color: #eee6f5; }
+  .foeRow .fe { font-size: min(7vh, 9vw); line-height: 1.1; }
+  .foeRow .fn { flex: 1; font-size: min(4vh, 5.2vw); font-weight: 700; display: flex; flex-direction: column; line-height: 1.15; }
+  .foeRow .fn small { font-size: 0.62em; font-weight: 600; color: #6a5f80; }
+  .foeRow .ft { font-size: min(5vh, 6.5vw); min-width: 1.3em; text-align: center; }
+  #bres { position: fixed; left: 0; right: 0; bottom: 5vh; display: flex; justify-content: center; flex-wrap: wrap; gap: 2vw; padding: 0 3vw; }
+  #bres .big { font-size: min(5vh, 5.6vw); }
+  #bAgain { background: var(--play); --d: var(--play-dark); }
+  #bPickNew { background: #ff5c5c; --d: #c93a3a; }
+  #bMenu2 { background: var(--set); --d: var(--set-dark); }
 
   /* ---------- Playing ---------- */
   #bHome { position: fixed; left: 14px; top: 14px; font-size: 34px; width: 64px; height: 64px;
@@ -83,13 +98,14 @@
     #menu { padding-top: 7vh; }
     .btns { flex-direction: column; gap: 2.2vh; margin-top: 3vh; align-items: stretch; }
     .big { font-size: min(5vh, 8.5vw); }
-    #settings { align-items: flex-start; padding: 2vh 3vw 0; }
+    #settings, #pick { align-items: flex-start; padding: 2vh 3vw 0; }
     .panel { width: 100%; max-height: 60vh; padding: 2vh 4vw; }
     .panel h2 { font-size: min(4.5vh, 8vw); margin-bottom: 1.2vh; }
     .lab { font-size: min(2.6vh, 5vw); }
     .opt { font-size: min(2.5vh, 4.6vw); }
     .opts { gap: 2vw; }
-    #bBack { font-size: min(3.2vh, 6vw); }
+    #bBack, #bPickBack { font-size: min(3.2vh, 6vw); }
+    #bres { gap: 1.6vh 3vw; }
   }
   /* Phones held sideways: everything a bit bigger for fingers */
   @media (max-height: 500px) and (min-aspect-ratio: 1/1) {
@@ -98,7 +114,9 @@
     .row { padding: 0.8vh 1vw; margin-bottom: 1vh; }
     .lab { font-size: 4.4vh; margin-bottom: 0.4vh; }
     .opt { font-size: 4.3vh; padding: 0.25em 0.6em; }
-    #bBack { font-size: 6vh; }
+    #bBack, #bPickBack { font-size: 6vh; }
+    .foeRow .fe { font-size: 9vh; }
+    .foeRow .fn { font-size: 5vh; }
     #bHome { width: 52px; height: 52px; font-size: 28px; left: 10px; top: 10px; }
   }
 </style>
@@ -112,6 +130,7 @@
   <div class="btns">
     <button class="big" id="bPlay">▶ Play</button>
     <button class="big" id="bSet">⚙️ Settings</button>
+    <button class="big" id="bBattle">🥊 Battle</button>
   </div>
   <div id="spaceBadge" class="hidden">🌌 Unlimited space unlocked!<div id="spaceStats"></div></div>
 </div>
@@ -147,6 +166,17 @@
   </div>
 </div>
 
+<div id="pick" class="hidden">
+  <div class="panel">
+    <h2 id="pickTitle"></h2>
+    <button class="row foeRow" data-foe="squirrel"></button>
+    <button class="row foeRow" data-foe="bear"></button>
+    <button class="row foeRow" data-foe="hedgehog"></button>
+    <button id="bPickBack"></button>
+  </div>
+</div>
+<div id="bres" class="hidden"><button class="big" id="bAgain"></button><button class="big" id="bPickNew"></button><button class="big" id="bMenu2"></button></div>
+
 <button id="bHome" class="hidden" title="Back to the menu">🏠</button>
 
 <!-- three.js r186 (MIT licence, lib/three-LICENSE.txt): draws the 3D world. It is in the game folder, so no internet is needed. -->
@@ -170,6 +200,7 @@ try { Object.assign(prog, JSON.parse(localStorage.getItem(SAVE_PROGRESS) || "{}"
 if (!Array.isArray(prog.planets)) prog.planets = [];
 if (!Array.isArray(prog.aliens)) prog.aliens = [];
 if (!Array.isArray(prog.gems)) prog.gems = [];
+if (!Array.isArray(prog.villages)) prog.villages = [];
 prog.high = Number(prog.high) || 0; prog.far = Number(prog.far) || 0;
 function saveProgress() { try { localStorage.setItem(SAVE_PROGRESS, JSON.stringify(prog)); } catch (e) {} }
 
@@ -229,7 +260,7 @@ let things = [], shootT = 1, greeted = new Map(), lastFound = "";
 let rec = { high0: 0, far0: 0, high: false, far: false };   // the space records when this flight began
 let statPulse = 0, saveT = 2;                                 // statPulse: the numbers glow when they go up
 // standing on a planet (land holds the planet, which way is up there, how high you jumped, how fast you walk)
-let land = null, noLandT = 0, landHint = 0, lastPlanet = null;
+let land = null, noLandT = 0, landHint = 0, lastPlanet = null, holdT = 0, lastGemT = -99;
 const fx3d = [];                  // little 3D effects to start (a puff of dust, a sparkle burst)
 
 function resetJump() {
@@ -238,7 +269,7 @@ function resetJump() {
   bestMark = best; shownNewBest = false;
   flying = false; thrust = 0; tilt = 0; flyFade = 0; flyHint = 0;
   held.clear(); things = []; lastFound = "";
-  land = null; noLandT = 0; landHint = 0; lastPlanet = null; fx3d.length = 0;
+  land = null; noLandT = 0; landHint = 0; lastPlanet = null; fx3d.length = 0; holdT = 0;
   jetStop();
 }
 
@@ -406,6 +437,7 @@ function resumeWhere() {
     hintOn = false; beginFlight(6);
     const o = a.planet ? findPlanet(a.planet) : null;           // standing on a planet: back on it
     if (o) { landOn(o, new THREE.Vector3(J.x, J.y + MAT_Y, J.z), true); flyHint = 0; }   // (J is where the feet were)
+    else keepOutOfPlanets();                                     // (an old save can point inside a planet that is huge now)
     showBanner(BACK_TEXT);
   } else {
     J.p = clamp(Math.round(Number(a.p) || (a.fly ? BOUNCE.maxPower - 1 : 0)), 0, BOUNCE.maxPower);
@@ -430,11 +462,13 @@ function updateFly(dt) {
   let ax = X.x * rx + Z.x * rz + Y.x * sy, ay = X.y * rx + Z.y * rz + Y.y * sy, az = X.z * rx + Z.z * rz + Y.z * sy;
   const n = Math.hypot(ax, ay, az);
   if (n > 1) { ax /= n; ay /= n; az /= n; }
-  J.vx += ax * FLY.push * dt; J.vy += ay * FLY.push * dt; J.vz += az * FLY.push * dt;
+  holdT = n > 0.3 ? holdT + dt : Math.max(0, holdT - dt * 3);
+  const boost = 1 + Math.min(1.3, Math.max(0, holdT - 1.5) / 2.5);   // keep going the same way: up to 2.3 times faster
+  J.vx += ax * FLY.push * boost * dt; J.vy += ay * FLY.push * boost * dt; J.vz += az * FLY.push * boost * dt;
   const slow = Math.exp(-FLY.drag * dt * (n > 0 ? 0.25 : 1));
   J.vx *= slow; J.vy *= slow; J.vz *= slow;
   const sp = Math.hypot(J.vx, J.vy, J.vz);
-  if (sp > FLY.top) { const k = FLY.top / sp; J.vx *= k; J.vy *= k; J.vz *= k; }
+  if (sp > FLY.top * boost) { const k = FLY.top * boost / sp; J.vx *= k; J.vy *= k; J.vz *= k; }
   J.x += J.vx * dt; J.y += J.vy * dt; J.z += J.vz * dt;
   thrust = lerp(thrust, n > 0 ? Math.min(1, 0.35 + n) : 0.2, Math.min(1, dt * 8));
   tilt = lerp(tilt, clamp(Math.hypot(J.vx, J.vz) / FLY.top, 0, 1) * 0.45, Math.min(1, dt * 5));   // lean forwards when you fly along
@@ -458,17 +492,24 @@ function updateFly(dt) {
 }
 
 // ---------- Landing on planets: walk round them, floaty jumps, a treasure gem on each ----------
-const PLANET_WALK = 3, PLANET_G = 5.8, PLANET_JUMP = 7.2;      // walking speed (m/s), low gravity, jump speed: about 4.5 m up, 2.5 s in the air
-const _la = new THREE.Vector3(), _lb = new THREE.Vector3(), _lc = new THREE.Vector3();
+const PLANET_WALK = 3.4, PLANET_G = 5.8, PLANET_JUMP = 7.2;    // walking speed (m/s), low gravity, jump speed: about 4.5 m up, 2.5 s in the air
+const _la = new THREE.Vector3(), _lb = new THREE.Vector3(), _lc = new THREE.Vector3(), _lside = new THREE.Vector3();
 function planetCentre(o) { return new THREE.Vector3(o.x, o.y, o.z); }
-// where a planet's treasure gem is: its middle, just above the ground (out is a Vector3)
-function gemSpot(o, out) { return out.set(o.x + o.gx * (o.R + 0.45), o.y + o.gy * (o.R + 0.45), o.z + o.gz * (o.R + 0.45)); }
-// find a planet again from its key ("p" + i + "," + j + "," + k)
+// find a planet again from its key ("Pstart", or "P" + I + "," + J + "," + K); old small-planet keys ("p...") are gone
 function findPlanet(key) {
-  const m = /^p(-?\d+),(-?\d+),(-?\d+)$/.exec(key || "");
-  if (!m) return null;
-  const out = []; cellThings(+m[1], +m[2], +m[3], out);
-  return out.find(o => o.key === key) || null;
+  if (key === STARTER.key) return STARTER;
+  const m = /^P(-?\d+),(-?\d+),(-?\d+)$/.exec(key || "");
+  return m ? bigCell(+m[1], +m[2], +m[3]) : null;
+}
+// not standing on a planet: make sure you are not inside one either (move out above its ground)
+function keepOutOfPlanets() {
+  const p = insideBig(J.x, J.y + MAT_Y + 1, J.z, 6);
+  if (!p) return;
+  const d = new THREE.Vector3(J.x - p.x, J.y + MAT_Y + 1 - p.y, J.z - p.z);
+  if (d.lengthSq() < 1e-6) d.set(0, 1, 0);
+  d.normalize();
+  if (p.y + d.y * (p.R + 25) - MAT_Y - 1 < FLY.home + 10) d.set(0, 1, 0);   // never so low that you would go home
+  J.x = p.x + d.x * (p.R + 25); J.y = p.y + d.y * (p.R + 25) - MAT_Y - 1; J.z = p.z + d.z * (p.R + 25);
 }
 // land on planet o where the bouncer touched it (quiet: no banner or thump, for "back where you stopped")
 function landOn(o, touch, quiet) {
@@ -480,7 +521,7 @@ function landOn(o, touch, quiet) {
   if (face.lengthSq() < 1e-4) { face.set(1, 0, 0).addScaledVector(n, -n.x); if (face.lengthSq() < 1e-4) face.set(0, 0, 1).addScaledVector(n, -n.z); }
   face.normalize();
   const h = quiet ? 0 : clamp(touch.distanceTo(C) - o.R - 1, 0, 1.2);
-  land = { o, key: o.key, C, R: o.R, n, face, h, vr: quiet ? 0 : -1.5, vt: new THREE.Vector3(), air: 0, settled: !!quiet, walkPh: 0 };
+  land = { o, key: o.key, C, R: o.R, n, face, h, vr: quiet ? 0 : -1.5, vt: new THREE.Vector3(), air: 0, settled: !!quiet, walkPh: 0, stuff: planetStuff(o) };
   J.vx = J.vy = J.vz = 0; thrust = 0; tilt = 0; landHint = 6; flyHint = 0;
   setFeet();
   if (quiet) return;
@@ -548,20 +589,65 @@ function updatePlanet(dt) {
     fx3d.push({ type: "puff", n: n.clone(), C: L.C, R: L.R, t: L.o.t });
   }
   setFeet();
-  // the treasure gem
-  const o = L.o;
-  if (!prog.gems.includes(o.key)) {
-    const g = gemSpot(o, _la);
-    _lb.copy(L.C).addScaledVector(n, L.R + L.h + 0.9);
-    if (_lb.distanceTo(g) < 1.6) {
-      prog.gems.push(o.key); saveProgress(); statPulse = 1.5;
-      fx3d.push({ type: "burst", at: g.clone(), t: o.t });
-      sfx.chime();
-      showBanner("💎 You found a treasure!");
-      const c = prog.gems.length;
-      thenBanner("💎 " + c + (c === 1 ? " treasure!" : " treasures!"));
+  const S = L.stuff;
+  // big things (trees, houses, spires) are in the way: slide round them
+  for (const b of S.blockers) {
+    if (L.h > b.h) continue;
+    const c = n.dot(b.d);
+    if (c < 0.9) continue;
+    const need = (b.r + 0.55) / L.R;
+    if (c < Math.cos(need)) continue;
+    const t = _lb.copy(n).addScaledVector(b.d, -c);
+    if (t.lengthSq() < 1e-12) t.copy(L.face).addScaledVector(b.d, -L.face.dot(b.d));
+    t.normalize();
+    n.copy(b.d).multiplyScalar(Math.cos(need)).addScaledVector(t, Math.sin(need)).normalize();
+    const out = _lc.copy(t).addScaledVector(n, -t.dot(n)).normalize(), into = L.vt.dot(out);
+    if (into < 0) {
+      L.vt.addScaledVector(out, -into);
+      const side = _lside.crossVectors(n, out), sv = L.vt.dot(side);
+      if (Math.abs(sv) < -into * 0.6) L.vt.addScaledVector(side, (sv < 0 ? 1 : -1) * into * 0.6);   // walking straight at it: slide round one side
+    }
+    L.vt.addScaledVector(n, -L.vt.dot(n));
+  }
+  setFeet();
+  // alien villages: a banner the first time, and the villagers say hello when you come close
+  for (const v of S.villages) {
+    const c = n.dot(v.d);
+    if (c < 0.94) continue;
+    if (!prog.villages.includes(v.key) && c > Math.cos(18 / L.R)) { prog.villages.push(v.key); saveProgress(); soonBanner("🏘 You found an alien village!"); sfx.yay(); }
+    for (const fo of v.folk) {
+      if (L.h > 2.5 || n.dot(fo.d) < Math.cos(4.8 / L.R)) continue;
+      const g = greeted.get(fo.key);
+      if (g !== undefined && time - g < 20) continue;
+      greeted.set(fo.key, time);
+      _lb.copy(L.C).addScaledVector(fo.d, L.R + 2.3);
+      const u = toScreen(_lb.x, _lb.y, _lb.z, { x: 0, y: 0, b: false });
+      if (u.b) { u.x = flyerX(); u.y = flyerY() - 60; }
+      popAt(GREETINGS[Math.floor(Math.random() * GREETINGS.length)], "#b8ffb0", u.x, u.y - 30);
+      sfx.bleep();
+      if (!prog.aliens.includes(fo.key)) { prog.aliens.push(fo.key); saveProgress(); statPulse = 1.5; }   // a new alien friend
     }
   }
+  // treasure gems
+  for (const g of S.gems) {
+    if (n.dot(g.d) < 0.99 || prog.gems.includes(g.key)) continue;
+    _la.copy(L.C).addScaledVector(g.d, L.R + 0.45); _lb.copy(L.C).addScaledVector(n, L.R + L.h + 0.9);
+    if (_lb.distanceTo(_la) < 1.6) gotGem(g, L.o, _la);
+  }
+}
+// a gem! (two quickly one after the other only change the number, so the banners don't pile up)
+function gotGem(g, o, at) {
+  prog.gems.push(g.key); saveProgress(); statPulse = 1.5;
+  fx3d.push({ type: "burst", at: at.clone(), t: o.t });
+  sfx.chime();
+  const c = prog.gems.length;
+  const cnt = "💎 " + c + (c === 1 ? " treasure!" : " treasures!");
+  bannerQ = bannerQ.filter(t => t.indexOf("💎") !== 0);
+  if (time - lastGemT > 4 || !(banner && banner.text.indexOf("💎") === 0)) {
+    showBanner("💎 You found a treasure!");
+    thenBanner(cnt);
+  } else banner = { text: cnt, life: 2.0 };
+  lastGemT = time;
 }
 // flew down out of space: the jetpack switches off and you fall back to the trampoline.
 // One good bounce when you land takes you straight back up to space.
@@ -579,7 +665,7 @@ function updateSpace(dt) {
   jetSound(thrust);
   for (const o of things) {
     const d = Math.hypot(o.x - J.x, o.y - (J.y + 1.2), o.z - J.z);
-    if (o.kind === "planet" && d < o.R + 3.5 && lastFound !== o.key) {
+    if (o.kind === "planet" && d < o.R + 30 && lastFound !== o.key) {
       lastFound = o.key;
       const P = PLANETS[o.t];
       showBanner("You found " + P.name + "! " + P.emoji);
@@ -622,37 +708,149 @@ const GREETINGS = [
   "Welcome to space!",
 ];
 // The same box of space always holds the same things, so you can fly back to them.
-// Space is cut into boxes CELL metres wide (i: sideways, j: up, k: forwards and backwards).
+// Saucers live in small boxes CELL metres wide (i: sideways, j: up, k: forwards and backwards).
+const ufoOk = new Map();
 function cellThings(i, j, k, out) {
   if (j < 7 || (j <= 9 && (i === -1 || i === 0) && (k === -1 || k === 0))) return;   // nothing low down, or right above the trampoline
   const r = n => rand(i * 73.13 + j * 157.71 + k * 241.37 + n * 11.37);
-  if (r(1) < 0.22) {
-    const t = Math.floor(r(2) * PLANETS.length), R = (3 + r(3) * 3) * (PLANETS[t].big || 1);
-    const x = (i + 0.22 + r(4) * 0.56) * CELL, y = (j + 0.22 + r(5) * 0.56) * CELL, z = (k + 0.22 + r(11) * 0.56) * CELL;
-    const hd = Math.hypot(x, z) || 1;
-    let gx = x / hd + (r(14) - 0.5) * 0.9, gy = 0.35 + r(13) * 0.5, gz = z / hd + (r(15) - 0.5) * 0.9;
-    if (PLANETS[t].rings) {                                          // keep it away from under Saturn's rings
-      const d = gx * RING_N[0] + gy * RING_N[1] + gz * RING_N[2], sg = d < 0 ? -1 : 1, gl = Math.hypot(gx, gy, gz);
-      if (Math.abs(d) / gl < 0.6) { gx += RING_N[0] * sg * 1.2 * gl; gy += RING_N[1] * sg * 1.2 * gl; gz += RING_N[2] * sg * 1.2 * gl; }
-    }
-    const gl = Math.hypot(gx, gy, gz);
-    out.push({ kind: "planet", key: "p" + i + "," + j + "," + k, t, R, x, y, z, gx: gx / gl, gy: gy / gl, gz: gz / gl });
-  }
   if (r(6) < 0.17) {
-    const ph = r(7) * 6.28, bx = (i + 0.15 + r(8) * 0.7) * CELL, by = (j + 0.15 + r(9) * 0.7) * CELL, bz = (k + 0.15 + r(12) * 0.7) * CELL;
-    out.push({ kind: "ufo", key: "u" + i + "," + j + "," + k, c: Math.floor(r(10) * 4), ph,
-               x: bx + Math.sin(time * 0.45 + ph) * 3, y: by + Math.sin(time * 0.9 + ph) * 0.6, z: bz + Math.cos(time * 0.45 + ph) * 3 });
+    const key = "u" + i + "," + j + "," + k, ph = r(7) * 6.28, bx = (i + 0.15 + r(8) * 0.7) * CELL, by = (j + 0.15 + r(9) * 0.7) * CELL, bz = (k + 0.15 + r(12) * 0.7) * CELL;
+    let ok = ufoOk.get(key);
+    if (ok === undefined) { ok = !insideBig(bx, by, bz, 25, true); ufoOk.set(key, ok); }   // never inside a planet or its rings
+    if (ok) out.push({ kind: "ufo", key, c: Math.floor(r(10) * 4), ph,
+                       x: bx + Math.sin(time * 0.45 + ph) * 3, y: by + Math.sin(time * 0.9 + ph) * 0.6, z: bz + Math.cos(time * 0.45 + ph) * 3 });
   }
 }
-const RING_N = [0, 0.913, 0.408];                    // which way Saturn's rings face (they are tilted)
+// ---------- Huge planets, like little worlds: each lives in its own big box of space, far from the others ----------
+const HUGE_R = { moon: 70, mars: 82, saturn: 96, ice: 86, candy: 88, jungle: 95, jupiter: 115 };   // radius in metres
+const BIG = 700, BIG_M = 205;                       // the big boxes, and how far a planet's middle stays from a box's edge
+const STARTER = { kind: "planet", key: "Pstart", t: 5, R: HUGE_R.jungle, x: -130, y: 460, z: -235 };   // the first planet: a short flight from where you come into space
+const KEEP_CLEAR = [[0, 300, 0, 70], [-3, 338, -48, 30], [-42, 373, -40, 40], [4, 286, -24, 25]];      // the way in, and the things you pass on the way up
+const bigCache = new Map();
+function bigCell(I, Jc, K) {
+  const key = I + "," + Jc + "," + K;
+  if (bigCache.has(key)) return bigCache.get(key);
+  let p = null;
+  const r = n => rand(I * 91.7 + Jc * 213.3 + K * 337.1 + n * 17.9 + 0.5);
+  if (r(1) < 0.45) {
+    const t = Math.floor(r(2) * PLANETS.length), R = HUGE_R[PLANETS[t].kind] * (0.95 + r(3) * 0.1), ring = PLANETS[t].rings ? 2.05 : 1;
+    const x = I * BIG + BIG_M + r(4) * (BIG - 2 * BIG_M), y = Jc * BIG + BIG_M + r(5) * (BIG - 2 * BIG_M), z = K * BIG + BIG_M + r(6) * (BIG - 2 * BIG_M);
+    const ok = y - R * ring > 350 && (Math.hypot(x, z) > R * ring + 100 || y - R * ring > 1500)
+      && Math.hypot(x - STARTER.x, y - STARTER.y, z - STARTER.z) > R * ring + STARTER.R + 200
+      && KEEP_CLEAR.every(c => Math.hypot(x - c[0], y - c[1], z - c[2]) > R * ring + c[3] + 60);
+    if (ok) p = { kind: "planet", key: "P" + key, t, R, x, y, z };
+  }
+  bigCache.set(key, p);
+  return p;
+}
+// the planets whose ground is within dist metres of a point
+function bigPlanetsNear(x, y, z, dist, out) {
+  const c = Math.ceil(dist / BIG) + 1, ci = Math.floor(x / BIG), cj = Math.floor(y / BIG), ck = Math.floor(z / BIG);
+  for (let I = ci - c; I <= ci + c; I++) for (let Jc = cj - c; Jc <= cj + c; Jc++) for (let K = ck - c; K <= ck + c; K++) {
+    const p = bigCell(I, Jc, K);
+    if (p && Math.hypot(p.x - x, p.y - y, p.z - z) - p.R < dist) out.push(p);
+  }
+  if (Math.hypot(STARTER.x - x, STARTER.y - y, STARTER.z - z) - STARTER.R < dist) out.push(STARTER);
+  return out;
+}
+// the planet whose ball (plus pad metres, and its rings if you ask) holds this point, or null
+function insideBig(x, y, z, pad = 0, rings = false) {
+  for (const p of bigPlanetsNear(x, y, z, 320, [])) {
+    if (Math.hypot(p.x - x, p.y - y, p.z - z) < (rings && PLANETS[p.t].rings ? p.R * 2.05 : p.R) + pad) return p;
+  }
+  return null;
+}
 const WELCOME = { x: -5.5, y: 303.5, z: -3 };     // a friendly alien waiting right where you come into space
 function spaceThingsNear() {
   const out = [], R = SPACE_R, ci = Math.floor(J.x / CELL), cj = Math.floor(J.y / CELL), ck = Math.floor(J.z / CELL);
   for (let j = cj - R; j <= cj + R; j++) for (let i = ci - R; i <= ci + R; i++) for (let k = ck - R; k <= ck + R; k++)
     if ((i - ci) ** 2 + (j - cj) ** 2 + (k - ck) ** 2 <= (R + 0.5) ** 2) cellThings(i, j, k, out);
+  bigPlanetsNear(J.x, J.y + MAT_Y, J.z, PHONE ? 1300 : 2000, out);
   out.push({ kind: "ufo", key: "welcome", c: 0, ph: 0,
              x: WELCOME.x + Math.sin(time * 0.45) * 1.2, y: WELCOME.y + Math.sin(time * 0.9) * 0.5, z: WELCOME.z + Math.cos(time * 0.45) * 0.8 });
   return out;
+}
+
+// ---------- What is on each huge planet: things to see, things in the way, alien villages and treasure gems ----------
+// The same planet always gets the same stuff (seeded from its key). Directions are from the planet's middle; sizes are metres.
+const STUFF = {
+  moon:    { big: [["boulder", 1.7, 3]],                       small: [["rock", 3], ["crater", 2]] },
+  mars:    { big: [["boulder", 2.0, 3.5], ["tower", 1.5, 5]],  small: [["rock", 3], ["dust", 2]] },
+  saturn:  { big: [["pillar", 1.4, 8]],                        small: [["crystals", 3], ["floater", 1]] },
+  ice:     { big: [["snowman", 1.0, 2.8], ["spike", 1.3, 6]],  small: [["icecrystal", 3], ["snowballs", 1]] },
+  candy:   { big: [["lollipop", 0.5, 5]],                      small: [["gumdrop", 3], ["cane", 2], ["sprinkles", 4]] },
+  jungle:  { big: [["palm", 0.7, 9], ["tree", 0.9, 9]],        small: [["bush", 3], ["flowers", 3]] },
+  jupiter: { big: [["spire", 1.6, 10]],                        small: [["swirl", 2], ["shard", 3]] },
+};
+const stuffCache = new Map();
+function hashKey(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rndDir(r, out = new THREE.Vector3()) { const u = r() * 2 - 1, a = r() * 6.2832, q = Math.sqrt(1 - u * u); return out.set(Math.cos(a) * q, u, Math.sin(a) * q); }
+// walk "metres" along the ground of a ball of radius R from direction d, heading the way "angle" points
+function walkFrom(d, angle, metres, R) {
+  const t1 = (Math.abs(d.y) < 0.95 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).cross(d).normalize(), t2 = d.clone().cross(t1);
+  const t = t1.multiplyScalar(Math.cos(angle)).addScaledVector(t2, Math.sin(angle)), a = metres / R;
+  return d.clone().multiplyScalar(Math.cos(a)).addScaledVector(t, Math.sin(a)).normalize();
+}
+function arcCos(m, R) { return Math.cos(m / R); }                // directions closer than m metres have a bigger dot than this
+function planetStuff(o) {
+  let S = stuffCache.get(o.key);
+  if (S) return S;
+  const r = rng(hashKey(o.key)), R = o.R, K = STUFF[PLANETS[o.t].kind];
+  S = { blockers: [], big: [], small: [], villages: [], gems: [] };
+  const clear = (d, rad, gap) => {                                 // nothing in the way within rad + gap metres (quick: straight-line distance)
+    for (const b of S.blockers) { const q = (b.r + rad + gap) / R, x = d.x - b.d.x, y = d.y - b.d.y, z = d.z - b.d.z; if (x * x + y * y + z * z < q * q) return false; }
+    return true;
+  };
+  // 1 to 3 alien villages: little round houses in a ring, a friendly alien at each door, a lamp in the middle
+  const nV = 1 + Math.floor(r() * 3);
+  for (let v = 0; v < nV; v++) {
+    let c = null;
+    for (let tries = 0; tries < 40 && !c; tries++) { const d = rndDir(r); if (S.villages.every(w => d.dot(w.d) < arcCos(70, R))) c = d; }
+    if (!c) break;
+    const vill = { key: "V:" + o.key + ":" + v, d: c, houses: [], folk: [] }, nh = 3 + Math.floor(r() * 4), style = r() < 0.5 ? 0 : 1, a0 = r() * 6.283;
+    for (let h = 0; h < nh; h++) {
+      const a = a0 + h / nh * 6.283 + (r() - 0.5) * 0.35, dist = 9.5 + r() * 3.5, d = walkFrom(c, a, dist, R), sz = 2.2 + r() * 0.8;
+      vill.houses.push({ d, s: sz, style: r() < 0.3 ? 1 - style : style, col: Math.floor(r() * 5) });
+      S.blockers.push({ d, r: sz * 0.95, h: sz * 1.9 });
+      const fd = walkFrom(c, a + (r() - 0.5) * 0.3, dist - sz - 1.5, R);
+      vill.folk.push({ key: "v:" + o.key + ":" + v + ":" + h, d: fd, c: Math.floor(r() * 4), ph: r() * 6.28 });
+      S.blockers.push({ d: fd, r: 0.45, h: 1.6 });
+    }
+    S.blockers.push({ d: c, r: 0.4, h: 3.2 });
+    S.villages.push(vill);
+  }
+  // big things you can't walk through, always with room to walk between them
+  const nBig = PHONE ? 110 : 200;
+  for (let i = 0; i < nBig * 3 && S.big.length < nBig; i++) {
+    const d = rndDir(r), e = K.big[Math.floor(r() * K.big.length)], sc = 0.8 + r() * 0.5, br = e[1] * sc;
+    if (S.villages.some(v => d.dot(v.d) > arcCos(24, R)) || !clear(d, br, 2.6)) continue;
+    S.big.push({ d, type: e[0], s: sc, yaw: r() * 6.283 });
+    S.blockers.push({ d, r: br, h: e[2] * sc });
+  }
+  // small things to look at (you can walk over them)
+  const nSmall = PHONE ? 500 : 1300, wsum = K.small.reduce((a, e) => a + e[1], 0);
+  for (let i = 0; i < nSmall; i++) {
+    const d = rndDir(r);
+    let w = r() * wsum, e = K.small[0];
+    for (const q of K.small) { w -= q[1]; if (w <= 0) { e = q; break; } }
+    if (!clear(d, 0.3, 0.3)) continue;
+    S.small.push({ d, type: e[0], s: 0.7 + r() * 0.7, yaw: r() * 6.283 });
+  }
+  // 12 to 15 treasure gems: some by the villages, some on the far side (away from home), the rest all over
+  const nG = 12 + Math.floor(r() * 4), away = new THREE.Vector3(o.x, 0, o.z);
+  if (away.lengthSq() < 1) away.set(1, 0, 0);
+  away.normalize();
+  for (let tries = 0; S.gems.length < nG && tries < 600; tries++) {
+    const i = S.gems.length;
+    let d;
+    if (i < 3 && S.villages.length) d = walkFrom(S.villages[i % S.villages.length].d, r() * 6.283, 4 + r() * 2.5, R);
+    else if (i < 5) d = away.clone().add(rndDir(r).multiplyScalar(0.45)).normalize();
+    else d = rndDir(r);
+    if (!clear(d, 1.0, 0.4) || S.gems.some(q => d.dot(q.d) > arcCos(i < 3 ? 5 : 14, R))) continue;
+    S.gems.push({ key: o.key + "#" + i, d });
+  }
+  stuffCache.set(o.key, S);
+  return S;
 }
 function burstConfetti() {
   const cols = ["#ff5c5c", "#ffd23f", "#3ccf5a", "#4aa8ff", "#c06bff", "#ff8a3d"];
@@ -978,6 +1176,19 @@ sun.position.copy(SUN_DIR).multiplyScalar(110); sun.target.position.set(0, 0, -2
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xd8ecff, 0x5f7c3c, 1.35);
 scene.add(hemi);
+const _lu = new THREE.Vector3(), _ld = new THREE.Vector3(), localUp = new THREE.Vector3(0, 1, 0);
+let localW = 0;
+function planetLight(dt) {
+  let w = 0;
+  if (land) { _lu.copy(land.n); w = 1; }
+  else if (deco && flyFade > 0) { _lu.set(J.x, J.y + MAT_Y, J.z).sub(deco.C); const h = _lu.length() - deco.R; _lu.normalize(); w = 1 - smooth((h - 30) / 220); }
+  if (w > 0) localUp.lerp(_lu, localW > 0.01 ? 1 - Math.exp(-dt * 4) : 1).normalize();
+  localW = lerp(localW, w, 1 - Math.exp(-dt * 3));
+  if (localW < 0.002) { sun.position.copy(SUN_DIR).multiplyScalar(110); hemi.position.set(0, 1, 0); return; }
+  _ld.copy(localUp).multiplyScalar(1.6).add(SUN_DIR).normalize();       // from above you, leaning towards the real sun
+  sun.position.copy(SUN_DIR).lerp(_ld, localW).normalize().multiplyScalar(110).add(sun.target.position);
+  hemi.position.set(0, 1, 0).lerp(localUp, localW).normalize();
+}
 const HEMI_DAY = [new THREE.Color(0xd8ecff), new THREE.Color(0x5f7c3c)], HEMI_SPACE = [new THREE.Color(0x8a9cc8), new THREE.Color(0x3a5c9a)];
 
 // ---------- The sky: a dome that goes dark blue, then black, as you go up ----------
@@ -1226,15 +1437,15 @@ function paintPad(color) {                                             // the so
   } finally { ctx = old; }
 }
 // feathers for the duck (soft rows of little scallops); it repeats
-function paintFeathers() {
+function paintFeathers(base = "#ffd23a", fluff = "255,244,170", line = "rgba(205,135,0,0.32)") {
   return sprite(256, 256, 1, () => {
-    ctx.fillStyle = "#ffd23a"; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = base; ctx.fillRect(0, 0, 256, 256);
     for (let row = 0; row < 16; row++) {
       const y = row * 16;
       for (let x = (row % 2) * 8; x < 256 + 16; x += 16) {
         tiled(256, x, y, 14, (X, Y) => {
-          puff(X, Y + 5, 10, "255,244,170", 0.5);
-          ctx.strokeStyle = "rgba(205,135,0,0.32)"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(X, Y + 2, 8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+          puff(X, Y + 5, 10, fluff, 0.5);
+          ctx.strokeStyle = line; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(X, Y + 2, 8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
         });
       }
     }
@@ -1429,7 +1640,7 @@ function paintMilky() {                                                // the Mi
 // planets, painted flat (a map of the whole planet) and then wrapped round a ball
 function paintPlanet(kind) {
   const W = 512, H = 256;
-  return sprite(W, H, 1, () => {
+  return sprite(W, H, PHONE ? 1 : 2, () => {
     const r = rng(40 + kind.charCodeAt(0) * 3 + kind.length);
     const fill = (c) => { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); };
     const bands = (cols, step) => {                                    // wavy cloud stripes (they join up round the back)
@@ -1475,9 +1686,9 @@ function paintPlanet(kind) {
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       for (let x = -W; x < W * 2; x += 64) poly([[x, 0], [x + 26, 0], [x + 26 + H * 0.8, H], [x + H * 0.8, H]], "rgba(255,255,255,0.5)");
       const sc = ["#ff4d4d", "#ffd23f", "#3ccf5a", "#4aa8ff", "#c06bff", "#ffffff", "#ff9f1c"];
-      for (let i = 0; i < 260; i++) { const x = r() * W, y = 10 + r() * (H - 20); ctx.save(); ctx.translate(x, y); ctx.rotate(r() * 3.14); rrect(-6, -2, 12, 4, 2, sc[i % sc.length]); ctx.restore(); }
+      for (let i = 0; i < 420; i++) { const x = r() * W, y = 10 + r() * (H - 20); ctx.save(); ctx.translate(x, y); ctx.rotate(r() * 3.14); rrect(-4, -1.5, 8, 3, 1.5, sc[i % sc.length]); ctx.restore(); }
     } else if (kind === "jungle") {
-      fill("#2f86d6"); blobs(40, "#3f9a3c", 16); blobs(30, "#78a84a", 10); blobs(60, "rgba(255,255,255,0.65)", 8);
+      fill("#3b8a3c"); blobs(26, "#2f86d6", 13); blobs(44, "#4f9e43", 10); blobs(40, "#2a6f30", 9); blobs(22, "#7fb851", 6); blobs(30, "#6b7f3a", 4);   // green jungle with blue lakes
     } else if (kind === "jupiter") {
       fill("#e3a865"); bands(["rgba(255,245,225,0.55)", "rgba(170,95,45,0.42)", "rgba(230,170,110,0.45)", "rgba(120,60,30,0.32)"], 11);
       ellipse(330, 160, 34, 18, "#c8562e"); ctx.strokeStyle = "rgba(255,220,180,0.6)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(330, 160, 38, 21, 0, 0, 7); ctx.stroke();
@@ -2090,9 +2301,9 @@ function webFoot(k = 1) {
   g.rotateX(Math.PI / 2); g.scale(k, k, k);
   return g;
 }
-function makeDuck() {
+function makeDuck(skin) {
   const g = new THREE.Group();
-  const fe = phys(0xffffff, { map: canvasTex(paintFeathers(), { rep: [3, 2] }), roughness: 0.86 });
+  const fe = skin || phys(0xffffff, { map: canvasTex(paintFeathers(), { rep: [3, 2] }), roughness: 0.86 });
   const beakM = phys(0xff9d1e, { roughness: 0.38, clearcoat: 0.45, clearcoatRoughness: 0.3 }), beakM2 = phys(0xf07a10, { roughness: 0.45, clearcoat: 0.3 });
   const eyeM = phys(0xffffff, { map: canvasTex(paintEye("duck")), roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.04 });
   const cheekM = new THREE.MeshBasicMaterial({ color: 0xff8f9a, transparent: true, opacity: 0.55, depthWrite: false });
@@ -2375,10 +2586,44 @@ function buildSatellite() {
   scene.add(g); high.sat = g;
 }
 const planetMats = {};
+let detailTex = null;
+function paintDetail() {                                           // red: fine grain, green: soft patches (both repeat with no seams)
+  const N = 256, c = document.createElement("canvas"); c.width = c.height = N;
+  const g = c.getContext("2d"), img = g.createImageData(N, N), d = img.data;
+  const tn = (x, y, P) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), m = k => ((k % P) + P) % P;
+    const a = hash2(m(xi), m(yi)), b = hash2(m(xi + 1), m(yi)), cc = hash2(m(xi), m(yi + 1)), e = hash2(m(xi + 1), m(yi + 1)); return a + (b - a) * u + (cc - a) * v + (a - b - cc + e) * u * v; };
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const fine = 0.5 * tn(x / 4, y / 4, 64) + 0.3 * tn(x / 2, y / 2, 128) + 0.2 * hash2(x * 7 + 3, y * 13 + 1);
+    const soft = 0.6 * tn(x / 32, y / 32, 8) + 0.4 * tn(x / 16, y / 16, 16);
+    const k = (y * N + x) * 4; d[k] = fine * 255; d[k + 1] = soft * 255; d[k + 2] = 128; d[k + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
 function planetMat(kind) {
-  if (!planetMats[kind]) planetMats[kind] = std(0xffffff, kind === "ice" || kind === "candy" ? 0.5 : 0.85, 0, { map: canvasTex(paintPlanet(kind)) });
+  if (!planetMats[kind]) {
+    const cv = paintPlanet(kind), m = std(0xffffff, kind === "ice" || kind === "candy" ? 0.5 : 0.85, 0, { map: canvasTex(cv) });
+    const small = sprite(32, 16, 1, () => ctx.drawImage(cv, 0, 0, 32, 16)), px = small.getContext("2d").getImageData(0, 0, 32, 16).data;   // its average colour
+    let ar = 0, ag = 0, ab = 0;
+    for (let i = 0; i < px.length; i += 4) { ar += px[i]; ag += px[i + 1]; ab += px[i + 2]; }
+    const avg = new THREE.Color().setRGB(ar / 512 / 255, ag / 512 / 255, ab / 512 / 255, THREE.SRGBColorSpace);
+    if (!detailTex) detailTex = canvasTex(paintDetail(), { rep: true, data: true });
+    patch(m, "planet", sh => {
+      sh.uniforms.detail = { value: detailTex }; sh.uniforms.avgC = { value: avg };
+      sh.vertexShader = "varying vec3 vPl; varying vec3 vPn;\n" + sh.vertexShader.replace("#include <project_vertex>", "#include <project_vertex>\nvPl = (modelMatrix * vec4(transformed, 1.0)).xyz - modelMatrix[3].xyz;\nvPn = normalize(position);");
+      sh.fragmentShader = "varying vec3 vPl; varying vec3 vPn; uniform sampler2D detail; uniform vec3 avgC;\n" + sh.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
+        vec3 bw = pow(abs(vPn), vec3(4.0)); bw /= (bw.x + bw.y + bw.z);
+        float d1 = texture2D(detail, vPl.yz / 3.5).r * bw.x + texture2D(detail, vPl.xz / 3.5).r * bw.y + texture2D(detail, vPl.xy / 3.5).r * bw.z;
+        float d2 = texture2D(detail, vPl.yz / 26.0).g * bw.x + texture2D(detail, vPl.xz / 26.0).g * bw.y + texture2D(detail, vPl.xy / 26.0).g * bw.z;
+        diffuseColor.rgb = mix(diffuseColor.rgb, avgC, smoothstep(0.86, 0.985, abs(vPn.y)));
+        diffuseColor.rgb *= 0.74 + 0.36 * d1 + 0.34 * (d2 - 0.5);`);
+    });
+    planetMats[kind] = m;
+  }
   return planetMats[kind];
 }
+let sphHi = null;                                                 // a very round ball for the planets near you
+function hiBall() { return sphHi || (sphHi = new THREE.SphereGeometry(1, PHONE ? 160 : 256, PHONE ? 100 : 160)); }
 const SPH64 = new THREE.SphereGeometry(1, 64, 40);
 const ringMats = {};
 function ringMat(kind) {
@@ -2433,7 +2678,7 @@ let liveTick = 0, ufoKit = null, ufoLights = null;
 function makePlanetObj(t) {
   const P = PLANETS[t], g = new THREE.Group();
   const ball = new THREE.Mesh(SPH64, planetMat(P.kind)); g.add(ball);
-  if (P.rings) { const ring = new THREE.Mesh(new THREE.RingGeometry(1.3, 2.25, 96), ringMat("saturn")); ring.rotation.set(-Math.PI / 2 + 0.42, 0, 0.3); g.add(ring); }
+  if (P.rings) { const ring = new THREE.Mesh(new THREE.RingGeometry(1.25, 2.0, 128), ringMat("saturn")); ring.rotation.set(-Math.PI / 2 + 0.42, 0, 0.3); g.add(ring); }
   g.add(glowSprite(new THREE.Color(`rgb(${P.glow})`), 3.3, 0.5));
   g.userData.ball = ball;
   return g;
@@ -2512,23 +2757,24 @@ function makeGem(kind) {
 }
 function updateGems() {
   gemTick++;
-  if (flyFade > 0) for (const o of things) {
-    if (o.kind !== "planet" || prog.gems.includes(o.key)) continue;
-    const onIt = !!land && land.key === o.key;
-    if (!onIt && Math.hypot(o.x - J.x, o.y - (J.y + MAT_Y), o.z - J.z) > 75) continue;   // only gems near you
-    const kind = PLANETS[o.t].kind;
-    let g = gemLive.get(o.key);
-    if (!g) { const pool = gemPools[kind] || (gemPools[kind] = []); g = { obj: pool.pop() || makeGem(kind), kind }; scene.add(g.obj); gemLive.set(o.key, g); }
-    g.tick = gemTick;
-    const e = live.get(o.key), grow = e ? e.obj.scale.x / o.R : 1;
-    _p.set(o.gx, o.gy, o.gz);
-    g.obj.position.set(o.x, o.y, o.z).addScaledVector(_p, o.R * grow + 0.45 + Math.sin(time * 2 + o.x) * 0.08);
-    g.obj.quaternion.setFromUnitVectors(_t1.set(0, 1, 0), _p);
-    g.obj.scale.setScalar(Math.max(0.001, grow) * 1.3);
-    const u = g.obj.userData;
-    u.spin.rotation.y = time * 1.2;
-    u.glow.material.opacity = 0.45 + 0.15 * Math.sin(time * 3);
-    u.sparks.forEach((sp, i) => { const a = time * 1.6 + i * 2.1; sp.position.set(Math.cos(a) * 0.55, 0.1 + Math.sin(time * 2.3 + i) * 0.35, Math.sin(a) * 0.55); sp.material.opacity = 0.5 + 0.5 * Math.sin(time * 6 + i * 2); });
+  if (deco && (flyFade > 0 || land)) {
+    const o = deco.o, S = planetStuff(o), kind = PLANETS[o.t].kind, C = deco.C, bx = J.x, by = J.y + MAT_Y + 1, bz = J.z;
+    for (const gm of S.gems) {
+      if (prog.gems.includes(gm.key)) continue;
+      const gx = C.x + gm.d.x * (o.R + 0.45), gy = C.y + gm.d.y * (o.R + 0.45), gz = C.z + gm.d.z * (o.R + 0.45);
+      if (Math.hypot(gx - bx, gy - by, gz - bz) > 140) continue;          // only gems near you
+      let g = gemLive.get(gm.key);
+      if (!g) { const pool = gemPools[kind] || (gemPools[kind] = []); g = { obj: pool.pop() || makeGem(kind), kind }; scene.add(g.obj); gemLive.set(gm.key, g); }
+      g.tick = gemTick;
+      const bob = Math.sin(time * 2 + gm.d.x * 50) * 0.08;
+      g.obj.position.set(gx + gm.d.x * bob, gy + gm.d.y * bob, gz + gm.d.z * bob);
+      g.obj.quaternion.setFromUnitVectors(_t1.set(0, 1, 0), gm.d);
+      g.obj.scale.setScalar(1.3);
+      const u = g.obj.userData;
+      u.spin.rotation.y = time * 1.2;
+      u.glow.material.opacity = 0.45 + 0.15 * Math.sin(time * 3);
+      u.sparks.forEach((sp, i) => { const a = time * 1.6 + i * 2.1; sp.position.set(Math.cos(a) * 0.55, 0.1 + Math.sin(time * 2.3 + i) * 0.35, Math.sin(a) * 0.55); sp.material.opacity = 0.5 + 0.5 * Math.sin(time * 6 + i * 2); });
+    }
   }
   for (const [key, g] of gemLive) if (g.tick !== gemTick) { scene.remove(g.obj); gemPools[g.kind].push(g.obj); gemLive.delete(key); }
 }
@@ -2573,6 +2819,229 @@ function updateFx(dt) {
     p.s.position.copy(p.pos); p.s.scale.setScalar(lerp(p.s0, p.s1, k)); p.s.material.opacity = (p.add ? 1 : 0.6) * (1 - k);
   }
 }
+// ---- planet stuff: shapes for each kind of planet (shared, drawn many times with InstancedMesh) ----
+const decoMat = std(0xffffff, 0.75, 0, { vertexColors: true }), decoGlow = std(0xffffff, 0.35, 0, { vertexColors: true, emissive: 0x2c2c2c });
+const winMat = new THREE.MeshBasicMaterial({ color: 0xffd27a, toneMapped: false });
+const decoKits = {}, DECO_WHITE = new THREE.Color(0xffffff);
+// colour a shape from dark at its foot to bright at its top (as if it stands in its own soft shadow)
+function shadeUp(g, hex, base = 0.62) {
+  g.computeBoundingBox();
+  const bb = g.boundingBox, h = Math.max(1e-3, bb.max.y - bb.min.y), c = new THREE.Color(hex), p = g.attributes.position, a = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) { const k = base + (1 - base) * clamp((p.getY(i) - bb.min.y) / h, 0, 1); a[i * 3] = c.r * k; a[i * 3 + 1] = c.g * k; a[i * 3 + 2] = c.b * k; }
+  g.setAttribute("color", new THREE.BufferAttribute(a, 3));
+  return g;
+}
+function lumpy(g, amt, seed = 0) {                               // bumpy rocks (corners in the same place move the same way)
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { _v.fromBufferAttribute(p, i); const k = 1 + (rand(_v.x * 12.9 + _v.y * 78.2 + _v.z * 37.7 + seed) - 0.5) * amt; p.setXYZ(i, _v.x * k, _v.y * k, _v.z * k); }
+  g.computeVertexNormals();
+  return g;
+}
+// colour each corner by a rule fn(x, y, z) -> hex (stripes, swirls)
+function paintBy(g, fn) {
+  const p = g.attributes.position, a = new Float32Array(p.count * 3), c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) { c.set(fn(p.getX(i), p.getY(i), p.getZ(i))); a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+  g.setAttribute("color", new THREE.BufferAttribute(a, 3));
+  return g;
+}
+const rockG = (r, hex, seed) => shadeUp(lumpy(new THREE.IcosahedronGeometry(r, 1), 0.38, seed).scale(1, 0.7, 1).translate(0, r * 0.35, 0), hex);
+function swirlDisc(r, a, b, turns) {                              // a flat round swirl lying on the ground
+  return paintBy(new THREE.RingGeometry(0.05, r, 48, 8).rotateX(-Math.PI / 2).translate(0, 0.04, 0), (x, y, z) => {
+    const ang = Math.atan2(z, x) / 6.2832, rr = Math.hypot(x, z) / r; return ((ang * turns + rr * 2.2) % 1 + 1) % 1 < 0.5 ? a : b; });
+}
+function decoKit(kind) {
+  if (decoKits[kind]) return decoKits[kind];
+  const k = {}, M = list => mergeGeos(list);
+  if (kind === "moon") {
+    k.rock = { geo: rockG(0.45, "#bdb9b1", 1) };
+    k.crater = { geo: paintBy(new THREE.LatheGeometry([[1.75, 0], [1.45, 0.08], [1.2, 0.2], [1.0, 0.12], [0.8, 0.02], [0, 0.03]].map(p => new THREE.Vector2(p[0], p[1])), 28), (x, y, z) => Math.hypot(x, z) < 0.95 ? "#8e8b84" : y > 0.14 ? "#e2dfd6" : "#c4c0b6") };
+    k.boulder = { geo: rockG(1.8, "#aaa69d", 2) };
+  } else if (kind === "mars") {
+    k.rock = { geo: rockG(0.45, "#b0502c", 3) };
+    k.dust = { geo: paintBy(new THREE.CircleGeometry(2.6, 20).rotateX(-Math.PI / 2).translate(0, 0.04, 0), () => "#d98b5e") };
+    k.boulder = { geo: rockG(2.1, "#9c4527", 4) };
+    k.tower = { geo: M([rockG(1.5, "#a24a2a", 5), rockG(1.1, "#b55a34", 6).translate(0.2, 1.6, 0), rockG(0.75, "#c26a40", 7).translate(-0.1, 2.9, 0.1)]) };
+  } else if (kind === "saturn") {
+    const xt = (h, tilt, rot, col) => shadeUp(new THREE.OctahedronGeometry(0.35, 0).scale(0.55, h, 0.55).translate(0, 0.35 * h * 0.8, 0).rotateZ(tilt).rotateY(rot), col, 0.75);
+    k.crystals = { geo: M([xt(2.2, 0.15, 0, "#f3e6c6"), xt(1.6, -0.35, 1.2, "#e4d6ff"), xt(1.3, 0.4, 2.6, "#fff2d8")]), glow: true };
+    k.floater = { geo: M([rockG(0.6, "#fff0d2", 8).translate(0, 3.2, 0), rockG(0.35, "#efe2ff", 9).translate(0.9, 4.3, 0.3)]), glow: true };
+    k.pillar = { geo: shadeUp(M([new THREE.CylinderGeometry(0.9, 1.25, 6.5, 6).translate(0, 3.25, 0), new THREE.ConeGeometry(0.9, 1.7, 6).translate(0, 7.35, 0)]), "#efe3c8", 0.55), glow: true };
+  } else if (kind === "ice") {
+    const prism = (h, tilt, rot) => M([new THREE.CylinderGeometry(0.16, 0.2, h, 6).translate(0, h / 2, 0), new THREE.ConeGeometry(0.16, 0.35, 6).translate(0, h + 0.17, 0)]).rotateZ(tilt).rotateY(rot);
+    k.icecrystal = { geo: shadeUp(M([prism(1.2, 0.1, 0), prism(0.8, 0.5, 1.4), prism(0.9, -0.45, 3.1), prism(0.6, 0.3, 4.4)]), "#c2ebff", 0.7), glow: true };
+    k.snowballs = { geo: shadeUp(M([new THREE.SphereGeometry(0.35, 12, 8).translate(0, 0.3, 0), new THREE.SphereGeometry(0.25, 12, 8).translate(0.45, 0.22, 0.1), new THREE.SphereGeometry(0.2, 10, 8).translate(0.15, 0.62, 0)]), "#f7fbff", 0.75) };
+    const snowman = [new THREE.SphereGeometry(0.75, 14, 10).translate(0, 0.7, 0), new THREE.SphereGeometry(0.55, 14, 10).translate(0, 1.75, 0), new THREE.SphereGeometry(0.4, 14, 10).translate(0, 2.55, 0)].map(g => shadeUp(g, "#f8fbff", 0.8));
+    snowman.push(tint(new THREE.ConeGeometry(0.07, 0.4, 10).rotateX(Math.PI / 2).translate(0, 2.55, 0.55), "#ff8a1f"));
+    for (const sx of [-0.14, 0.14]) snowman.push(tint(new THREE.SphereGeometry(0.05, 8, 6).translate(sx, 2.66, 0.36), "#1a1a22"));
+    for (const by of [1.6, 1.85, 2.05]) snowman.push(tint(new THREE.SphereGeometry(0.05, 8, 6).translate(0, by, 0.53), "#1a1a22"));
+    for (const sx of [-1, 1]) snowman.push(tint(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6).rotateZ(sx * 1.0).translate(sx * 0.85, 2.0, 0), "#6b4626"));
+    snowman.push(tint(new THREE.CylinderGeometry(0.3, 0.3, 0.35, 16).translate(0, 3.0, 0), "#2a2440"), tint(new THREE.CylinderGeometry(0.42, 0.42, 0.05, 16).translate(0, 2.84, 0), "#2a2440"));
+    k.snowman = { geo: M(snowman) };
+    k.spike = { geo: shadeUp(M([new THREE.ConeGeometry(1.3, 6, 7).translate(0, 3, 0), new THREE.ConeGeometry(0.6, 3, 7).translate(1.1, 1.5, 0.3), new THREE.ConeGeometry(0.5, 2.4, 7).translate(-0.9, 1.2, -0.5)]), "#9fd8ff", 0.6), glow: true };
+  } else if (kind === "candy") {
+    const spr = [];                                              // a little pile of sugar sprinkles lying on the ground
+    for (let i = 0; i < 7; i++) spr.push(tint(new THREE.CapsuleGeometry(0.055, 0.22, 2, 6).rotateZ(Math.PI / 2).rotateY(rand(i * 3 + 1) * 6.28).translate((rand(i * 3 + 2) - 0.5) * 1.1, 0.05, (rand(i * 3 + 3) - 0.5) * 1.1), ["#ff4d4d", "#ffd23f", "#3ccf5a", "#4aa8ff", "#c06bff", "#ffffff", "#ff9f1c"][i]));
+    k.sprinkles = { geo: mergeGeos(spr) };
+    k.gumdrop = { geo: shadeUp(new THREE.LatheGeometry([[0, 0], [0.45, 0], [0.5, 0.12], [0.42, 0.45], [0.25, 0.62], [0, 0.66]].map(p => new THREE.Vector2(p[0], p[1])), 18), "#ffffff", 0.75), tint: ["#ff6fa8", "#7ef0c0", "#fff07a", "#ffa04a", "#c08aff", "#7ac8ff"] };
+    const cane = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([[0, 0, 0], [0, 1.4, 0], [0.12, 1.66, 0], [0.34, 1.68, 0], [0.46, 1.48, 0]].map(p => new THREE.Vector3(p[0], p[1], p[2]))), 24, 0.07, 6, false);
+    k.cane = { geo: paintBy(cane, (x, y, z) => (Math.floor((y + x * 1.6) * 6) % 2) ? "#ff2f4a" : "#ffffff") };
+    const disc = (r, z) => M([new THREE.RingGeometry(0.02, r, 32, 6).translate(0, 0, z), new THREE.RingGeometry(0.02, r, 32, 6).rotateY(Math.PI).translate(0, 0, -z)]);
+    const head = paintBy(M([disc(1.1, 0.12), new THREE.CylinderGeometry(1.1, 1.1, 0.24, 32, 1, true).rotateX(Math.PI / 2)]).translate(0, 4.1, 0), (x, y, z) => {
+      const ang = Math.atan2(y - 4.1, x) / 6.2832, rr = Math.hypot(x, y - 4.1) / 1.1; return ((ang * 2 + rr * 2.5) % 1 + 1) % 1 < 0.5 ? "#ff4f9a" : "#fff3fa"; });
+    k.lollipop = { geo: M([shadeUp(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8).translate(0, 1.6, 0), "#ffffff", 0.8), head]) };
+  } else if (kind === "jungle") {
+    k.bush = { geo: M([new THREE.SphereGeometry(0.6, 10, 7).translate(0, 0.45, 0), new THREE.SphereGeometry(0.5, 10, 7).translate(0.55, 0.35, 0.1), new THREE.SphereGeometry(0.45, 10, 7).translate(-0.45, 0.32, -0.2)].map((g, i) => shadeUp(g, ["#3f9a3c", "#4fae48", "#2f8a35"][i], 0.6))) };
+    const fl = [];
+    for (let i = 0; i < 4; i++) { const a = i * 1.7, x = Math.cos(a) * 0.3, z = Math.sin(a) * 0.3, h = 0.45 + i * 0.08;
+      fl.push(tint(new THREE.CylinderGeometry(0.02, 0.025, h, 4).translate(x, h / 2, z), "#2f8a30"), tint(new THREE.SphereGeometry(0.12, 8, 5).scale(1, 0.6, 1).translate(x, h, z), ["#ff5c8a", "#ffd23f", "#ff7a3a", "#c06bff"][i]), tint(new THREE.SphereGeometry(0.045, 6, 4).translate(x, h + 0.05, z), "#fff2a0")); }
+    k.flowers = { geo: M(fl) };
+    const trunk = shadeUp(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([[0, -0.2, 0], [0.4, 3, 0], [1.0, 6, 0], [1.4, 8, 0]].map(p => new THREE.Vector3(p[0], p[1], p[2]))), 16, 0.24, 8, false), "#8a6238", 0.7);
+    const fronds = [];
+    for (let i = 0; i < 7; i++) { const a = i / 7 * 6.2832; fronds.push(tint(new THREE.SphereGeometry(1, 8, 4).scale(0.32, 0.06, 1.9).translate(0, 0, 1.6).rotateX(0.45).rotateY(a).translate(1.4, 8.05, 0), i % 2 ? "#3d9a3a" : "#55b048")); }
+    for (let i = 0; i < 3; i++) fronds.push(tint(new THREE.SphereGeometry(0.17, 8, 6).translate(1.4 + Math.cos(i * 2.1) * 0.25, 7.8, Math.sin(i * 2.1) * 0.25), "#6b4a26"));
+    k.palm = { geo: M([trunk, ...fronds]) };
+    k.tree = { geo: M([shadeUp(new THREE.CylinderGeometry(0.32, 0.5, 5.5, 10).translate(0, 2.75, 0), "#6b4a2c", 0.65), ...[[0, 6.2, 0, 2.2, "#2f7d2e"], [1.3, 5.6, 0.4, 1.6, "#3a8f36"], [-1.2, 5.8, -0.5, 1.7, "#2a6e2a"], [0.2, 7.5, -0.3, 1.5, "#45a03e"]].map(q => shadeUp(new THREE.SphereGeometry(q[3], 12, 8).translate(q[0], q[1], q[2]), q[4], 0.7))]) };
+  } else {                                                        // Jupiter
+    k.swirl = { geo: swirlDisc(2.6, "#f6dcb0", "#e08a3c", 2) };
+    const sh = (h, tilt, rot) => new THREE.OctahedronGeometry(0.3, 0).scale(0.6, h, 0.6).translate(0, 0.3 * h * 0.8, 0).rotateZ(tilt).rotateY(rot);
+    k.shard = { geo: shadeUp(M([sh(1.6, 0.1, 0), sh(1.1, 0.5, 2), sh(0.9, -0.4, 4)]), "#ff9a3a", 0.7), glow: true };
+    k.spire = { geo: shadeUp(M([new THREE.ConeGeometry(1.5, 9, 6).translate(0, 4.5, 0), new THREE.ConeGeometry(0.7, 4.2, 6).rotateZ(0.35).translate(1.0, 1.8, 0.2), new THREE.ConeGeometry(0.6, 3.4, 6).rotateZ(-0.4).translate(-0.9, 1.5, -0.4)]), "#ff8a2a", 0.5), glow: true };
+  }
+  return (decoKits[kind] = k);
+}
+// ---- alien villages: round little houses (domes and mushrooms), glowing round windows, a lamp, friendly aliens ----
+let villageKit = null;
+function makeVillageKit() {
+  const v = {}, M = list => mergeGeos(list);
+  const dome = [tint(new THREE.CylinderGeometry(1, 1.04, 0.55, 24, 1, true).translate(0, 0.27, 0), "#ffffff"), tint(new THREE.SphereGeometry(1, 24, 12, 0, 6.2832, 0, Math.PI / 2).scale(1, 0.95, 1).translate(0, 0.55, 0), "#ffffff"),
+    tint(new THREE.SphereGeometry(1, 16, 10).scale(0.32, 0.5, 0.08).translate(0, 0.42, 0.99), "#5a3a2c"), tint(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6).translate(0, 1.7, 0), "#888899"), tint(new THREE.SphereGeometry(0.09, 10, 8).translate(0, 1.98, 0), "#ffe14d")];
+  v.dome = M(dome);
+  v.domeWin = M([0.9, -0.9, 2.4].map(a => new THREE.CircleGeometry(0.17, 16).translate(0, 0, 1.005).rotateY(a).translate(0, 0.62, 0)));
+  const cap = tint(new THREE.SphereGeometry(1.35, 24, 10, 0, 6.2832, 0, Math.PI / 2).scale(1, 0.62, 1).translate(0, 1.3, 0), "#e8404a"), spots = [];
+  for (let i = 0; i < 9; i++) { const a = i * 2.4, el = 0.35 + (i % 3) * 0.3, x = Math.cos(a) * Math.cos(el) * 1.36, z = Math.sin(a) * Math.cos(el) * 1.36, y = 1.3 + Math.sin(el) * 0.84;
+    spots.push(tint(new THREE.SphereGeometry(0.16, 10, 6).scale(1, 0.4, 1).translate(x, y, z), "#ffffff")); }
+  v.mush = M([tint(new THREE.CylinderGeometry(0.72, 0.88, 1.35, 20).translate(0, 0.67, 0), "#f4ead6"), cap, ...spots, tint(new THREE.SphereGeometry(1, 16, 10).scale(0.26, 0.42, 0.06).translate(0, 0.42, 0.83), "#6a4632")]);
+  v.mushWin = M([1.1, -1.1].map(a => new THREE.CircleGeometry(0.13, 14).translate(0, 0, 0.82).rotateY(a).translate(0, 0.85, 0)));
+  v.lamp = M([tint(new THREE.CylinderGeometry(0.06, 0.08, 2.6, 8).translate(0, 1.3, 0), "#6e6a80"), tint(new THREE.SphereGeometry(0.22, 12, 10).translate(0, 2.75, 0), "#fff1b0")]);
+  return v;
+}
+const HOUSE_COLS = ["#bfe8ff", "#ffd1e8", "#d8ffc8", "#fff1b0", "#e2d4ff"].map(c => new THREE.Color(c));
+const _sA = new THREE.Vector3(), _sB = new THREE.Vector3(), _sX = new THREE.Vector3(), _sZ = new THREE.Vector3(), _sS = new THREE.Vector3();
+// stand something upright on a planet's ground at direction d, turned by yaw, sized s
+function surfaceMatrix(C, d, R, yaw, sc, out) {
+  const t1 = (Math.abs(d.y) < 0.95 ? _sA.set(0, 1, 0) : _sA.set(1, 0, 0)).cross(d).normalize(), t2 = _sB.crossVectors(d, t1);
+  _sX.copy(t1).multiplyScalar(Math.cos(yaw)).addScaledVector(t2, Math.sin(yaw)); _sZ.crossVectors(_sX, d);
+  out.makeBasis(_sX, d, _sZ); out.scale(_sS.set(sc, sc, sc)); out.setPosition(C.x + d.x * R, C.y + d.y * R, C.z + d.z * R);
+  return out;
+}
+// the same, with its front looking towards a point
+function surfaceMatrixFacing(C, d, R, target, sc, out) {
+  _sZ.copy(target).sub(C); _sZ.addScaledVector(d, -_sZ.dot(d));      // towards the target, flat along the ground
+  if (_sZ.lengthSq() < 1e-8) return surfaceMatrix(C, d, R, 0, sc, out);
+  _sZ.normalize(); _sX.crossVectors(d, _sZ);
+  out.makeBasis(_sX, d, _sZ); out.scale(_sS.set(sc, sc, sc)); out.setPosition(C.x + d.x * R, C.y + d.y * R, C.z + d.z * R);
+  return out;
+}
+function instanced(geo, mat, n) { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, n)); im.count = n; return im; }
+function buildDeco(o) {
+  const S = planetStuff(o), kit = decoKit(PLANETS[o.t].kind), g = new THREE.Group(), C = new THREE.Vector3(o.x, o.y, o.z), R = o.R, m = new THREE.Matrix4(), c = new THREE.Color();
+  const D = { key: o.key, o, C, R, group: g, folk: [], streams: [], at: new THREE.Vector3(), atH: -1e9 };
+  const byType = {}, bigType = {};
+  for (const it of S.big) { (byType[it.type] = byType[it.type] || []).push(it); bigType[it.type] = true; }
+  for (const it of S.small) (byType[it.type] = byType[it.type] || []).push(it);
+  // every thing is worked out once; only the ones near the camera are drawn (the rest are over the horizon)
+  for (const type in byType) {
+    const k = kit[type], list = byType[type], n = list.length, im = instanced(k.geo, k.glow ? decoGlow : decoMat, n);
+    const mats = new Float32Array(n * 16), cols = new Float32Array(n * 3), dirs = new Float32Array(n * 3);
+    list.forEach((it, i) => {
+      surfaceMatrix(C, it.d, R, it.yaw, it.s, m).toArray(mats, i * 16); (k.tint ? c.set(k.tint[i % k.tint.length]) : c.copy(DECO_WHITE)).toArray(cols, i * 3); it.d.toArray(dirs, i * 3);
+      im.setMatrixAt(i, m); im.setColorAt(i, c);
+    });
+    im.frustumCulled = false; g.add(im);
+    D.streams.push({ im, mats, cols, dirs, n, big: !!bigType[type] });
+  }
+  // villages
+  const vk = villageKit || (villageKit = makeVillageKit()), houses = { 0: [], 1: [] };
+  for (const v of S.villages) for (const h of v.houses) houses[h.style].push([v, h]);
+  const parts = [[0, vk.dome, decoMat, true], [0, vk.domeWin, winMat, false], [1, vk.mush, decoMat, false], [1, vk.mushWin, winMat, false]];
+  for (const [style, geo, mat, coloured] of parts) {
+    const list = houses[style], im = instanced(geo, mat, list.length);
+    list.forEach(([v, h], i) => { surfaceMatrixFacing(C, h.d, R, _v.copy(C).addScaledVector(v.d, R), h.s, m); im.setMatrixAt(i, m); if (mat !== winMat) im.setColorAt(i, coloured ? HOUSE_COLS[h.col] : DECO_WHITE); });
+    im.computeBoundingSphere(); g.add(im);
+  }
+  const lamps = instanced(vk.lamp, decoMat, S.villages.length);
+  S.villages.forEach((v, i) => {
+    lamps.setMatrixAt(i, surfaceMatrix(C, v.d, R, 0, 1, m)); lamps.setColorAt(i, DECO_WHITE);
+    const glow = glowSprite(0xffd890, 3.2, 0.55); glow.position.copy(C).addScaledVector(v.d, R + 2.75); g.add(glow);
+  });
+  lamps.computeBoundingSphere(); g.add(lamps);
+  // the villagers (they turn to look at you and wave)
+  const k = ufoKit || (ufoKit = makeUfoKit()), byCol = [[], [], [], []];
+  for (const v of S.villages) for (const f of v.folk) byCol[f.c].push({ f, v });
+  D.folkMeshes = byCol.map((list, ci) => {
+    if (!k.standAliens) { k.standAliens = k.aliens.map(a => a.clone().translate(0, -0.28, 0)); k.standArms = k.arms; }
+    const body = instanced(k.standAliens[ci], k.alienM, list.length), arm = instanced(k.arms[ci], k.alienM, list.length);
+    body.frustumCulled = arm.frustumCulled = false; g.add(body, arm);
+    return { body, arm, list };
+  });
+  return D;
+}
+const decoCache = [];
+let deco = null;
+function getDeco(o) {
+  let d = decoCache.find(q => q.key === o.key);
+  if (!d) {
+    d = buildDeco(o); decoCache.unshift(d); scene.add(d.group);
+    if (decoCache.length > 2) { const old = decoCache.pop(); scene.remove(old.group); old.group.traverse(q => { if (q.isInstancedMesh) q.dispose(); }); }
+  }
+  return d;
+}
+const _fm = new THREE.Matrix4(), _fa2 = new THREE.Matrix4(), _fb2 = new THREE.Vector3();
+const _sg = new THREE.Vector3();
+function streamDeco(D) {                                              // pick the things near the camera (when it has moved a few metres)
+  _sg.copy(camera.position).sub(D.C); const h = Math.max(1, _sg.length() - D.R); _sg.normalize();
+  if (_sg.distanceTo(D.at) * D.R < 6 && Math.abs(h - D.atH) < 15) return;
+  D.at.copy(_sg); D.atH = h;
+  const cosS = h > 90 ? 2 : Math.cos(Math.min(Math.PI, (PHONE ? 60 : 78) / D.R)), cosB = Math.cos(Math.min(Math.PI, Math.acos(D.R / (D.R + h)) + 50 / D.R));
+  for (const st of D.streams) {
+    const thr = st.big ? cosB : cosS, M = st.im.instanceMatrix.array, Cl = st.im.instanceColor.array, d = st.dirs;
+    let k = 0;
+    for (let i = 0; i < st.n; i++) {
+      if (d[i * 3] * _sg.x + d[i * 3 + 1] * _sg.y + d[i * 3 + 2] * _sg.z < thr) continue;
+      M.set(st.mats.subarray(i * 16, i * 16 + 16), k * 16); Cl.set(st.cols.subarray(i * 3, i * 3 + 3), k * 3); k++;
+    }
+    st.im.count = k; st.im.visible = k > 0;
+    st.im.instanceMatrix.needsUpdate = st.im.instanceColor.needsUpdate = true;
+  }
+}
+function updateDeco() {
+  // decorate the planet near you (the one you stand on, or the nearest one within 450 m)
+  let best = land ? land.o : null;
+  if (!best && flyFade > 0) { let bd = 450; for (const o of things) if (o.kind === "planet") { const d = camera.position.distanceTo(_fb2.set(o.x, o.y, o.z)) - o.R; if (d < bd) { bd = d; best = o; } } }
+  if ((best ? best.key : "") !== (deco ? deco.key : "")) {
+    if (deco) deco.group.visible = false;
+    deco = best ? getDeco(best) : null;
+    if (deco) deco.group.visible = true;
+  }
+  if (!deco) return;
+  const le = live.get(deco.key);
+  deco.group.visible = !!land || !!(le && time - le.born > 0.6);
+  streamDeco(deco);
+  // villagers: face you when you are near, otherwise the middle of their village; wave after saying hello
+  const me = _fb2.set(J.x, J.y + MAT_Y + 1, J.z);
+  for (const fm of deco.folkMeshes) {
+    fm.list.forEach(({ f, v }, i) => {
+      const near = me.distanceTo(_v.copy(deco.C).addScaledVector(f.d, deco.R)) < 14;
+      surfaceMatrixFacing(deco.C, f.d, deco.R, near ? me : _sA.copy(deco.C).addScaledVector(v.d, deco.R + 0.001), 1.25, _fm);
+      fm.body.setMatrixAt(i, _fm);
+      const g = greeted.get(f.key), waving = g !== undefined && time - g < 3;
+      _fa2.makeRotationZ(waving ? 2.3 + Math.sin(time * 12 + f.ph) * 0.45 : 0.5 + Math.sin(time * 1.5 + f.ph) * 0.08).setPosition(0.36, 0.54, 0.05);
+      fm.arm.setMatrixAt(i, _fm.multiply(_fa2));
+    });
+    fm.body.instanceMatrix.needsUpdate = fm.arm.instanceMatrix.needsUpdate = true;
+  }
+}
+
 function buildLanding() {
   if (!gemKit) gemKit = makeGemKit();
   planetShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobShadow.material.map, transparent: true, depthWrite: false, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4 }));
@@ -2627,7 +3096,7 @@ const menuView = { az: VIEW0.az, el: 0.1, dist: 15 };
 const tgt = new THREE.Vector3(0, MAT_Y + 1.6, 0);
 const EL_MIN = -1.25, EL_MAX = 1.45, D_MIN = 3.5, D_MAX = 45;
 let snapView = true, lead = 0, shiftX = 0, shiftY = 0, dragging = false;
-function viewNow() { return screen === "play" ? view : menuView; }
+function viewNow() { return screen === "play" ? view : screen === "battle" ? battleView : screen === "pick" ? pickView : menuView; }
 function distK() { return innerWidth < innerHeight ? 1.15 : 1; }
 function minEl(v) { return Math.asin(clamp((0.45 - tgt.y) / (v.dist * distK()), -1, 1)); }   // never look from under the lawn
 function turnView(dx, dy) {                                   // dx, dy: how far the mouse or finger moved (screen pixels)
@@ -2658,15 +3127,39 @@ function camOffset(v, el, out) {
   return out.copy(F.ex).multiplyScalar(Math.sin(v.az) * Math.cos(el)).addScaledVector(F.up, Math.sin(el)).addScaledVector(F.ez, Math.cos(v.az) * Math.cos(el));
 }
 function camForward(out) { const v = viewNow(); return camOffset(v, Math.max(v.el, minEl(v)), out).negate(); }   // the way the camera looks
+let armK = 1;
+const _ca = new THREE.Vector3();
+function armHit(L, A, B) {                                         // how far along from you to the camera the first tree or house is (1: nothing)
+  const len = A.distanceTo(B), near = Math.cos(Math.min(3, (len + 12) / L.R)), i0 = Math.ceil(1.5 / Math.max(len, 0.1) * 16);
+  let hit = 1;
+  for (const b of L.stuff.blockers) {
+    if (b.r < 0.6 || b.d.dot(L.n) < near || L.n.distanceTo(b.d) * L.R < b.r + 1.2) continue;   // (not the one you are touching)
+    for (let i = i0; i < 16; i++) {
+      const t = i / 16; if (t >= hit) break;
+      _ca.lerpVectors(A, B, t).sub(L.C); const r = _ca.length();
+      if (r - L.R > b.h + 0.4) continue;
+      if (_ca.divideScalar(r).distanceTo(b.d) * L.R < b.r + 0.5) { hit = t; break; }
+    }
+  }
+  return hit;
+}
+let elUp = 0;
+const _ca2 = new THREE.Vector3();
+function camAvoid(L, dt) {                                          // still hidden after looking from higher up: the camera comes in front
+  const A = tgt, B = camera.position, hit = armHit(L, A, B);
+  const want = hit < 1 ? Math.max(2.5 / Math.max(2.5, A.distanceTo(B)), hit - 0.08) : 1;
+  armK = want < armK || snapView ? want : lerp(armK, want, 1 - Math.exp(-dt * 4));
+  if (armK < 0.999) B.lerpVectors(A, B, armK);
+}
 function updateView(dt) {
   const v = viewNow();
   if (screen !== "play" && !dragging) menuView.az += dt * 0.035;   // the menu camera drifts slowly round
   const onP = !!land && screen === "play";
-  turnFrame(onP ? land.n : WORLD_UP, onP ? 1 - Math.exp(-dt * 5) : 1 - Math.exp(-dt * (flying ? 1.8 : 6)));
+  turnFrame(onP ? land.n : WORLD_UP, snapView && onP ? 1 : onP ? 1 - Math.exp(-dt * 5) : 1 - Math.exp(-dt * (flying ? 1.8 : 6)));
   planetZoom = lerp(planetZoom, onP ? 1 : 0, 1 - Math.exp(-dt * 2));      // a bit further out on a planet, to see the round little world
   if (lastPlanet && !onP && (lastPlanet.t -= dt) <= 0) lastPlanet = null;
   const pR = onP ? land.R : lastPlanet ? lastPlanet.R : 4;
-  const d = (v.dist + planetZoom * (pR * 1.1 + 3)) * distK();
+  const d = ((screen === "battle" ? clamp(v.dist, 6, 20) : v.dist) + planetZoom * Math.min(pR * 1.1 + 3, 6)) * distK();
   let gx = 0, gy, gz = 0;
   if (screen === "play") {
     gx = J.x; gz = J.z;
@@ -2679,20 +3172,29 @@ function updateView(dt) {
       lead = lerp(lead, clamp(J.vy * 0.06, -1, 1) * smooth((J.y - 2) / 10), 1 - Math.exp(-dt * 3));
       gy = Math.max(MAT_Y + 1.35, feet + 1.0 - halfV * (0.15 - 0.17 * lead));
     }
-  } else gy = MAT_Y + 3.2;
+  } else if (screen === "battle" || screen === "pick") { battleFocus(_bc); gx = _bc.x; gz = _bc.z; gy = RING.top + (screen === "pick" ? 1.0 : 1.2); }   // the boxing ring
+  else gy = MAT_Y + 3.2;
   const kx = snapView ? 1 : 1 - Math.exp(-dt * (onP ? 10 : flying ? 5 : 8));
   tgt.x = lerp(tgt.x, gx, kx); tgt.z = lerp(tgt.z, gz, kx);
   tgt.y = snapView ? gy : lerp(tgt.y, gy, 1 - Math.exp(-dt * (onP ? 10 : flying ? 8 : 6 + Math.abs(J.vy) * 0.8)));
-  snapView = false;
-  const el = Math.max(v.el, minEl(v));
+  let el = Math.min(EL_MAX, Math.max(v.el, minEl(v)) + planetZoom * 0.28);    // a little higher on a planet, to see round the things on it
+  if (screen === "battle") el = clamp(el, 0.3, 1.3);                // in a battle: always from above the ropes (the trampoline stays out of the way)
+  if (onP && land.stuff) {                                          // a tree or a house in the way: look from higher up
+    let up = 0;
+    while (up < 0.9 && armHit(land, tgt, _ca2.copy(tgt).addScaledVector(camOffset(v, Math.min(EL_MAX, el + up), _fb), d)) < 1) up += 0.3;
+    elUp = snapView ? up : lerp(elUp, up, 1 - Math.exp(-dt * (up > elUp ? 6 : 1.5)));
+    el = Math.min(EL_MAX, el + elUp);
+  } else elUp = 0;
   camera.position.copy(tgt).addScaledVector(camOffset(v, el, _fb), d);
-  const P = onP ? land : lastPlanet;                              // never inside the planet you stand on (or just left)
+  const P = onP ? land : lastPlanet || (deco && flying ? deco : null);   // never inside the planet you stand on (or just left, or fly past)
   if (P) { _fa.copy(camera.position).sub(P.C); const r = P.R + 0.8; if (_fa.length() < r) camera.position.copy(P.C).addScaledVector(_fa.normalize(), r); }
+  if (onP && land.stuff) camAvoid(land, dt); else armK = 1;
+  snapView = false;
   camera.up.copy(camFrame.up);
   camera.lookAt(tgt);
   // the picture slides over to make room for the Settings panel (and under the buttons on an upright phone)
   const wide = innerWidth > innerHeight;
-  const sx = screen === "settings" && wide ? 0.24 : 0, sy = screen === "settings" && !wide ? 0.2 : screen === "menu" && !wide ? 0.08 : 0;
+  const side = screen === "settings" || screen === "pick", sx = side && wide ? 0.24 : 0, sy = side && !wide ? 0.2 : screen === "menu" && !wide ? 0.08 : 0;
   shiftX = lerp(shiftX, sx, 1 - Math.exp(-dt * 6)); shiftY = lerp(shiftY, sy, 1 - Math.exp(-dt * 6));
   const W = innerWidth, H = innerHeight;
   if (Math.abs(shiftX) > 0.002 || Math.abs(shiftY) > 0.002) camera.setViewOffset(W, H, -shiftX * W, -shiftY * H, W, H);
@@ -2726,7 +3228,8 @@ function updateWorld(dt) {
   scene.fog.density = 0.0034 * (1 - smooth((camY - 30) / 190));
   cloudU.haze.value.set(sk.bot[0], sk.bot[1], sk.bot[2]); cloudU.hazeD.value = 0.0011 * (1 - smooth((camY - 150) / 120));
   const sp = smooth((camY - 220) / 90);
-  hemi.color.copy(HEMI_DAY[0]).lerp(HEMI_SPACE[0], sp); hemi.groundColor.copy(HEMI_DAY[1]).lerp(HEMI_SPACE[1], sp); hemi.intensity = lerp(1.35, 0.85, sp);
+  hemi.color.copy(HEMI_DAY[0]).lerp(HEMI_SPACE[0], sp); hemi.groundColor.copy(HEMI_DAY[1]).lerp(HEMI_SPACE[1], sp); hemi.intensity = lerp(1.35, 1.45, sp);
+  planetLight(dt);
   if (earthMat.userData.u) earthMat.userData.u.hazeA.value = smooth((camY - 120) / 220) * 0.9;
   const sa = smooth((camY - 200) / 90);
   if (stars) {
@@ -2741,6 +3244,7 @@ function updateWorld(dt) {
   const who = BOUNCERS[settings.who] ? settings.who : "duck", B = BOUNCERS[who];
   if (who !== shownWho) { for (const k in BOUNCERS) BOUNCERS[k].group.visible = k === who; pack3.position.set(B.pack[0], B.pack[1], B.pack[2]); shownWho = who; }
   bouncer.position.set(J.x, MAT_Y + J.y, J.z);
+  bouncer.visible = screen !== "battle" && screen !== "pick";
   let sx = 1, sy = 1;                                         // squash on the mat, stretch when going fast (as before)
   if (!flying) {
     if (J.phase === "squish") { const k = Math.sin(Math.PI * Math.min(1, J.squishT / BOUNCE.squish)); sy = 1 - 0.3 * k; sx = 1 + 0.25 * k; }
@@ -2799,7 +3303,7 @@ function updateWorld(dt) {
   const glow = screen === "play" && !flying && inZone();
   glowRing.visible = glow; glowRing.material.opacity = glow ? 0.55 + 0.35 * Math.sin(time * 20) : 0;
   const h = Math.max(0, J.y), s = 1 / (1 + h * 0.18);
-  blobShadow.visible = !flying && h < 30 && J.x === 0 && J.z === 0;
+  blobShadow.visible = !flying && h < 30 && J.x === 0 && J.z === 0 && bouncer.visible;
   blobShadow.position.set(0, MAT_Y - Math.max(0, dip) + 0.02, 0); blobShadow.scale.setScalar(0.5 + 1.25 * s);
   blobShadow.material.opacity = 0.55 * Math.pow(s, 1.2) * clamp((30 - h) / 8, 0, 1);
 
@@ -2821,7 +3325,8 @@ function updateWorld(dt) {
   if (high.decor) { high.decor.moon.rotation.y = time * 0.02; high.decor.ball.rotation.y = time * 0.05; }
 
   updateSpace3D(dt);
-  updateGems(); updateFx(dt);
+  updateArena(dt);
+  updateDeco(); updateGems(); updateFx(dt);
 
   // ---- shadows are only drawn again while something near the ground moves ----
   const low = !flying && J.y < 45;
@@ -2848,9 +3353,9 @@ function updateSpace3D(dt) {
     const grow = Math.max(0.001, smooth((time - e.born) / 0.6) * smooth(flyFade));
     e.obj.position.set(o.x, o.y, o.z);
     if (o.kind === "planet") {
-      const onIt = !!land && land.key === o.key;
+      const onIt = !!land && land.key === o.key, ball = e.obj.userData.ball, want = camera.position.distanceTo(e.obj.position) < o.R + 250 ? hiBall() : SPH64;
+      if (ball.geometry !== want) ball.geometry = want;
       e.obj.scale.setScalar(o.R * (onIt ? 1 : grow));
-      if (!onIt) e.obj.userData.ball.rotation.y += dt * 0.08;
       continue;
     }
     e.obj.scale.setScalar(grow);
@@ -2876,9 +3381,12 @@ function updateSpace3D(dt) {
     const on = flyFade > 0;
     c.dust.visible = c.ion.visible = c.head.visible = on;
     if (!on) { c.on = false; continue; }
-    if (!c.on || c.p.distanceTo(cp) > 2600) {
-      _t1.set(Math.random() * 2 - 1, Math.random() * 1.2 - 0.3, Math.random() * 2 - 1).normalize();
-      c.p.copy(cp).addScaledVector(_t1, 1100 + Math.random() * 600);
+    if (!c.on || c.p.distanceTo(cp) > 2600 || insideBig(c.p.x, c.p.y, c.p.z, 30, true)) {
+      for (let tries = 0; tries < 8; tries++) {
+        _t1.set(Math.random() * 2 - 1, Math.random() * 1.2 - 0.3, Math.random() * 2 - 1).normalize();
+        c.p.copy(cp).addScaledVector(_t1, 1100 + Math.random() * 600);
+        if (!insideBig(c.p.x, c.p.y, c.p.z, 120, true)) break;
+      }
       _t2.set(Math.random() * 2 - 1, Math.random() - 0.5, Math.random() * 2 - 1).normalize();
       c.v.copy(_t2.sub(_t1.multiplyScalar(_t2.dot(_t1)))).normalize().multiplyScalar(45 + Math.random() * 45); c.on = true;
     }
@@ -2894,7 +3402,7 @@ function updateSpace3D(dt) {
       _t1.set(Math.random() * 2 - 1, 0.1 + Math.random() * 0.9, Math.random() * 2 - 1).normalize();
       s.p.copy(cp).addScaledVector(_t1, 650 + Math.random() * 300);
       _t2.set(Math.random() * 2 - 1, -0.4, Math.random() * 2 - 1).normalize();
-      s.v.copy(_t2.sub(_t1.multiplyScalar(_t2.dot(_t1)))).normalize().multiplyScalar(560); s.life = 0.55;
+      s.v.copy(_t2.sub(_t1.multiplyScalar(_t2.dot(_t1)))).normalize().multiplyScalar(560); s.life = insideBig(s.p.x, s.p.y, s.p.z, 60, true) ? 0 : 0.55;
     }
   }
   for (const s of shooters) {
@@ -2961,7 +3469,7 @@ cv.addEventListener("pointerdown", e => {
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   const p = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, drag: false, early: null, joy: false, btn: e.button, type: e.pointerType };
   ptrs.set(e.pointerId, p);
-  if (flying && touchMode && screen === "play") {
+  if (touchMode && ((flying && screen === "play") || (screen === "battle" && !resShown))) {
     const j = joyPlace(), g = gamePoint(e);
     if (Math.hypot(g.x - j.x, g.y - j.y) < j.r * 1.4) { p.joy = true; joy = { id: e.pointerId, dx: 0, dy: 0 }; setJoy(e); return; }
   }
@@ -2999,6 +3507,7 @@ function ptrUp(e) {
   const p = ptrs.get(e.pointerId); if (!p) return;
   ptrs.delete(e.pointerId);
   if (land && screen === "play" && e.type === "pointerup" && !p.drag && !p.joy && (p.type !== "mouse" || p.btn === 0)) press();   // a tap on a planet: jump
+  if (screen === "battle" && e.type === "pointerup" && !p.drag && !p.joy && (p.type !== "mouse" || p.btn === 0)) battlePunch();   // a tap in a battle: punch
   if (p.joy) joy = null;
   if (camPtrs().length < 2) pinch = null;
   dragging = camPtrs().some(q => q.drag);
@@ -3011,18 +3520,20 @@ addEventListener("click", () => document.activeElement?.blur?.());   // after a 
 
 // ================= Getting the high-up things ready a few at a time while the menu shows =================
 const jobs3D = [() => paintEarthRows(6)];
-jobs3D.push(buildSkyFar, buildBalloon, buildPlane, buildSatellite, buildDecor, buildComets, buildLanding, ...PLANETS.map(P => () => planetMat(P.kind)), () => { if (!ufoKit) ufoKit = makeUfoKit(); }, prepareSpace);
+jobs3D.push(buildSkyFar, buildBalloon, buildPlane, buildSatellite, buildDecor, buildComets, buildLanding, ...PLANETS.map(P => () => planetMat(P.kind)), () => { if (!ufoKit) ufoKit = makeUfoKit(); },
+  ...PLANETS.map(P => () => decoKit(P.kind)), () => { if (!villageKit) villageKit = makeVillageKit(); }, arenaStep, prepareSpace);
 // make one of each space thing now and get its shaders ready, so nothing stutters the first time you reach space
 function prepareSpace() {
   if (!R3) return;
-  const temp = new THREE.Group(), hidden = [stars, milky, ...nebulae, pack3, ufoLights, ...comets.flatMap(c => [c.dust, c.ion, c.head]), ...shooters.map(q => q.m)].filter(o => o && !o.visible);
+  const temp = new THREE.Group(), hidden = [stars, milky, ...nebulae, pack3, ufoLights, arena, ...comets.flatMap(c => [c.dust, c.ion, c.head]), ...shooters.map(q => q.m)].filter(o => o && !o.visible);
   PLANETS.forEach((P, t) => { const o = makePlanetObj(t); temp.add(o); pools.planet[t].push(o); });
   ALIEN_COLS.forEach((c, i) => { const o = makeUfo(i); temp.add(o); pools.ufo[i].push(o); });
   const gem = makeGem("moon"); temp.add(gem); (gemPools.moon = gemPools.moon || []).push(gem);
+  const sd = getDeco(STARTER); sd.group.visible = true;
   if (planetShadow) { planetShadow.visible = true; hidden.push(planetShadow); }
   temp.position.set(0, -60, 0); scene.add(temp);
   for (const o of hidden) o.visible = true;
-  const done = () => { scene.remove(temp); for (const o of hidden) o.visible = false; };
+  const done = () => { scene.remove(temp); for (const o of hidden) o.visible = false; sd.group.visible = deco === sd; };
   try {
     if (R3.compileAsync) R3.compileAsync(scene, camera).then(done, done);
     else { R3.compile(scene, camera); done(); }
@@ -3102,15 +3613,7 @@ function drawHUD() {
     const look = touchMode ? "Drag with one finger to look around!" : "Drag the mouse to look around!";
     bigText(look, VW / 2, narrow ? VH - 88 : VH - 92, 26, "#d8f0ff");
   }
-  if (flying && touchMode) {                                   // the joystick (bottom left): steer left and right, up and down
-    const j = joyPlace(), kx = joy ? joy.dx : 0, ky = joy ? joy.dy : 0;
-    ellipse(j.x, j.y, j.r, j.r, "rgba(255,255,255,0.16)");
-    ctx.strokeStyle = "rgba(255,255,255,0.65)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, 7); ctx.stroke();
-    ctx.font = "700 22px Fredoka, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.7)"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText("▲", j.x, j.y - j.r * 0.72); ctx.fillText("▼", j.x, j.y + j.r * 0.72); ctx.fillText("◀", j.x - j.r * 0.72, j.y); ctx.fillText("▶", j.x + j.r * 0.72, j.y);
-    ctx.textBaseline = "alphabetic";
-    ellipse(j.x + kx * j.r * 0.6, j.y - ky * j.r * 0.6, j.r * 0.42, j.r * 0.42, joy ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.6)");
-  }
+  if (flying && touchMode) drawJoy();                           // the joystick (bottom left): steer left and right, up and down
   if (land && landHint > 0) {                                  // on a planet: how to walk, jump and fly away
     const walkTip = touchMode ? "Joystick to walk, tap to jump! Tap twice to fly away!" : "Arrows to walk, SPACE to jump! Jump twice to fly away!";
     ctx.globalAlpha = clamp(landHint, 0, 1);
@@ -3175,6 +3678,738 @@ function drawSpeedLines() {
   ctx.globalAlpha = 1;
 }
 
+// ================= Battle challenges: two ducks against one friendly opponent, sumo style =================
+// ---- the rules (no 3D in this part, so the tests can play lots of battles quickly) ----
+const RING = { x: 0, z: 12.9, A: 4.0, top: 0.85, apron: 4.35, P: 6.5, water: 0.42 };   // A: half the mat (the ropes); P: the soft pool wall
+const FIGHT = { flipV: 5.0, fric: 2.2, acc: 14, bounce: 0.6, stun: 0.3, swing: 0.08, ready: 1.6, tired: 25, tiredEvery: 8 };
+const DUCK = { r: 0.45, mass: 1, speed: 4.3, power: 8.5, reach: 0.65, cd: 0.45 };
+const PAL = { think: 0.4, aim: 0.6, punchP: 0.6 };                    // the computer duck that helps you
+const PAL_BODY = { mass: 3.0, push: 1.0, grip: 2.5, flipV: 6.0, stunK: 0.3 };   // Noah: the white duck is EXTREMELY hard to knock out (heavy, grippy feet, gets up fast)
+const FOES = {
+  squirrel: { r: 0.4, mass: 0.75, speed: 3.3, power: 6.5, reach: 0.55, cd: 1.0, think: 0.6, aim: 0.5, punchP: 0.55 },
+  bear:     { r: 0.7, mass: 1.5, speed: 2.7, power: 9.5, reach: 0.6, cd: 1.1, think: 0.45, aim: 0.65, punchP: 0.65, stunK: 0.5 },
+  hedgehog: { r: 0.45, mass: 1.25, speed: 5.8, power: 11.5, reach: 0.5, cd: 0.6, think: 0.08, aim: 0.95, punchP: 0.9, dodge: 0.95, stunK: 0.35,
+              roll: { cd: 1.8, speed: 9.5, power: 13, curl: 0.4, time: 0.9 } },
+};
+const FOE_LIST = ["squirrel", "bear", "hedgehog"];
+function makeFighter(kind, team, x, z, face, who) {
+  const P = team === "duck" ? DUCK : FOES[kind];
+  return { kind, team, who, x, z, vx: 0, vz: 0, y: RING.top, face, r: P.r, mass: P.mass, speed: P.speed, power: P.power, reach: P.reach, cool: P.cd,
+           stunK: P.stunK || 1, cd: 0.6, punchT: 9, hitDone: true, hand: 0, stun: 0, state: "ring", mx: 0, mz: 0, wantPunch: false,
+           thinkT: Math.random() * 0.3, tgt: null, gx: x, gz: z, punchOK: false, rollCd: 2 + Math.random(), curlT: 0, rollT: 0, rdx: 0, rdz: 0,
+           fallT: 0, fx0: 0, fz0: 0, fx1: 0, fz1: 0, y0: 0, spin: 0, poolT: 0, wave: 0, laughT: 0, cheerT: 0, dodgeSeen: -1 };
+}
+function newBattle(kind) {
+  const c = RING, B = { kind, t: 0, phase: "ready", endT: 0, events: [], fighters: [] };
+  B.me = makeFighter("duck", "duck", c.x + 1.7, c.z - 0.95, -Math.PI / 2, "me");        // the ducks on the left (as the camera sees it), you in front
+  B.pal = Object.assign(makeFighter("duck", "duck", c.x + 1.7, c.z + 0.95, -Math.PI / 2, "pal"), PAL_BODY);
+  B.foe = makeFighter(kind, "foe", c.x - 1.9, c.z, Math.PI / 2, "foe");
+  B.fighters.push(B.me, B.pal, B.foe);
+  return B;
+}
+const inRing = f => f.state === "ring";
+// how far a spot is from the ropes on each side, and which way is "out" nearest to it
+function edgeOut(x, z) {
+  const dx = x - RING.x, dz = z - RING.z;
+  return Math.abs(dx) > Math.abs(dz) ? [Math.sign(dx) || 1, 0, RING.A - Math.abs(dx)] : [0, Math.sign(dz) || 1, RING.A - Math.abs(dz)];
+}
+function bev(B, type, f, more) { B.events.push(Object.assign({ type, f }, more)); }
+// a punch (or a rolling charge) lands: the one hit slides back, the softer and lighter the further
+function knock(B, a, t, dx, dz, power) {
+  const n = Math.hypot(dx, dz) || 1, k = power / t.mass;
+  t.vx += dx / n * k; t.vz += dz / n * k;
+  t.stun = FIGHT.stun * t.stunK; t.curlT = 0; t.rollT = 0;
+  a.vx -= dx / n * 0.6; a.vz -= dz / n * 0.6;                              // a little bounce back for the one punching
+  bev(B, "hit", t, { by: a, power });
+}
+function startPunch(B, f) {
+  if (f.cd > 0 || f.punchT < 0.3 || f.curlT > 0 || f.rollT > 0 || f.stun > 0) return;
+  // aim at the nearest one in reach (kind to small fingers and quick keys)
+  let best = null, bd = 1e9;
+  for (const o of B.fighters) if (o.team !== f.team && inRing(o)) { const d = Math.hypot(o.x - f.x, o.z - f.z) - o.r - f.r; if (d < f.reach + 0.45 && d < bd) { bd = d; best = o; } }
+  if (best) f.face = Math.atan2(best.x - f.x, best.z - f.z);
+  f.punchT = 0; f.hitDone = false; f.cd = f.cool; f.hand = 1 - f.hand;
+  bev(B, "swing", f);
+}
+function punchLands(B, f) {
+  f.hitDone = true;
+  const fx = Math.sin(f.face), fz = Math.cos(f.face);
+  let best = null, bd = 1e9;
+  for (const o of B.fighters) {
+    if (o.team === f.team || !inRing(o)) continue;
+    const dx = o.x - f.x, dz = o.z - f.z, d = Math.hypot(dx, dz), gap = d - o.r - f.r;
+    if (gap > f.reach || (dx * fx + dz * fz) / (d || 1) < 0.34) continue;      // in reach, and in front (within about 70 degrees)
+    if (gap < bd) { bd = gap; best = o; }
+  }
+  if (!best) return;
+  const dx = best.x - f.x, dz = best.z - f.z, d = Math.hypot(dx, dz) || 1;
+  knock(B, f, best, dx / d * 0.6 + fx * 0.4, dz / d * 0.6 + fz * 0.4, f.power);
+}
+// ---- the computer players: go behind the one you push, push it towards the nearest ropes, never back yourself into them ----
+function aiThink(B, f, P) {
+  const foes = B.fighters.filter(o => o.team !== f.team && inRing(o));
+  if (!foes.length) { f.tgt = null; return; }
+  let t = f.tgt && inRing(f.tgt) ? f.tgt : null;
+  for (const o of foes) if (!t || Math.hypot(o.x - f.x, o.z - f.z) < Math.hypot(t.x - f.x, t.z - f.z) - 1.5) t = o;
+  f.tgt = t;
+  let [nx, nz] = edgeOut(t.x, t.z);
+  if (Math.random() > P.aim) { const a = Math.random() * 6.283; nx = Math.cos(a); nz = Math.sin(a); }   // a sloppy plan sometimes
+  const back = f.r + t.r + 0.15;
+  f.gx = t.x - nx * back; f.gz = t.z - nz * back;
+  if ((f.x - t.x) * nx + (f.z - t.z) * nz > -0.2) {                        // on the wrong side: walk round
+    const px = -nz, pz = nx, s = Math.sign((f.x - t.x) * px + (f.z - t.z) * pz) || 1;
+    f.gx = t.x + px * s * (back + 0.45) - nx * 0.3; f.gz = t.z + pz * s * (back + 0.45) - nz * 0.3;
+  }
+  const lim = RING.A - f.r - 0.3;
+  f.gx = clamp(f.gx, RING.x - lim, RING.x + lim); f.gz = clamp(f.gz, RING.z - lim, RING.z + lim);
+  const ramp = f.who === "pal" ? Math.min(1, 0.4 + (B.t - FIGHT.ready) / 15) : 1;   // your helper warms up slowly, so you get to join in
+  f.punchOK = Math.random() < P.punchP * ramp;
+  // the hedgehog curls up and rolls at you when you stand between it and the ropes
+  const R = FOES[f.kind] && FOES[f.kind].roll;
+  if (R && f.rollCd <= 0 && f.stun <= 0) {
+    const dx = t.x - f.x, dz = t.z - f.z, d = Math.hypot(dx, dz), [ex, ez, em] = edgeOut(t.x, t.z);
+    if (d > 1.6 && d < 4.8 && (dx * ex + dz * ez) / d > 0.45 && em < 2.6 && Math.random() < 0.6) { f.curlT = R.curl; f.rdx = dx / d; f.rdz = dz / d; bev(B, "curl", f); }
+  }
+}
+function aiMove(B, f, P, dt) {
+  f.mx = f.mz = 0; f.wantPunch = false;
+  if ((f.thinkT -= dt) <= 0) { f.thinkT = P.think * (0.7 + Math.random() * 0.6); aiThink(B, f, P); }
+  const t = f.tgt;
+  if (!t || !inRing(t) || f.curlT > 0 || f.rollT > 0) return;
+  const dx = t.x - f.x, dz = t.z - f.z, d = Math.hypot(dx, dz) || 1, gap = d - f.r - t.r;
+  let mx = f.gx - f.x, mz = f.gz - f.z, md = Math.hypot(mx, mz);
+  const [nx, nz] = edgeOut(t.x, t.z);
+  if (md < 0.35 && (dx * nx + dz * nz) / d > 0.5) { mx = dx; mz = dz; md = d; }     // lined up behind it: lean in and shove
+  if (md > 0.05) { const k = Math.min(1, md / 0.4) / md; f.mx = mx * k; f.mz = mz * k; }
+  // stay off the ropes yourself
+  for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const room = RING.A - f.r - ((f.x - RING.x) * ax + (f.z - RING.z) * az), out = f.mx * ax + f.mz * az;
+    if (room < 0.8 && out > 0) { f.mx -= ax * out * 1.5; f.mz -= az * out * 1.5; }
+  }
+  if (d < 2.6) f.face = Math.atan2(dx, dz);
+  if (gap < f.reach && f.punchOK && f.cd <= 0) f.wantPunch = true;
+  // the hedgehog hops out of the way of a punch
+  if (P.dodge) for (const o of B.fighters) {
+    if (o.team === f.team || !inRing(o) || o.punchT > 0.06 || o.dodgeId === f.dodgeSeen) continue;
+    const ox = f.x - o.x, oz = f.z - o.z, od = Math.hypot(ox, oz);
+    if (od - o.r - f.r > o.reach + 0.4) continue;
+    o.dodgeId = o.dodgeId || Math.random(); f.dodgeSeen = o.dodgeId;
+    if (Math.random() < P.dodge) {
+      let px = -oz / od, pz = ox / od;
+      if (px * (RING.x - f.x) + pz * (RING.z - f.z) < 0) { px = -px; pz = -pz; }   // hop towards the middle
+      f.vx += px * 4.5; f.vz += pz * 4.5; bev(B, "dodge", f);
+    }
+  }
+}
+const GOOD = { think: 0.1, aim: 1, punchP: 1 };                            // the "good player" the tests use
+function stepBattle(B, dt, ctl) {
+  B.t += dt; B.events.length = 0;
+  if (B.phase === "ready" && B.t >= FIGHT.ready) { B.phase = "fight"; bev(B, "go", null); }
+  const fight = B.phase === "fight";
+  // a long battle: the opponent gets tired (a bit lighter, slower and softer each time), so every battle ends
+  if (fight && B.t - FIGHT.ready > FIGHT.tired + (B.foe.tired || 0) * FIGHT.tiredEvery && (B.foe.tired || 0) < 4 && inRing(B.foe)) {
+    const f = B.foe; f.tired = (f.tired || 0) + 1; f.mass *= 0.86; f.speed *= 0.92; f.power *= 0.92; bev(B, "tired", f);
+  }
+  for (const f of B.fighters) {
+    f.cd -= dt; f.punchT += dt; f.stun -= dt; f.rollCd -= dt; f.wave = Math.max(0, f.wave - dt);
+    if (f.dodgeId && f.punchT > 0.3) f.dodgeId = 0;
+    if (!inRing(f)) continue;
+    f.mx = f.mz = 0; f.wantPunch = false;
+    if (fight && f.stun <= 0) {
+      if (f.who === "me") {
+        if (ctl && ctl.mode === "good") aiMove(B, f, GOOD, dt);
+        else if (ctl && ctl.mode !== "idle") { f.mx = ctl.mx; f.mz = ctl.mz; f.wantPunch = ctl.punch; if (Math.hypot(ctl.mx, ctl.mz) > 0.2) f.face = turnTo(f.face, Math.atan2(ctl.mx, ctl.mz), dt * 14); }
+      } else aiMove(B, f, f.team === "duck" ? PAL : FOES[f.kind], dt);
+      if (f.who !== "me" && Math.hypot(f.mx, f.mz) > 0.2 && !(f.tgt && Math.hypot(f.tgt.x - f.x, f.tgt.z - f.z) < 2.6)) f.face = turnTo(f.face, Math.atan2(f.mx, f.mz), dt * 10);
+      if (f.wantPunch) startPunch(B, f);
+    }
+    // the hedgehog's rolling charge
+    const R = FOES[f.kind] && FOES[f.kind].roll;
+    if (R && f.curlT > 0) { f.curlT -= dt; f.vx *= 0.85; f.vz *= 0.85; if (f.curlT <= 0) { f.rollT = R.time; bev(B, "roll", f); } }
+    if (R && f.rollT > 0) {
+      f.rollT -= dt; f.vx = f.rdx * R.speed; f.vz = f.rdz * R.speed; f.face = Math.atan2(f.rdx, f.rdz);
+      const room = RING.A - f.r - ((f.x - RING.x) * Math.sign(f.rdx) * (Math.abs(f.rdx) > 0.3) + (f.z - RING.z) * Math.sign(f.rdz) * (Math.abs(f.rdz) > 0.3));
+      if (room < 0.9) { f.rollT = 0; f.vx *= 0.25; f.vz *= 0.25; }               // brakes before the ropes
+      for (const o of B.fighters) if (o.team !== f.team && inRing(o) && Math.hypot(o.x - f.x, o.z - f.z) < o.r + f.r + 0.1) {
+        knock(B, f, o, f.rdx, f.rdz, R.power); f.rollT = 0; f.vx = -f.rdx * 1.5; f.vz = -f.rdz * 1.5; f.rollCd = R.cd; break;
+      }
+      if (f.rollT <= 0 && f.rollCd <= 0) f.rollCd = R.cd;
+    }
+    if (f.punchT >= FIGHT.swing && !f.hitDone) punchLands(B, f);
+    // walking: push the way you want to go (up to your top speed); the mat slows everything down
+    const m = Math.hypot(f.mx, f.mz);
+    if (m > 0.01 && f.rollT <= 0 && f.curlT <= 0) {
+      const ux = f.mx / Math.max(1, m), uz = f.mz / Math.max(1, m), along = (f.vx * ux + f.vz * uz) / (Math.hypot(ux, uz) || 1);
+      if (along < f.speed * Math.min(1, m)) { f.vx += ux * FIGHT.acc * dt; f.vz += uz * FIGHT.acc * dt; }
+    }
+    if (f.rollT <= 0) {                                                  // (grippy feet stop a slide quickly)
+      const slide = f.stun > 0 || Math.hypot(f.vx, f.vz) > f.speed + 0.3, k = Math.exp(-FIGHT.fric * dt * (m > 0.01 ? 1 : 1.6) * (slide && f.grip ? f.grip : 1));
+      f.vx *= k; f.vz *= k;
+    }
+    f.x += f.vx * dt; f.z += f.vz * dt;
+  }
+  // bodies bump into each other (the heavy ones hardly move)
+  const live = B.fighters.filter(inRing);
+  for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+    const a = live[i], b = live[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz), o = a.r + b.r - d;
+    if (o <= 0 || d < 1e-6) continue;
+    const nx = dx / d, nz = dz / d, ia = 1 / (a.push || a.mass), ib = 1 / (b.push || b.mass), s = ia + ib;
+    a.x -= nx * o * ia / s; a.z -= nz * o * ia / s; b.x += nx * o * ib / s; b.z += nz * o * ib / s;
+    const vn = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+    if (vn < 0) { const j2 = -1.3 * vn / s; a.vx -= nx * j2 * ia; a.vz -= nz * j2 * ia; b.vx += nx * j2 * ib; b.vz += nz * j2 * ib; }
+  }
+  // the ropes: a soft push bounces you back, a strong one flips you over into the pool
+  for (const f of live) {
+    for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (!inRing(f)) break;
+      const pos = (f.x - RING.x) * ax + (f.z - RING.z) * az, lim = RING.A - f.r * 0.6;
+      if (pos <= lim) continue;
+      const vn = f.vx * ax + f.vz * az;
+      if (vn > (f.flipV || FIGHT.flipV)) flipOut(B, f, ax, az);
+      else {
+        f.x -= ax * (pos - lim); f.z -= az * (pos - lim);
+        if (vn > 0) { f.vx -= ax * vn * (1 + FIGHT.bounce); f.vz -= az * vn * (1 + FIGHT.bounce); if (vn > 1.2) bev(B, "rope", f, { ax, az, v: vn }); }
+      }
+    }
+  }
+  // flying over the ropes, splashing, floating; at the end everyone waves
+  for (const f of B.fighters) {
+    if (f.state === "fall") {
+      f.fallT += dt;
+      const k = Math.min(1, f.fallT / 0.8);
+      f.x = lerp(f.fx0, f.fx1, k); f.z = lerp(f.fz0, f.fz1, k);
+      f.y = lerp(f.y0, RING.water - 0.3, k) + Math.sin(Math.PI * k) * 1.4;
+      f.spin = k * Math.PI * 2;
+      if (k >= 1) { f.state = "pool"; f.poolT = 0; f.spin = 0; bev(B, "splash", f); f.laughT = 0.9; }
+    } else if (f.state === "pool") {
+      f.poolT += dt; f.laughT -= dt;
+      f.y = RING.water - 0.3 + Math.sin(f.poolT * 2.2 + f.fx1) * 0.05 - 0.45 * Math.exp(-f.poolT * 5);
+      if (f.laughT < 0 && f.laughT > -dt * 1.5) bev(B, "laugh", f);
+      if (B.phase === "won" && f.team === "foe" && f.poolT > 1.8) climbOut(f);
+    } else if (f.state === "climb") {
+      f.fallT += dt;
+      const k = Math.min(1, f.fallT / 0.9);
+      f.x = lerp(f.fx0, f.fx1, k); f.z = lerp(f.fz0, f.fz1, k); f.y = lerp(f.y0, 0, k) + Math.sin(Math.PI * k) * 1.6;
+      if (k >= 1) { f.state = "lawn"; f.y = 0; f.face = Math.atan2(RING.x - f.x, RING.z - f.z); bev(B, "byebye", f); }
+    }
+    if (B.phase === "won" || B.phase === "lost") f.wave = 1;
+  }
+  // who won?
+  if (B.phase === "fight") {
+    if (!inRing(B.foe)) { B.phase = "won"; B.endT = B.t; bev(B, "won", B.foe); }
+    else if (!inRing(B.me) && !inRing(B.pal)) { B.phase = "lost"; B.endT = B.t; bev(B, "lost", B.foe); }
+  }
+}
+function turnTo(a, b, k) { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); }
+function flipOut(B, f, ax, az) {
+  f.state = "fall"; f.fallT = 0; f.fx0 = f.x; f.fz0 = f.z; f.y0 = f.y; f.fax = ax; f.faz = az;
+  const mid = (RING.apron + RING.P - 0.38) / 2, side = RING.P - 0.9;
+  f.fx1 = ax ? RING.x + ax * mid : clamp(f.x + f.vx * 0.15, RING.x - side, RING.x + side);
+  f.fz1 = az ? RING.z + az * mid : clamp(f.z + f.vz * 0.15, RING.z - side, RING.z + side);
+  f.vx = f.vz = 0; f.punchT = 9; f.curlT = f.rollT = 0;
+  bev(B, "flip", f, { ax, az });
+}
+function climbOut(f) {
+  f.state = "climb"; f.fallT = 0; f.fx0 = f.x; f.fz0 = f.z; f.y0 = f.y;
+  const dx = f.x - RING.x, dz = f.z - RING.z, out = RING.P + 1.3;
+  if (Math.abs(dx) > Math.abs(dz)) { f.fx1 = RING.x + Math.sign(dx) * out; f.fz1 = f.z; } else { f.fz1 = RING.z + Math.sign(dz) * out; f.fx1 = f.x; }
+}
+// play a whole battle with no pictures (for the tests): "idle" (you stand still) or "good" (you play well)
+function simBattle(kind, mode, maxT = 120) {
+  const B = newBattle(kind), ctl = { mode, mx: 0, mz: 0, punch: false };
+  while (B.phase === "ready" || B.phase === "fight") { stepBattle(B, 1 / 60, ctl); if (B.t > maxT) return "draw"; }
+  return B.phase;
+}
+
+// ---- the words for battles (one per line, so the Indonesian game can swap each one) ----
+const BT = {
+  title: "🥊 Who do you want to battle?",
+  names: { squirrel: "Squirrel", bear: "Bear", hedgehog: "Hedgehog" },
+  levels: { squirrel: "Easy", bear: "Medium", hedgehog: "Hard" },
+  back: "⬅ Back",
+  ready: "Ready...",
+  go: "Go! 🥊",
+  hintKeys: "Arrows to move, SPACE to punch!",
+  hintTouch: "Joystick to move, tap to punch!",
+  hint2: "Push them into the pool! 💦",
+  win: "🏆 You win!",
+  lose: n => "The " + n + " wins! Try again!",
+  champ: "🌟 You beat the Hedgehog! You're the CHAMPION! 🌟",
+  trophy: "🏆 New trophy!",
+  again: "🔁 Again",
+  pickNew: "🥊 Pick another",
+  menu: "🏠 Menu",
+  splash: "Splash! 💦",
+  yay: "Yay! 🎉",
+  goGo: "Go, go! 📣",
+  fun: "That was fun! 👋",
+  roll: "Roll! 🌀",
+  tired: n => "😴 The " + n + " is getting tired!",
+};
+const HIT_WORDS = ["Pomf!", "Bonk!", "Boing!", "Poof!"];
+const FOE_EMOJI = { squirrel: "🐿️", bear: "🐻", hedgehog: "🦔" }, FOE_STARS = { squirrel: "⭐", bear: "⭐⭐", hedgehog: "⭐⭐⭐" };
+// trophies: the opponents you have beaten (battles never touch your best height, space or progress)
+const SAVE_BATTLE = "trampoline-battle";
+const battleSave = { won: [] };
+try { const s = JSON.parse(localStorage.getItem(SAVE_BATTLE) || "null"); if (s && Array.isArray(s.won)) battleSave.won = s.won.filter(k => FOES[k]); } catch (e) {}
+function saveBattle() { try { localStorage.setItem(SAVE_BATTLE, JSON.stringify(battleSave)); } catch (e) {} }
+
+// ---- sounds for battles: a soft glove "pomf", a big splash, a cheer ----
+let noiseBuf = null;
+function noise(dur, f0, f1, vol, type = "lowpass", delay = 0, q = 0.7) {
+  const a = audio(); if (!a) return;
+  if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const t0 = a.currentTime + delay, src = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = noiseBuf; fl.type = type; fl.Q.value = q;
+  fl.frequency.setValueAtTime(f0, t0); fl.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(fl).connect(g).connect(a.destination); src.start(t0, Math.random() * 0.4); src.stop(t0 + dur + 0.05);
+}
+Object.assign(sfx, {
+  pomf(k = 1) { tone("sine", 170 + k * 25, 65, 0.16, 0.3); noise(0.12, 1300, 280, 0.24); },
+  splash() { noise(0.75, 4200, 320, 0.32); noise(0.4, 900, 180, 0.26, "lowpass", 0.04); for (let i = 0; i < 6; i++) tone("sine", 500 + Math.random() * 600, 900 + Math.random() * 900, 0.08, 0.05, 0.18 + i * 0.07); },
+  cheer() { sfx.yay(); noise(1.3, 1100, 2300, 0.13, "bandpass", 0.05, 1.1); [784, 988, 1175, 1568].forEach((f, i) => tone("triangle", f, f * 1.02, 0.25, 0.1, 0.45 + i * 0.11)); },
+  twang() { tone("sine", 150, 430, 0.22, 0.12); },
+  ding() { tone("triangle", 1320, 1310, 0.6, 0.16); tone("sine", 2640, 2610, 0.4, 0.05); },
+  giggle() { [0, 1, 2, 3].forEach(i => tone("sine", 720 - i * 45, 940 - i * 45, 0.08, 0.06, i * 0.11)); },
+  aww() { tone("triangle", 440, 330, 0.45, 0.12); tone("triangle", 330, 262, 0.5, 0.1, 0.35); },
+});
+
+// ---- the friendly fighters: two ducks with boxing gloves, a squirrel, a bear and a hedgehog ----
+let gloveMat = null, kidEye = null, softCheek = null;
+const gloveGeos = {};
+function gloveGeo(hex) {
+  if (!gloveGeos[hex]) gloveGeos[hex] = mergeGeos([
+    tint(new THREE.SphereGeometry(1, 18, 12).scale(0.16, 0.15, 0.19), hex),
+    tint(new THREE.SphereGeometry(1, 10, 8).scale(0.065, 0.075, 0.085).translate(0.12, 0.04, 0.03), hex),
+    tint(new THREE.CylinderGeometry(0.105, 0.115, 0.11, 16).rotateX(Math.PI / 2).translate(0, -0.01, -0.17), "#ffffff")]);
+  return gloveGeos[hex];
+}
+function bModel() { const root = new THREE.Group(), body = new THREE.Group(); root.add(body); return { root, body, walkPh: 0, roll: 0 }; }
+function addGloves(M, hex, rest, k = 1, parent = M.body) {
+  gloveMat = gloveMat || phys(0xffffff, { vertexColors: true, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.2 });
+  M.gloves = []; M.rest = rest;
+  for (let i = 0; i < 2; i++) { const g = addMesh(parent, gloveGeo(hex), gloveMat, rest[i][0], rest[i][1], rest[i][2], k); if (i === 0) g.scale.x = -k; M.gloves.push(g); }
+}
+const kidEyeMat = () => kidEye || (kidEye = phys(0xffffff, { map: canvasTex(paintEye("kid")), roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.04 }));
+const cheekMat = () => softCheek || (softCheek = new THREE.MeshBasicMaterial({ color: 0xff8f9a, transparent: true, opacity: 0.55, depthWrite: false }));
+function eyesAndCheeks(head, R, ex, ey, ez, size, cx, cy, cz) {
+  for (const s of [-1, 1]) {
+    onBall(addMesh(head, SPH16, kidEyeMat(), 0, 0, 0, size, size * 1.18, size * 0.75), R, s * ex, ey, ez);
+    const ch = onBall(addMesh(head, SPH16, cheekMat(), 0, 0, 0, size * 0.95, size * 0.62, size * 0.25), R * 1.01, s * cx, cy, cz); ch.castShadow = false;
+  }
+}
+function makeBattleDuck(white) {
+  const M = bModel();
+  const fe = white ? phys(0xffffff, { map: canvasTex(paintFeathers("#f7f3ea", "255,255,255", "rgba(150,138,120,0.3)"), { rep: [3, 2] }), roughness: 0.86 }) : null;
+  M.duck = makeDuck(fe); M.body.add(M.duck.group);
+  addGloves(M, white ? "#2f7fe4" : "#e8383a", [[-0.33, 1.0, 0.74], [0.33, 1.0, 0.74]]);
+  M.h = 2.15; M.mid = 0.95; M.reach = 0.42; M.floatR = 0.66;
+  return M;
+}
+function makeSquirrel() {
+  const M = bModel(), b = M.body;
+  const fur = phys(0xc9773c, { roughness: 0.85 }), fur2 = phys(0xb4652f, { roughness: 0.9 }), cream = phys(0xf7e4c6, { roughness: 0.8 }), dark = std(0x3a2418, 0.45);
+  addMesh(b, SPH, fur, 0, 0.62, -0.02, 0.4, 0.46, 0.38);
+  addMesh(b, SPH, cream, 0, 0.58, 0.19, 0.28, 0.34, 0.21);
+  const head = new THREE.Group(); head.position.set(0, 1.2, 0.06); b.add(head);
+  addMesh(head, SPH, fur, 0, 0, 0, 0.36, 0.33, 0.34);
+  addMesh(head, SPH, cream, 0, -0.11, 0.21, 0.2, 0.15, 0.15);
+  addMesh(head, SPH16, dark, 0, -0.04, 0.35, 0.055, 0.045, 0.04);
+  addMesh(head, new THREE.BoxGeometry(0.1, 0.08, 0.02), std(0xffffff, 0.4), 0, -0.2, 0.33);           // two little front teeth
+  eyesAndCheeks(head, 0.335, 0.42, 0.22, 0.88, 0.085, 0.62, -0.18, 0.76);
+  for (const s of [-1, 1]) {
+    addMesh(head, new THREE.ConeGeometry(1, 1, 12), fur, s * 0.19, 0.34, -0.03, 0.09, 0.26, 0.07, 0, 0, -s * 0.25);
+    addMesh(head, new THREE.ConeGeometry(1, 1, 8), cream, s * 0.185, 0.32, 0.01, 0.05, 0.17, 0.03, 0, 0, -s * 0.25);
+    addMesh(b, SPH, fur2, s * 0.17, 0.07, 0.1, 0.12, 0.08, 0.19);
+  }
+  for (const [y, z, r] of [[0.42, -0.4, 0.2], [0.7, -0.64, 0.26], [1.06, -0.73, 0.3], [1.42, -0.62, 0.28], [1.64, -0.38, 0.21]]) addMesh(b, SPH, r > 0.25 ? fur2 : fur, 0, y, z, r, r, r * 0.9);   // the big bushy tail
+  addGloves(M, "#3ccf5a", [[-0.27, 0.8, 0.44], [0.27, 0.8, 0.44]], 0.82);
+  M.h = 1.8; M.mid = 0.75; M.reach = 0.34; M.floatR = 0.52;
+  return M;
+}
+function makeBear() {
+  const M = bModel(), b = M.body;
+  const fur = phys(0x8a5a33, { roughness: 0.88 }), tum = phys(0xdcb48a, { roughness: 0.85 }), muz = phys(0xeacca5, { roughness: 0.8 }), dark = std(0x2a1a12, 0.35), pink = std(0xf0a0a8, 0.7);
+  addMesh(b, SPH, fur, 0, 1.0, 0, 0.72, 0.82, 0.66);
+  addMesh(b, SPH, tum, 0, 0.95, 0.4, 0.5, 0.58, 0.3);
+  for (const s of [-1, 1]) addMesh(b, SPH, fur, s * 0.32, 0.16, 0.1, 0.24, 0.2, 0.3);
+  const head = new THREE.Group(); head.position.set(0, 2.02, 0.1); b.add(head);
+  addMesh(head, SPH, fur, 0, 0, 0, 0.52, 0.48, 0.48);
+  addMesh(head, SPH, muz, 0, -0.12, 0.38, 0.25, 0.18, 0.2);
+  addMesh(head, SPH16, dark, 0, -0.03, 0.57, 0.1, 0.07, 0.06);
+  addMesh(head, tubeAlong([[-0.08, -0.2, 0.55], [0, -0.24, 0.57], [0.08, -0.2, 0.55]], 0.014, 12, 6), dark, 0, 0, 0);   // a smile
+  eyesAndCheeks(head, 0.48, 0.36, 0.25, 0.9, 0.085, 0.6, -0.1, 0.78);
+  for (const s of [-1, 1]) { addMesh(head, SPH, fur, s * 0.37, 0.4, -0.02, 0.17, 0.17, 0.12); addMesh(head, SPH16, pink, s * 0.37, 0.4, 0.07, 0.1, 0.1, 0.04); }
+  addGloves(M, "#8a5cff", [[-0.46, 1.3, 0.66], [0.46, 1.3, 0.66]], 1.3);
+  M.h = 2.75; M.mid = 1.1; M.reach = 0.42; M.floatR = 0.85;
+  return M;
+}
+function makeHedgehog() {
+  const M = bModel(), ball = new THREE.Group(); ball.position.y = 0.55; M.body.add(ball); M.ball = ball;
+  const coat = phys(0x86684a, { roughness: 0.9 }), face = phys(0xf2dcc0, { roughness: 0.8 }), dark = std(0x2a1d16, 0.35), pink = std(0xf3a6a6, 0.7);
+  addMesh(ball, SPH, coat, 0, 0, -0.05, 0.5, 0.48, 0.52);
+  // soft rounded spikes all over the back (friendly, not sharp)
+  const sp = [], n = 90;
+  for (let i = 0; i < n; i++) {
+    const y = 1 - (i + 0.5) / n * 2, rr = Math.sqrt(1 - y * y), a = i * 2.39996, d = new THREE.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr);
+    if (d.z > 0.35 || d.y < -0.55) continue;
+    const g = new THREE.ConeGeometry(0.075, 0.22, 7).translate(0, 0.11, 0);
+    g.applyQuaternion(_q.setFromUnitVectors(_t1.set(0, 1, 0), d)); g.translate(d.x * 0.46, d.y * 0.44, d.z * 0.48 - 0.05);
+    sp.push(g);
+  }
+  const spikes = mergeGeos(sp);
+  addMesh(ball, spikes, std(0x6e5238, 0.85), 0, 0, 0);
+  addMesh(ball, SPH, face, 0, -0.04, 0.27, 0.34, 0.3, 0.3);
+  addMesh(ball, SPH, face, 0, -0.08, 0.5, 0.13, 0.11, 0.2);
+  addMesh(ball, SPH16, dark, 0, -0.06, 0.69, 0.06, 0.05, 0.05);
+  for (const s of [-1, 1]) {
+    onBall(addMesh(ball, SPH16, kidEyeMat(), 0, 0, 0, 0.06, 0.07, 0.045), 0.3, s * 0.4, 0.3, 0.86).position.add(_v.set(0, -0.04, 0.27));
+    const ch = addMesh(ball, SPH16, cheekMat(), s * 0.21, -0.12, 0.48, 0.06, 0.04, 0.02, 0, s * 0.5, 0); ch.castShadow = false;
+    addMesh(ball, SPH16, pink, s * 0.22, 0.2, 0.32, 0.06, 0.06, 0.03);
+    addMesh(ball, SPH, face, s * 0.17, -0.48, 0.16, 0.1, 0.07, 0.14);
+  }
+  addGloves(M, "#ffd23f", [[-0.3, 0.02, 0.46], [0.3, 0.02, 0.46]], 0.85, ball);
+  M.h = 1.35; M.mid = 0.55; M.reach = 0.3; M.floatR = 0.62;
+  return M;
+}
+let floatMat = null;
+function makeFloat(R) {
+  floatMat = floatMat || phys(0xffffff, { vertexColors: true, roughness: 0.3, clearcoat: 0.5 });
+  const g = paintBy(new THREE.TorusGeometry(R, 0.17, 12, 36), (x, y) => (Math.floor((Math.atan2(y, x) / 6.2832 + 0.5) * 8) % 2) ? "#ff5c8a" : "#ffffff").rotateX(Math.PI / 2);
+  const m = new THREE.Mesh(g, floatMat); m.castShadow = true; m.position.y = 0.33; m.visible = false;
+  return m;
+}
+
+// ---- the arena: a boxing ring on the lawn, with low stretchy ropes and a soft blue pool all round ----
+let arena = null, ropeIM = null, waterTex = null, splashParts = [], ripples = [];
+const fighters3D = {}, ropeWob = [0, 0, 0, 0], ropeWobV = [0, 0, 0, 0];
+const ROPE_SEG = 12, ROPE_H = [0.45, 0.85];
+function paintRingMat() {
+  return sprite(512, 512, 1, () => {
+    ctx.fillStyle = "#5aa9f5"; ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 512; i += 4) { ctx.fillStyle = i % 8 ? "rgba(255,255,255,0.05)" : "rgba(0,40,90,0.05)"; ctx.fillRect(i, 0, 2, 512); ctx.fillRect(0, i, 512, 2); }
+    ctx.strokeStyle = "rgba(255,255,255,0.85)"; ctx.lineWidth = 8; ctx.strokeRect(22, 22, 468, 468);
+    ctx.beginPath(); ctx.arc(256, 256, 92, 0, 7); ctx.stroke();
+    ctx.fillStyle = "#ffd23f"; ctx.beginPath();
+    for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 30 : 70; ctx.lineTo(256 + Math.cos(a) * r, 256 + Math.sin(a) * r); }
+    ctx.closePath(); ctx.fill();
+  });
+}
+function paintRipples() {
+  return sprite(256, 256, 1, () => {
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 256, 256);
+    const r = rng(77);
+    for (let i = 0; i < 70; i++) { const x = r() * 256, y = r() * 256, s = 8 + r() * 26; tiled(256, x, y, s * 1.4, (X, Y) => softEllipse(X, Y, s * 1.3, s * 0.55, "170,225,255", 0.5, r() * 3)); }
+    for (let i = 0; i < 40; i++) { const x = r() * 256, y = r() * 256, s = 4 + r() * 10; tiled(256, x, y, s * 1.4, (X, Y) => softEllipse(X, Y, s * 1.4, s * 0.35, "255,255,255", 0.9, r() * 3)); }
+  });
+}
+function roundRect(h, cr) {                                       // a square with round corners, h from the middle to each side
+  const s = new THREE.Shape(), a = h - cr;
+  s.moveTo(-a, -h); s.lineTo(a, -h); s.absarc(a, -a, cr, -Math.PI / 2, 0, false); s.lineTo(h, a); s.absarc(a, a, cr, 0, Math.PI / 2, false);
+  s.lineTo(-a, h); s.absarc(-a, a, cr, Math.PI / 2, Math.PI, false); s.lineTo(-h, -a); s.absarc(-a, -a, cr, Math.PI, Math.PI * 1.5, false);
+  return s;
+}
+let arenaJobs = null;
+function arenaStep() {                                            // build the arena a piece at a time while the menu shows (true when it is all built)
+  if (!arenaJobs) {
+    if (arena) return true;
+    arena = new THREE.Group(); arena.visible = false; scene.add(arena);
+    const c = RING, top = c.top, at = (o, x, y, z) => { o.position.set(c.x + x, y, c.z + z); return o; };
+    arenaJobs = [() => {
+      // the ring: a padded box with a white stripe, and a soft blue mat with a star in the middle
+      const skirt = std(0x2f4a9a, 0.85), white = std(0xf7f7f7, 0.6), matM = std(0xffffff, 0.9, 0, { map: canvasTex(paintRingMat()) });
+      at(addMesh(arena, new THREE.BoxGeometry(c.apron * 2, top - 0.08, c.apron * 2), skirt, 0, 0, 0), 0, (top - 0.08) / 2, 0);
+      at(addMesh(arena, new THREE.BoxGeometry(c.apron * 2 + 0.03, 0.1, c.apron * 2 + 0.03), white, 0, 0, 0), 0, top - 0.24, 0);
+      at(addMesh(arena, new THREE.BoxGeometry(c.apron * 2 - 0.06, 0.08, c.apron * 2 - 0.06), [skirt, skirt, matM, skirt, skirt, skirt], 0, 0, 0), 0, top - 0.04, 0);
+    }, () => {
+      // corner posts with soft pads (one red corner, one blue corner, two white ones)
+      const chrome = std(0xdfe5ee, 0.25, 0.9), C = c.A + 0.12;
+      [[1, 1, 0xe8383a], [-1, 1, 0xf7f7f7], [-1, -1, 0x2f7fe4], [1, -1, 0xf7f7f7]].forEach(([sx, sz, col]) => {
+        at(addMesh(arena, new THREE.CylinderGeometry(0.07, 0.07, 1.25, 12), chrome, 0, 0, 0), sx * C, top + 0.6, sz * C);
+        at(addMesh(arena, roundBox(0.26, 0.95, 0.26, 0.09), std(col, 0.6), 0, 0, 0), sx * (C - 0.04), top + 0.56, sz * (C - 0.04));
+      });
+      // the ropes (little pieces, so they can stretch when someone bumps into them)
+      ropeIM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 8), std(0xffffff, 0.55), 4 * ROPE_H.length * ROPE_SEG);
+      ropeIM.castShadow = true; ropeIM.frustumCulled = false;
+      const rc = new THREE.Color();
+      for (let i = 0; i < ropeIM.count; i++) ropeIM.setColorAt(i, rc.set(Math.floor(i / ROPE_SEG) % 2 ? "#e8383a" : "#ffffff"));
+      arena.add(ropeIM);
+    }, () => {
+      // the pool: a soft blue-and-white blow-up wall, light blue floor, rippling water
+      const wallIn = c.P - 0.38, shape = roundRect(wallIn, 1.0);
+      at(addMesh(arena, new THREE.ShapeGeometry(shape, 10).rotateX(-Math.PI / 2), std(0x9fe0ff, 0.9), 0, 0, 0), 0, 0.03, 0).receiveShadow = true;
+      const hole = new THREE.Path(); hole.moveTo(-c.apron, -c.apron); hole.lineTo(-c.apron, c.apron); hole.lineTo(c.apron, c.apron); hole.lineTo(c.apron, -c.apron); hole.lineTo(-c.apron, -c.apron);
+      const ws = roundRect(wallIn + 0.05, 1.05); ws.holes.push(hole);
+      waterTex = canvasTex(paintRipples(), { rep: true }); waterTex.repeat.set(0.4, 0.4);
+      const water = at(new THREE.Mesh(new THREE.ShapeGeometry(ws, 10).rotateX(-Math.PI / 2), std(0x3fb0ec, 0.08, 0, { map: waterTex, transparent: true, opacity: 0.88 })), 0, c.water, 0);
+      water.receiveShadow = true; arena.add(water);
+    }, () => {
+      const pts = [], wallC = roundRect(c.P, 1.38).getSpacedPoints(160);
+      for (const p of wallC) pts.push(new THREE.Vector3(p.x, 0.38, -p.y));
+      pts.pop();
+      const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 240, 0.38, 14, true), tc = new Float32Array(tube.attributes.position.count * 3), cb = new THREE.Color("#4aa8ff"), cw = new THREE.Color("#ffffff");
+      for (let i = 0; i < tube.attributes.position.count; i++) (Math.floor(Math.floor(i / 15) / 12) % 2 ? cw : cb).toArray(tc, i * 3);
+      tube.setAttribute("color", new THREE.BufferAttribute(tc, 3));
+      at(addMesh(arena, tube, phys(0xffffff, { vertexColors: true, roughness: 0.35, clearcoat: 0.6 }), 0, 0, 0), 0, 0, 0);
+    }, () => {
+      // splash drops and ripples
+      for (let i = 0; i < 48; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexAll, color: 0xe6f7ff, transparent: true, depthWrite: false })); s.visible = false; arena.add(s); splashParts.push({ s, life: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), size: 0.2 }); }
+      for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false })); m.visible = false; arena.add(m); ripples.push({ m, life: 0 }); }
+    },
+    () => { fighters3D.me = makeBattleDuck(false); }, () => { fighters3D.pal = makeBattleDuck(true); },
+    () => { fighters3D.squirrel = makeSquirrel(); }, () => { fighters3D.bear = makeBear(); }, () => { fighters3D.hedgehog = makeHedgehog(); },
+    () => {
+      for (const k in fighters3D) { const M = fighters3D[k]; M.float = makeFloat(M.floatR); M.root.add(M.float); arena.add(M.root); at(M.root, (Object.keys(fighters3D).indexOf(k) - 2) * 1.6, top, 0); }
+      for (const k in fighters3D) fighters3D[k].root.traverse(o => {           // little bits (eyes, noses, cheeks) need no shadow of their own
+        if (!o.isMesh) return;
+        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+        if (o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 0.13) o.castShadow = false;
+      });
+    }];
+  }
+  arenaJobs.shift()();
+  if (arenaJobs.length) return false;
+  arenaJobs = null;
+  return true;
+}
+function buildArena() { while (!arenaStep()) {} }
+
+// ---- playing a battle ----
+let battle = null, battleAcc = 0, pickSel = 0, resSel = 0, resShown = false, champT = 0, cheerT = 0, goT = -1;
+const battleCtl = { mx: 0, mz: 0, punch: false };
+const battleView = { az: Math.PI + 0.15, el: 0.5, dist: 12 }, pickView = { az: Math.PI + 0.22, el: 0.22, dist: 9.5 };
+const _bh = { x: 0, y: 0, b: false }, _bf = new THREE.Vector3(), _bc = new THREE.Vector3();
+const PICK_SPOT = { squirrel: [2.3, 0.6], bear: [0, 1.3], hedgehog: [-2.3, 0.6] };
+function openPick() { buildArena(); pickSel = Math.max(0, FOE_LIST.indexOf(battle ? battle.kind : "squirrel")); show("pick"); }
+function startBattle(kind) {
+  buildArena();
+  show("battle");
+  battle = newBattle(kind); battleAcc = 0; resShown = false; champT = 0; cheerT = 2; goT = -1;
+  battleView.az = Math.PI + 0.15; battleView.el = 0.5; battleView.dist = innerWidth < innerHeight ? 10 : 12; snapView = true;
+  battleCtl.mx = battleCtl.mz = 0; battleCtl.punch = false;
+}
+function battlePunch() { if (battle && battle.phase === "fight") battleCtl.punch = true; }
+function headOf(f, M) { toScreen(f.x, f.y + M.h + 0.35, f.z, _bh); return _bh; }
+function sayAt(f, text, color) { const M = fighters3D[f.who === "foe" ? f.kind : f.who], h = headOf(f, M); if (!h.b) popAt(text, color, clamp(h.x, 120, VW - 120), clamp(h.y, popTop() + 40, VH - 60)); }
+function updateBattle(dt) {
+  if (!battle) return;
+  // which way you want to go, as the camera sees it
+  camForward(_bf); _bf.y = 0; if (_bf.lengthSq() < 1e-6) _bf.set(0, 0, 1); _bf.normalize();
+  let ix = 0, iy = 0;
+  if (held.has("left")) ix -= 1; if (held.has("right")) ix += 1;
+  if (held.has("up") || held.has("fwd")) iy += 1; if (held.has("down") || held.has("back")) iy -= 1;
+  if (joy) { ix += joy.dx; iy += joy.dy; }
+  const n = Math.hypot(ix, iy); if (n > 1) { ix /= n; iy /= n; }
+  battleCtl.mx = _bf.x * iy - _bf.z * ix; battleCtl.mz = _bf.z * iy + _bf.x * ix;
+  battleAcc = Math.min(battleAcc + dt, 0.1);
+  while (battleAcc >= 1 / 60) {
+    battleAcc -= 1 / 60;
+    stepBattle(battle, 1 / 60, battleCtl);
+    battleCtl.punch = false;
+    for (const e of battle.events) battleEvent(e);
+  }
+  if (champT > 0) { const was = champT; champT -= dt; if (Math.floor(was / 0.7) !== Math.floor(champT / 0.7)) burstConfetti(); }   // the champion gets lots of confetti
+  // ducks out of the battle cheer from their floats
+  if (battle.phase === "fight" && (cheerT -= dt) <= 0) {
+    cheerT = 3 + Math.random() * 2;
+    const out = [battle.me, battle.pal].filter(f => f.state === "pool");
+    if (out.length) sayAt(out[Math.floor(Math.random() * out.length)], BT.goGo, "#b8ffb0");
+  }
+  if (!resShown && (battle.phase === "won" || battle.phase === "lost") && battle.t - battle.endT > 3.2) { resShown = true; resSel = 0; elRes.classList.remove("hidden"); paintRes(); }
+}
+function battleEvent(e) {
+  const f = e.f, kind = battle.kind;
+  if (e.type === "go") { sfx.ding(); goT = time; }
+  else if (e.type === "hit") { sfx.pomf(e.power / 9); sayAt(f, HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)], f.team === "foe" ? "#ffe14d" : "#ffffff"); hitPuff(f, e.by); }
+  else if (e.type === "rope") { sfx.twang(); const s = e.ax > 0 ? 0 : e.ax < 0 ? 1 : e.az > 0 ? 2 : 3; ropeWobV[s] += Math.min(1.2, e.v * 0.18); }
+  else if (e.type === "flip") sfx.whee();
+  else if (e.type === "splash") { sfx.splash(); splashAt(f.x, f.z, f.r); sayAt(f, BT.splash, "#bfe9ff"); }
+  else if (e.type === "laugh") { sfx.giggle(); sayAt(f, "Ha ha! 😄", "#ffffff"); }
+  else if (e.type === "curl") sayAt(f, BT.roll, "#ffd23f");
+  else if (e.type === "tired") sayAt(f, BT.tired(BT.names[kind]), "#d8f0ff");
+  else if (e.type === "byebye") sayAt(f, BT.fun, "#ffe14d");
+  else if (e.type === "won") {
+    showBanner(BT.win); burstConfetti(); sfx.cheer();
+    for (const d of [battle.me, battle.pal]) setTimeout(() => { if (battle && d.state !== "fall") sayAt(d, BT.yay, "#ffe14d"); }, 900);
+    if (!battleSave.won.includes(kind)) { battleSave.won.push(kind); saveBattle(); thenBanner(BT.trophy); }
+    if (kind === "hedgehog") { thenBanner(BT.champ); champT = 3.5; }
+  } else if (e.type === "lost") { showBanner(BT.lose(BT.names[kind])); sfx.aww(); }
+}
+function hitPuff(t, by) {
+  const x = (t.x + by.x) / 2, z = (t.z + by.z) / 2;
+  for (let i = 0; i < 8; i++) spawnDrop(x, RING.top + 1.0, z, (Math.random() - 0.5) * 3, 1 + Math.random() * 2, (Math.random() - 0.5) * 3, 0.5, 0xffffff, 0.35, 0);
+}
+function spawnDrop(x, y, z, vx, vy, vz, life, col, size, g = 9.8) {
+  const p = splashParts.find(q => q.life <= 0); if (!p) return;
+  p.p.set(x, y, z); p.v.set(vx, vy, vz); p.life = p.max = life; p.size = size; p.g = g; p.s.material.color.set(col); p.s.visible = true;
+}
+function splashAt(x, z, r) {
+  for (let i = 0; i < 34; i++) {
+    const a = Math.random() * 6.283, s = 1 + Math.random() * 2.5;
+    spawnDrop(x + Math.cos(a) * r * 0.6, RING.water + 0.1, z + Math.sin(a) * r * 0.6, Math.cos(a) * s, 3 + Math.random() * 4.5, Math.sin(a) * s, 0.9 + Math.random() * 0.4, i % 3 ? 0xf2fbff : 0x7fcfff, 0.26 + Math.random() * 0.3);
+  }
+  for (let k = 0; k < 2; k++) { const q = ripples.find(o => o.life <= 0); if (!q) break; q.life = 1.2 + k * 0.4; q.max = q.life; q.m.position.set(x, RING.water + 0.02, z); q.m.visible = true; }
+}
+// where the camera looks during a battle (the middle of the action) or on the pick screen (the one you have picked)
+function battleFocus(out) {
+  if (screen === "pick") { const s = PICK_SPOT[FOE_LIST[Math.min(pickSel, 2)]]; return out.set(RING.x + s[0] * 0.6, 0, RING.z + s[1]); }
+  if (!battle) return out.set(RING.x, 0, RING.z);
+  let x = 0, z = 0, w = 0;
+  for (const f of battle.fighters) if (f.state === "ring") { const k = f.team === "foe" ? 1.5 : 1; x += f.x * k; z += f.z * k; w += k; }
+  if (!w) return out.set(RING.x, 0, RING.z);
+  return out.set(RING.x + clamp(x / w - RING.x, -2.2, 2.2) * 0.8, 0, RING.z + clamp(z / w - RING.z, -2.2, 2.2) * 0.8);
+}
+// ---- every frame: put the fighters, the ropes and the splashes where the battle says ----
+function poseFighter(f, M, dt, ph) {
+  M.root.visible = true;
+  M.root.position.set(f.x, f.y, f.z);
+  const b = M.body, sp = Math.hypot(f.vx, f.vz), walk = f.state === "ring" ? Math.min(1, sp / 3) : 0;
+  M.walkPh += dt * (2 + sp * 3.2);
+  b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); b.scale.set(1, 1, 1);
+  let face = f.face;
+  if (f.state === "ring") {
+    b.rotation.z = Math.sin(M.walkPh) * 0.12 * walk; b.position.y = Math.abs(Math.sin(M.walkPh)) * 0.07 * walk;
+    if (f.stun > 0) b.rotation.x = -0.35 * Math.min(1, f.stun / 0.15);                      // knocked back: a wobble
+    const happy = (ph === "won" && f.team === "duck") || (ph === "lost" && f.team === "foe");
+    if (happy) b.position.y = Math.abs(Math.sin(time * 7 + f.x)) * 0.45;                   // jumping for joy
+  } else if (f.state === "fall") {
+    face = Math.atan2(-f.fax, -f.faz);
+    const a = -f.spin; b.rotation.x = a; b.position.set(0, M.mid - M.mid * Math.cos(a), -M.mid * Math.sin(a));
+  } else if (f.state === "pool") {
+    face = Math.atan2(RING.x - f.x, RING.z - f.z) + Math.sin(f.poolT * 0.7 + f.fx1) * 0.3;
+    b.rotation.x = Math.sin(f.poolT * 1.7) * 0.06; b.rotation.z = Math.sin(f.poolT * 1.3) * 0.06;
+  } else if (f.state === "lawn") face = Math.atan2(RING.x - f.x, RING.z - f.z);
+  M.root.rotation.y = face;
+  M.float.visible = f.state === "pool" || (f.state === "climb" && f.fallT < 0.15);
+  // the hedgehog curls up into a ball and rolls
+  if (M.ball) {
+    if (f.curlT > 0) { M.ball.scale.set(1.08, 0.92, 1.08); M.roll = 0; }
+    else M.ball.scale.set(1, 1, 1);
+    if (f.rollT > 0) M.roll += dt * sp / 0.5; else M.roll *= Math.exp(-dt * 10);
+    M.ball.rotation.x = M.roll;
+  }
+  // gloves: up in front, one shoots forward to punch, one waves at the end
+  for (let i = 0; i < 2; i++) { const g = M.gloves[i], r = M.rest[i]; g.position.set(r[0], r[1] + Math.sin(time * 5 + f.x * 3 + i) * 0.03, r[2]); g.rotation.set(0, 0, 0); }
+  if (f.punchT < 0.3 && f.state === "ring") {
+    const k = f.punchT < FIGHT.swing ? f.punchT / FIGHT.swing : Math.max(0, 1 - (f.punchT - FIGHT.swing) / 0.22), g = M.gloves[f.hand], r = M.rest[f.hand];
+    g.position.set(r[0] * (1 - 0.65 * k), r[1] + 0.05 * k, r[2] + M.reach * k * 1.4);
+  }
+  if (f.wave > 0 && f.state !== "fall" && f.rollT <= 0) {
+    const g = M.gloves[1], r = M.rest[1], w = Math.sin(time * 9 + f.z);
+    g.position.set(r[0] * 1.5 + w * 0.12, r[1] + M.h * 0.32, r[2] * 0.4); g.rotation.z = w * 0.4;
+  }
+  if (M.duck) M.duck.pose(f.wave > 0, false, time, walk, M.walkPh, true);
+}
+function updateArena(dt) {
+  const on = screen === "battle" || screen === "pick";
+  if (!arena) return;
+  arena.visible = on;
+  if (!on) return;
+  waterTex.offset.set(time * 0.02, time * 0.013);
+  for (const k in fighters3D) fighters3D[k].root.visible = false;
+  if (screen === "pick") {
+    FOE_LIST.forEach((k, i) => {
+      const M = fighters3D[k], s = PICK_SPOT[k], sel = i === pickSel, x = RING.x + s[0], z = RING.z + s[1];
+      const f = { x, z, y: RING.top + (sel ? Math.abs(Math.sin(time * 5)) * 0.35 : 0), vx: 0, vz: 0, state: "lawn", face: 0, stun: 0, punchT: 9, hand: 0, wave: sel ? 1 : 0, curlT: 0, rollT: 0 };
+      poseFighter(f, M, dt, "");
+      M.root.rotation.y = Math.atan2(camera.position.x - x, camera.position.z - z);
+    });
+  } else if (battle) {
+    for (const f of battle.fighters) poseFighter(f, fighters3D[f.who === "foe" ? f.kind : f.who], dt, battle.phase);
+  }
+  // the ropes: they bulge where someone leans on them, and wobble after a bump
+  const C = RING.A + 0.12, m = _m4;
+  for (let s = 0; s < 4; s++) {
+    ropeWobV[s] += (-ropeWob[s] * 120 - ropeWobV[s] * 6) * dt; ropeWob[s] += ropeWobV[s] * dt;
+    const ax = [1, -1, 0, 0][s], az = [0, 0, 1, -1][s], tx = -az, tz = ax;          // out of the ring, and along the side
+    let lean = 0, at = 0;
+    if (battle && screen === "battle") for (const f of battle.fighters) {
+      if (f.state !== "ring") continue;
+      const o = (f.x - RING.x) * ax + (f.z - RING.z) * az + f.r - RING.A;
+      if (o > lean) { lean = o; at = (f.x - RING.x) * tx + (f.z - RING.z) * tz; }
+    }
+    for (let h = 0; h < ROPE_H.length; h++) for (let i = 0; i < ROPE_SEG; i++) {
+      const u0 = i / ROPE_SEG, u1 = (i + 1) / ROPE_SEG, y = RING.top + ROPE_H[h];
+      const P = (u, out) => { const along = -C + u * 2 * C, bulge = Math.sin(Math.PI * u) * (lean * Math.exp(-((along - at) ** 2) / 1.6) + ropeWob[s] * 0.35); return out.set(RING.x + ax * (C + bulge) + tx * along, y, RING.z + az * (C + bulge) + tz * along); };
+      P(u0, _t1); P(u1, _t2);
+      const len = _t1.distanceTo(_t2); _v.subVectors(_t2, _t1).normalize();
+      m.compose(_p.addVectors(_t1, _t2).multiplyScalar(0.5), _q.setFromUnitVectors(_up, _v), _s.set(1, len, 1));
+      ropeIM.setMatrixAt((s * ROPE_H.length + h) * ROPE_SEG + i, m);
+    }
+  }
+  ropeIM.instanceMatrix.needsUpdate = true;
+  // splash drops and ripples
+  for (const p of splashParts) {
+    if (p.life <= 0) continue;
+    p.life -= dt; if (p.life <= 0) { p.s.visible = false; continue; }
+    p.v.y -= p.g * dt; p.p.addScaledVector(p.v, dt);
+    if (p.p.y < RING.water && p.g > 0) { p.life = 0; p.s.visible = false; continue; }
+    p.s.position.copy(p.p); p.s.scale.setScalar(p.size); p.s.material.opacity = Math.min(1, p.life / p.max * 2);
+  }
+  for (const q of ripples) {
+    if (q.life <= 0) continue;
+    q.life -= dt; if (q.life <= 0) { q.m.visible = false; continue; }
+    const k = 1 - q.life / q.max; q.m.scale.setScalar(0.5 + k * 3.2); q.m.material.opacity = 0.7 * (1 - k);
+  }
+}
+// ---- the words and buttons on top during a battle ----
+function drawJoy() {
+  const j = joyPlace(), kx = joy ? joy.dx : 0, ky = joy ? joy.dy : 0;
+  ellipse(j.x, j.y, j.r, j.r, "rgba(255,255,255,0.16)");
+  ctx.strokeStyle = "rgba(255,255,255,0.65)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, 7); ctx.stroke();
+  ctx.font = "700 22px Fredoka, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.7)"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("▲", j.x, j.y - j.r * 0.72); ctx.fillText("▼", j.x, j.y + j.r * 0.72); ctx.fillText("◀", j.x - j.r * 0.72, j.y); ctx.fillText("▶", j.x + j.r * 0.72, j.y);
+  ctx.textBaseline = "alphabetic";
+  ellipse(j.x + kx * j.r * 0.6, j.y - ky * j.r * 0.6, j.r * 0.42, j.r * 0.42, joy ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.6)");
+}
+const emojiPics = new Map();
+function emojiPic(t, size) {                                         // emoji drawn once into a little picture (drawing them every frame is slow)
+  const key = t + size;
+  if (!emojiPics.has(key)) {
+    const c = document.createElement("canvas"), k = Math.max(1, Math.min(2, scale * (window.devicePixelRatio || 1)));
+    c.width = c.height = Math.ceil(size * 1.4 * k);
+    const g = c.getContext("2d"); g.scale(k, k); g.font = size + "px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(t, size * 0.7, size * 0.74);
+    emojiPics.set(key, c);
+  }
+  return emojiPics.get(key);
+}
+function drawEmoji(t, x, y, size) { ctx.drawImage(emojiPic(t, size), x - size * 0.7, y - size * 0.7, size * 1.4, size * 1.4); }
+function drawBattleHUD() {
+  if (!battle) return;
+  const B = battle, narrow = VW < 760, y = narrow ? 112 : 58, sz = narrow ? 44 : 52;
+  // who is still in the ring: you, your helper, and the opponent
+  const icons = [["🦆", B.me, "#e8383a"], ["🦆", B.pal, "#2f7fe4"], ["vs", null, null], [FOE_EMOJI[B.kind], B.foe, "#ffd23f"]];
+  const gap = sz * 1.25; let x = VW / 2 - gap * 1.5;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const [t, f, col] of icons) {
+    const out = f && f.state !== "ring";
+    ctx.globalAlpha = out ? 0.35 : 1;
+    if (!f) bigText("vs", x, y + 6, sz * 0.62, "#ffffff");
+    else { drawEmoji(t, x, y, sz); rrect(x - sz * 0.32, y + sz * 0.52, sz * 0.64, 8, 4, col); }
+    if (out) { ctx.globalAlpha = 1; drawEmoji("💦", x + sz * 0.38, y + sz * 0.3, Math.round(sz * 0.55)); }
+    x += gap;
+  }
+  ctx.globalAlpha = 1; ctx.textBaseline = "alphabetic";
+  // Ready... Go!
+  if (B.phase === "ready") bigText(BT.ready, VW / 2, VH * 0.42, 76, "#ffffff");
+  else if (goT >= 0 && time - goT < 0.9) {                         // "Go!" grows and fades (one font size, made bigger by scaling: quicker to draw)
+    const k = 1 + (time - goT) * 0.45;
+    ctx.save(); ctx.globalAlpha = clamp((0.9 - (time - goT)) * 3, 0, 1); ctx.translate(VW / 2, VH * 0.42); ctx.scale(k, k);
+    bigText(BT.go, 0, 0, 92, "#ffe14d"); ctx.restore();
+  }
+  // how to play (for the first few seconds)
+  const ht = B.t - FIGHT.ready;
+  if (B.phase !== "won" && B.phase !== "lost" && ht < 8) {
+    ctx.globalAlpha = clamp(8 - ht, 0, 1);
+    const x0 = touchMode && !narrow ? Math.min(VW / 2 + 90, VW - 220) : VW / 2;
+    bigText(touchMode ? BT.hintTouch : BT.hintKeys, x0, narrow ? 205 : VH - 80, 34, "#ffffff");   // (on an upright phone: under the names, above the ring)
+    bigText(BT.hint2, x0, narrow ? 262 : VH - 34, 30, "#bfe9ff");
+    ctx.globalAlpha = 1;
+  }
+  if (touchMode && !resShown) drawJoy();
+}
+
 // ================= Main loop =================
 let last = 0;
 function frame(t) {
@@ -3186,6 +4421,7 @@ function frame(t) {
   flyFade = clamp(flyFade + (flying ? dt : -dt) / 1.2, 0, 1);
   things = flyFade > 0 ? spaceThingsNear() : [];
   if (flying) updateSpace(dt);
+  if (screen === "battle") updateBattle(dt);
   statPulse = Math.max(0, statPulse - dt);
   if (screen === "play" && (saveT -= dt) <= 0) { saveT = 2; rememberWhere(); }   // remember where you are every 2 seconds
 
@@ -3222,13 +4458,16 @@ function frame(t) {
       bigText(banner.text, VW / 2, flying ? (touchMode && VW < 760 ? VH * 0.6 : VH * 0.82) : VH * 0.58, 64, "#ffe14d");   // under you while flying (above the joystick on a phone)
       ctx.globalAlpha = 1;
     }
+  } else if (screen === "battle") {
+    drawBattleHUD();
+    if (banner) { ctx.globalAlpha = clamp(banner.life * 2, 0, 1); bigText(banner.text, VW / 2, VH * (VW < 760 ? 0.3 : 0.27), 64, "#ffe14d"); ctx.globalAlpha = 1; }
   }
   requestAnimationFrame(frame);
 }
 
 // ================= Menu, Settings and keys =================
 const elMenu = document.getElementById("menu"), elSet = document.getElementById("settings"), elHome = document.getElementById("bHome");
-const menuBtns = [document.getElementById("bPlay"), document.getElementById("bSet")];
+const menuBtns = [document.getElementById("bPlay"), document.getElementById("bSet"), document.getElementById("bBattle")];
 const rows = [...document.querySelectorAll("#settings .row"), document.getElementById("bBack")];
 let menuSel = 0, setSel = 0;
 
@@ -3242,14 +4481,16 @@ function show(name) {
   screen = name;
   elMenu.classList.toggle("hidden", name !== "menu");
   elSet.classList.toggle("hidden", name !== "settings");
-  elHome.classList.toggle("hidden", name !== "play");
+  elPick.classList.toggle("hidden", name !== "pick");
+  elRes.classList.add("hidden"); resShown = false;
+  elHome.classList.toggle("hidden", name !== "play" && name !== "battle");
   document.getElementById("spaceBadge").classList.toggle("hidden", !spaceUnlocked());
   document.getElementById("spaceStats").textContent = prog.high > 0 ? "🪐 " + prog.planets.length + "/" + PLANETS.length +
     " · 👽 " + prog.aliens.length + " · 💎 " + prog.gems.length + " · 🏆 ↑ " + Math.floor(prog.high) + " m ↔ " + Math.floor(prog.far) + " m" : "";
-  if (name === "play" || name === "menu") resetJump();
+  if (name === "play" || name === "menu" || name === "pick" || name === "battle") resetJump();
   if (name === "play") { resumeWhere(); saveT = 2; snapView = true; }
   if (name === "menu") menuView.az = view.az;
-  paintMenu(); paintSettings();
+  paintMenu(); paintSettings(); paintPick();
 }
 function paintMenu() { menuBtns.forEach((b, i) => b.classList.toggle("sel", i === menuSel)); }
 function paintSettings() {
@@ -3269,6 +4510,7 @@ function changeSetting(row, dir) {
 
 menuBtns[0].onclick = () => { sfx.click(); show("play"); };
 menuBtns[1].onclick = () => { sfx.click(); menuSel = 1; setSel = 0; show("settings"); };
+menuBtns[2].onclick = () => { sfx.click(); menuSel = 2; openPick(); };
 menuBtns.forEach((b, i) => b.onmouseenter = () => { menuSel = i; paintMenu(); });
 document.getElementById("bBack").onclick = () => { sfx.click(); show("menu"); };
 elHome.onclick = () => { sfx.click(); menuSel = 0; show("menu"); };
@@ -3279,6 +4521,44 @@ rows.forEach((r, i) => {
   });
 });
 
+// ---- the Battle pick screen, and the buttons after a battle ----
+const elPick = document.getElementById("pick"), elRes = document.getElementById("bres");
+const pickRows = [...document.querySelectorAll("#pick .foeRow"), document.getElementById("bPickBack")];
+const resBtns = [document.getElementById("bAgain"), document.getElementById("bPickNew"), document.getElementById("bMenu2")];
+document.getElementById("pickTitle").textContent = BT.title;
+pickRows[3].textContent = BT.back;
+resBtns[0].textContent = BT.again; resBtns[1].textContent = BT.pickNew; resBtns[2].textContent = BT.menu;
+function paintPick() {
+  pickRows.forEach((r, i) => r.classList.toggle("sel", i === pickSel));
+  FOE_LIST.forEach((k, i) => { pickRows[i].innerHTML = `<span class="fe">${FOE_EMOJI[k]}</span><span class="fn">${BT.names[k]}<small>${FOE_STARS[k]} ${BT.levels[k]}</small></span><span class="ft">${battleSave.won.includes(k) ? "🏆" : ""}</span>`; });
+}
+function paintRes() { resBtns.forEach((b, i) => b.classList.toggle("sel", i === resSel)); }
+pickRows.forEach((r, i) => {
+  r.onmouseenter = () => { if (pickSel !== i) { pickSel = i; paintPick(); } };
+  r.onclick = () => { sfx.click(); if (i < 3) startBattle(FOE_LIST[i]); else { menuSel = 2; show("menu"); } };
+});
+resBtns.forEach((b, i) => {
+  b.onmouseenter = () => { resSel = i; paintRes(); };
+  b.onclick = () => { sfx.click(); if (i === 0) startBattle(battle.kind); else if (i === 1) openPick(); else { menuSel = 2; show("menu"); } };
+});
+function pickKey(k) {
+  if (["ArrowDown", "ArrowRight", "Tab"].includes(k)) { pickSel = (pickSel + 1) % pickRows.length; paintPick(); sfx.click(); }
+  if (["ArrowUp", "ArrowLeft"].includes(k)) { pickSel = (pickSel + pickRows.length - 1) % pickRows.length; paintPick(); sfx.click(); }
+  if (k === " " || k === "Enter") pickRows[pickSel].onclick();
+  if (k === "Escape") { menuSel = 2; show("menu"); }
+}
+function battleKey(k, e) {
+  if (k === "Escape") { menuSel = 2; show("menu"); return; }
+  if (resShown) {
+    if (["ArrowRight", "ArrowDown", "Tab"].includes(k)) { resSel = (resSel + 1) % 3; paintRes(); sfx.click(); }
+    if (["ArrowLeft", "ArrowUp"].includes(k)) { resSel = (resSel + 2) % 3; paintRes(); sfx.click(); }
+    if ((k === " " || k === "Enter") && !e.repeat) resBtns[resSel].onclick();
+    return;
+  }
+  if (FLY_KEYS[k]) held.add(FLY_KEYS[k]);
+  if (k === " " && !e.repeat) battlePunch();
+}
+
 // flying with the jetpack: arrow keys (left, right, up, down) and W/S (forwards and backwards, the way the camera looks)
 const FLY_KEYS = { ArrowLeft: "left", a: "left", A: "left", ArrowRight: "right", d: "right", D: "right",
                    ArrowUp: "up", ArrowDown: "down", w: "fwd", W: "fwd", s: "back", S: "back" };
@@ -3288,6 +4568,8 @@ addEventListener("blur", () => held.clear());
 addEventListener("keydown", e => {
   const k = e.key;
   if ([" ", "Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Escape", "Tab"].includes(k)) e.preventDefault();
+  if (screen === "battle") { battleKey(k, e); return; }
+  if (screen === "pick") { if (!(e.repeat && (k === " " || k === "Enter"))) pickKey(k); return; }
   if (screen === "play") {
     if (FLY_KEYS[k]) held.add(FLY_KEYS[k]);
     if (k === " " && !e.repeat) press();
@@ -3296,7 +4578,8 @@ addEventListener("keydown", e => {
   }
   if (e.repeat && (k === " " || k === "Enter")) return;
   if (screen === "menu") {
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab"].includes(k)) { menuSel = 1 - menuSel; paintMenu(); sfx.click(); }
+    if (["ArrowRight", "ArrowDown", "Tab"].includes(k)) { menuSel = (menuSel + 1) % menuBtns.length; paintMenu(); sfx.click(); }
+    if (["ArrowLeft", "ArrowUp"].includes(k)) { menuSel = (menuSel + menuBtns.length - 1) % menuBtns.length; paintMenu(); sfx.click(); }
     if (k === " " || k === "Enter") menuBtns[menuSel].onclick();
   } else if (screen === "settings") {
     if (k === "ArrowDown" || k === "Tab") { setSel = (setSel + 1) % rows.length; paintSettings(); }
