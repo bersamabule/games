@@ -865,7 +865,7 @@ function makeShot() {
 const fwd = new THREE.Vector3(), rgt = new THREE.Vector3(), upv = new THREE.Vector3();
 function shoot() {
   if (fireCd > 0) return;
-  fireCd = 0; gunFire(); sPewQ();   // no waiting between zaps (Noah: "no maximum fire rate"): holding fires every frame
+  fireCd = 0; gunFire(); sPewQ();   // no maximum fire rate: holding fires every frame
   camera.updateMatrixWorld(true);
   camera.getWorldDirection(fwd); rgt.setFromMatrixColumn(camera.matrixWorld, 0); upv.setFromMatrixColumn(camera.matrixWorld, 1);
   const target = camera.position.clone().addScaledVector(fwd, 40);
