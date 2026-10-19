@@ -55,9 +55,20 @@
                display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 94vw; }
   .card h2 { margin: 0; font-size: clamp(30px, 6.5vw, 54px); color: #ff4f86; }
   .card p { margin: 0; font-size: clamp(18px, 3.6vw, 28px); font-weight: 600; }
+  .btn.pink { background: #ff4f86; box-shadow: 0 7px 0 #c93a69, 0 12px 20px rgba(0,0,0,0.3); }
+  .btn.pink:active { box-shadow: 0 2px 0 #c93a69; }
+  .btn:disabled { background: #b9c0cc; box-shadow: 0 5px 0 #8f97a6; color: #eef1f6; cursor: default; transform: none; }
+  .coinline { font-size: clamp(22px, 4.4vw, 34px) !important; color: #c98a00; }
+  .upg { background: #fff4d6; border-radius: 26px; padding: 14px 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 4px solid #ffcc2e; }
+  .upg .uhead { font-size: clamp(24px, 5vw, 38px); font-weight: 700; color: #ff4f86; }
+  .upg .uhead span { display: block; font-size: 0.6em; color: #2a3a6a; }
+  .upg p { font-size: clamp(16px, 3.2vw, 24px); }
+  #scoins { background: rgba(200,140,0,0.85) !important; transition: transform 0.18s; }
+  .plus { position: fixed; transform: translate(-50%, -50%); font-size: 30px; font-weight: 700; color: #ffe14a; text-shadow: 0 3px 0 #b36b00, 0 0 10px rgba(255,200,0,0.8); pointer-events: none; animation: plusup 1s ease-out forwards; z-index: 5; }
+  @keyframes plusup { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -70px; } }
   .card .row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
   .card .btn { font-size: clamp(22px, 4.4vw, 34px); padding: 10px 34px; }
-  @media (max-height: 480px) { .card .box { padding: 12px 24px; gap: 6px; } .card h2 { font-size: 28px; } .card p { font-size: 16px; } .card .btn { font-size: 20px; padding: 6px 24px; } }
+  @media (max-height: 480px) { .card .box { padding: 12px 24px; gap: 6px; } .card h2 { font-size: 28px; } .card p { font-size: 16px; } .card .btn { font-size: 20px; padding: 6px 24px; } .upg { padding: 6px 14px; gap: 2px; } .upg .uhead { font-size: 20px; } .upg .uhead span { font-size: 13px; } .upg p { font-size: 13px !important; } .coinline { font-size: 18px !important; } .card .row { gap: 8px; } }
   /* touch controls */
   #touch { display: none; }
   body.touch #touch { display: block; }
@@ -70,7 +81,7 @@
   #fire { right: 22px; bottom: 26px; width: 104px; height: 104px; font-size: 44px; background: #ff4f86; }
   #jump { right: 140px; bottom: 30px; width: 76px; height: 76px; font-size: 32px; background: #ffa21f; }
   #fire:active, #jump:active, #fire.on, #jump.on { transform: translateY(4px); filter: brightness(1.15); }
-  @media (max-width: 480px) { #hearts { left: 12px; top: 74px; transform: none; font-size: 22px; } }
+  @media (max-width: 480px) { #hearts { left: 12px; top: 112px; transform: none; font-size: 22px; } }
   @media (orientation: landscape) and (max-height: 520px) {
     #fire { width: 88px; height: 88px; font-size: 36px; bottom: 16px; right: 18px; } #jump { width: 64px; height: 64px; right: 120px; bottom: 18px; font-size: 26px; }
     #stats div { font-size: 14px; padding: 1px 10px; } #hearts { font-size: 24px; top: 6px; } #pausebtn { width: 42px; height: 42px; font-size: 20px; top: 6px; }
@@ -82,7 +93,7 @@
 <canvas id="gl"></canvas>
 <div id="hurt"></div>
 <div id="hud" class="hidden">
-  <div id="stats"><div id="swave">Wave 1</div><div id="sscore">Popped: 0</div></div>
+  <div id="stats"><div id="swave">Wave 1</div><div id="sscore">Popped: 0</div><div id="scoins">💰 0</div></div>
   <div id="hearts"></div>
   <button id="pausebtn" aria-label="Pause">&#9208;</button>
   <div id="cross"><i></i></div>
@@ -100,7 +111,8 @@
   <button id="play" class="btn">Play</button>
   <div id="best"></div>
 </div>
-<div id="pausecard" class="card hidden"><div class="box"><h2>Paused</h2><div class="row"><button id="resume" class="btn">Resume</button><button id="tomenu" class="btn orange">Menu</button></div></div></div>
+<div id="pausecard" class="card hidden"><div class="box"><h2>Paused</h2><div class="row"><button id="resume" class="btn">Resume</button><button id="shopbtn" class="btn pink">🛒 Shop</button><button id="tomenu" class="btn orange">Menu</button></div></div></div>
+<div id="shopcard" class="card hidden"><div class="box"><h2>🛒 Shop</h2><p id="shopcoins" class="coinline">You have 💰 0</p><div class="upg"><div class="uhead">💥 Blaster power <span id="shoplvl"></span></div><p id="shopl1"></p><p id="shopl2"></p><p id="shopl3"></p><button id="buy" class="btn">Buy</button></div><div class="row"><button id="shopback" class="btn orange">Back</button></div></div></div>
 <div id="overcard" class="card hidden"><div class="box"><h2>The robots got you!</h2><p id="overtxt">Try again?</p><div class="row"><button id="again" class="btn">Try again</button><button id="tomenu2" class="btn orange">Menu</button></div></div></div>
 <div id="nogl">Oh no! This screen cannot show 3D.</div>
 
@@ -428,16 +440,17 @@ function aoBlob(x, z, w, d, parent, a) { const m = new THREE.Mesh(aoGeo, aoMat);
 const solids = [];   // {x,z,hw,hd}  boxes
 const trunks = [];   // {x,z,r}
 const crateTints = { 0xff7aa8: 0xffa9a0, 0x4ec9ff: 0xa8d8ff, 0xffd23f: 0xffe596, 0x7be36a: 0xb5e8a0, 0xb77bff: 0xd2b8ff, 0xffa21f: 0xffc27a };
-function crate(x, z, s, h, color) {
-  const m = box(s, h, s, matOf(crateSet, { metalness: 0, color: crateTints[color] || 0xffffff, envMapIntensity: 0.5 }), x, h / 2, z);
-  m.rotation.y = 0;
-  solids.push({ x, z, hw: s / 2, hd: s / 2 });
-  aoBlob(x, z, s * 1.75, s * 1.75);
+const CH = 1.2;   // every crate is 1.2 tall: you can jump up onto one, then onto a stacked one
+function crate(x, z, w, y0, color) {
+  const m = box(w, CH, w, matOf(crateSet, { metalness: 0, color: crateTints[color] || 0xffffff, envMapIntensity: 0.5 }), x, y0 + CH / 2, z);
+  solids.push({ x, z, hw: w / 2, hd: w / 2, y0, top: y0 + CH });
+  if (y0 === 0) aoBlob(x, z, w * 1.75, w * 1.75);
 }
-const crateSpots = [[-7, -5, 2, 2, 0xff7aa8], [-5.4, -5.1, 1.4, 1.4, 0x4ec9ff], [-6.3, -5.1, 1.2, 3.0, 0xffd23f],
-  [8, -3, 2.2, 2.2, 0x7be36a], [8, -3.1, 1.4, 3.4, 0xb77bff],
-  [-9, 7, 2, 2, 0xffa21f], [-9, 9.2, 1.6, 1.6, 0xff7aa8],
-  [10, 9, 2, 2, 0x4ec9ff], [4, -11, 2.4, 2.4, 0xffd23f], [-13, -12, 2, 2, 0x7be36a], [14, -12, 2, 2, 0xff7aa8], [-15, 1, 2.2, 2.2, 0xb77bff], [0, -4, 1.6, 1.6, 0xffa21f]];
+const crateSpots = [[-7, -5, 1.8, 0, 0xff7aa8], [-5.2, -5.1, 1.6, 0, 0x4ec9ff], [-6.1, -5.05, 1.4, CH, 0xffd23f],
+  [8, -3, 2.0, 0, 0x7be36a], [8, -3, 1.4, CH, 0xb77bff],
+  [-9, 7, 1.8, 0, 0xffa21f], [-9, 9.2, 1.6, 0, 0xff7aa8],
+  [10, 9, 1.8, 0, 0x4ec9ff], [10, 9, 1.3, CH, 0xffd23f], [4, -11, 2.0, 0, 0xffd23f], [-13, -12, 1.8, 0, 0x7be36a],
+  [14, -12, 1.8, 0, 0xff7aa8], [14, -12, 1.3, CH, 0x4ec9ff], [-15, 1, 1.8, 0, 0xb77bff], [0, -4, 1.6, 0, 0xffa21f], [-2.2, 5, 1.6, 0, 0x7be36a], [3.2, 7.5, 1.7, 0, 0xff7aa8]];
 for (const c of crateSpots) crate(c[0], c[1], c[2], c[3], c[4]);
 
 // trees: bark trunks and canopies made of lots of little leaf clusters (all instanced)
@@ -657,7 +670,7 @@ function drawLED(level) {
 function gunFire() { kick = 1; pumpT = 0.28; flash = 1; energy = Math.max(0, energy - 0.1); flashRot = Math.random() * 6.28; }
 function gunAnim(dt, ml) {
   kick = Math.max(0, kick - dt * 7); flash = Math.max(0, flash - dt * 9); pumpT = Math.max(0, pumpT - dt); energy = Math.min(1, energy + dt * 0.22);
-  walkAmt += ((ml > 0.1 && P.y <= 0.001 ? 1 : 0) - walkAmt) * Math.min(1, dt * 8);
+  walkAmt += ((ml > 0.1 && P.onFloor ? 1 : 0) - walkAmt) * Math.min(1, dt * 8);
   const t = clock, b = P.bob;
   gun.position.set(GUN_HOME.x + Math.sin(t * 1.1) * 0.004 + Math.sin(b * 0.5) * 0.012 * walkAmt, GUN_HOME.y + Math.sin(t * 1.6) * 0.003 - Math.abs(Math.sin(b)) * 0.014 * walkAmt - kick * 0.012, GUN_HOME.z + kick * 0.1);
   gun.rotation.set(kick * 0.16 + Math.sin(t * 1.3) * 0.006, 0.07 + Math.sin(b * 0.5) * 0.02 * walkAmt, Math.sin(t * 0.9) * 0.006 + Math.sin(b * 0.5) * 0.03 * walkAmt);
@@ -678,7 +691,7 @@ let mode = "menu";            // menu | play | pause | over
 let hadLock = false, dragLook = false, frozen = false;
 let bestWave = 0;
 try { bestWave = +localStorage.getItem("robot-blaster-best") || 0; } catch (e) {}
-const P = { x: 0, z: 12, y: 0, vy: 0, yaw: 0, pitch: 0, hearts: 5, inv: 0, bob: 0 };
+const P = { onFloor: true, floor: 0, x: 0, z: 12, y: 0, vy: 0, yaw: 0, pitch: 0, hearts: 5, inv: 0, bob: 0 };
 let wave = 0, score = 0, queue = 0, spawnT = 0, breakT = 0, fight = false, fireCd = 0, clock = 0, bannerT = 0, hintT = 0, hurtA = 0;
 const robots = [], shots = [], bits = [];
 const keys = {};
@@ -689,7 +702,37 @@ function showBest() { $("best").textContent = bestWave ? "Best wave: " + bestWav
 showBest();
 function saveBest() { if (wave > bestWave) { bestWave = wave; try { localStorage.setItem("robot-blaster-best", String(bestWave)); } catch (e) {} showBest(); } }
 function drawHearts() { let s = ""; for (let i = 0; i < 5; i++) s += i < P.hearts ? "❤️" : "🤍"; $("hearts").textContent = s; }
-function drawStats() { $("swave").textContent = "Wave " + wave; $("sscore").textContent = "Popped: " + score; }
+const DMG = [1, 1.5, 2, 3, 5], PRICE = [15, 40, 80, 150];
+let coins = 0, power = 0;
+try { coins = Math.max(0, +localStorage.getItem("robot-blaster-coins") || 0); power = clamp((+localStorage.getItem("robot-blaster-power") || 0) | 0, 0, 4); } catch (e) {}
+function saveCoins() { try { localStorage.setItem("robot-blaster-coins", String(coins)); } catch (e) {} }
+function savePower() { try { localStorage.setItem("robot-blaster-power", String(power)); } catch (e) {} }
+function addCoins(n) { coins += n; saveCoins(); const c = $("scoins"); c.style.transform = "scale(1.25)"; setTimeout(() => { c.style.transform = ""; }, 180); }
+function drawStats() { $("swave").textContent = "Wave " + wave; $("sscore").textContent = "Popped: " + score; $("scoins").textContent = "\uD83D\uDCB0 " + coins; }
+const tmpV = new THREE.Vector3();
+function plusPop(x, y, z, txt) {
+  camera.updateMatrixWorld(); tmpV.set(x, y, z).project(camera); if (tmpV.z > 1) return;
+  const el = document.createElement("div"); el.className = "plus"; el.textContent = txt;
+  el.style.left = ((tmpV.x * 0.5 + 0.5) * innerWidth) + "px"; el.style.top = ((-tmpV.y * 0.5 + 0.5) * innerHeight) + "px";
+  document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
+}
+const zapsFor = (hp, lv) => Math.ceil(hp / DMG[lv] - 1e-9);
+function drawShop() {
+  $("shopcoins").textContent = "You have \uD83D\uDCB0 " + coins; $("shoplvl").textContent = "Level " + (power + 1) + " of 5";
+  const names = ["small", "big", "giant"];
+  for (let i = 0; i < 3; i++) {
+    const now = zapsFor(TIERS[i].hp, power), nx = power < 4 ? zapsFor(TIERS[i].hp, power + 1) : now;
+    $("shopl" + (i + 1)).textContent = power < 4 ? "Zaps to pop a " + names[i] + " robot: " + now + " \→ " + nx : "Zaps to pop a " + names[i] + " robot: " + now;
+  }
+  const b = $("buy");
+  if (power >= 4) { b.textContent = "MAX! \⭐"; b.disabled = true; }
+  else { const pr = PRICE[power]; b.disabled = coins < pr; b.textContent = coins >= pr ? "Buy for \uD83D\uDCB0 " + pr : "Need \uD83D\uDCB0 " + pr; }
+}
+function buyPower() {
+  if (power >= 4 || coins < PRICE[power]) return;
+  coins -= PRICE[power]; power++; saveCoins(); savePower(); drawShop(); drawStats();
+  [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.25, "triangle", 0.12, i * 0.08)); flash = 1; kick = 0.5; pumpT = 0.28;
+}
 function banner(txt, secs) {
   const b = $("big"); b.textContent = txt; b.classList.remove("hidden"); b.style.animation = "none"; void b.offsetWidth; b.style.animation = ""; bannerT = secs;
 }
@@ -712,7 +755,7 @@ function paintMat(color, o) {
   if (Q.clear) return new THREE.MeshPhysicalMaterial(Object.assign(p, { clearcoat: 0.55, clearcoatRoughness: 0.22 }, o || {}));
   return new THREE.MeshStandardMaterial(Object.assign(p, o || {}));
 }
-const TIERS = [{ s: 0.8, hp: 2, name: "small" }, { s: 1.05, hp: 4, name: "big" }, { s: 1.45, hp: 7, name: "giant" }];
+const TIERS = [{ s: 0.8, hp: 3, coin: 2, name: "small" }, { s: 1.05, hp: 6, coin: 5, name: "big" }, { s: 1.45, hp: 10, coin: 10, name: "giant" }];
 function makeRobot(tier, color) {
   const T = TIERS[tier], root = new THREE.Group(), m = new THREE.Group(); root.add(m);
   const bodyM = paintMat(color, { emissive: 0x000000 }), headM = paintMat(new THREE.Color(color).offsetHSL(0, 0, 0.06), { emissive: 0x000000 });
@@ -775,8 +818,9 @@ function removeRobot(o) {
 function clearRobots() { while (robots.length) removeRobot(robots[0]); for (const s of shots) s.g.visible = false; }
 
 // pushes a circle (x,z,r) out of crates and trunks
-function resolve(p, r) {
+function resolve(p, r, y, hh) {
   for (const b of solids) {
+    if (y !== undefined && !(y < b.top - 0.05 && y + hh > b.y0)) continue;
     const cx = clamp(p.x, b.x - b.hw, b.x + b.hw), cz = clamp(p.z, b.z - b.hd, b.z + b.hd);
     let dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz);
     if (d < r) {
@@ -824,12 +868,12 @@ function shoot() {
   const start = camera.position.clone().addScaledVector(fwd, 0.7).addScaledVector(rgt, 0.2).addScaledVector(upv, -0.2);
   const dir = target.sub(start).normalize();
   let s = shots.find(q => !q.g.visible); if (!s) { s = makeShot(); shots.push(s); }
-  const zm = zapMs[(zapN++) % 3]; s.core.material = zm.core; s.glow.material = zm.glow; s.col = zm.col;
+  const zm = zapMs[power >= 3 ? 2 : (zapN++) % 3]; s.g.scale.setScalar(1 + power * 0.3); s.glow.scale.setScalar(0.75 + power * 0.2); s.core.material = zm.core; s.glow.material = zm.glow; s.col = zm.col;
   s.g.position.copy(start); s.g.visible = true; s.vx = dir.x * 38; s.vy = dir.y * 38; s.vz = dir.z * 38; s.life = 1.6;
 }
 
 // ---------- waves ----------
-const waveCount = w => Math.min(24, 3 + (w - 1) * 2);
+const waveCount = w => Math.min(20, 3 + Math.floor((w - 1) * 1.6));
 const CAP = PHONE ? 6 : 8;
 function beginWave(w) {
   wave = w; fight = true; queue = waveCount(w); spawnT = 2.2;
@@ -840,28 +884,30 @@ function startPlay(w) {
   getAc();
   w = w || 1;
   clearRobots();
-  Object.assign(P, { x: 0, z: 12, y: 0, vy: 0, yaw: 0, pitch: 0, hearts: 5, inv: 0 });
+  Object.assign(P, { onFloor: true, floor: 0, x: 0, z: 12, y: 0, vy: 0, yaw: 0, pitch: 0, hearts: 5, inv: 0 });
   score = 0; breakT = 0; fireCd = 0; hurtA = 0; $("hurt").style.opacity = 0;
   mode = "play"; frozen = false;
-  $("menu").classList.add("hidden"); $("pausecard").classList.add("hidden"); $("overcard").classList.add("hidden");
+  $("menu").classList.add("hidden"); $("pausecard").classList.add("hidden"); $("shopcard").classList.add("hidden"); $("overcard").classList.add("hidden");
   $("hud").classList.remove("hidden"); if (touchMode) $("touch").classList.remove("hidden");
-  drawHearts(); beginWave(w);
-  $("hint").textContent = touchMode ? "Stick to walk. Drag to look. Tap the button to zap!" : "Mouse looks. W A S D walk. Space jumps. Click to zap!";
+  drawHearts(); drawStats(); beginWave(w);
+  $("hint").textContent = touchMode ? "Stick to walk. Drag to look. Jump onto crates! Tap the big button to zap. \⏸ = Shop" : "Mouse looks. W A S D walk. Space jumps (try the crates!). Click to zap. Esc = Shop";
   $("hint").classList.remove("hidden"); $("hint").style.opacity = 1; hintT = 9;
 }
 function toMenu() {
   mode = "menu"; clearRobots(); exitLock();
   for (const b of bits) b.m.visible = false;
   $("menu").classList.remove("hidden"); $("hud").classList.add("hidden"); $("touch").classList.add("hidden"); $("big").classList.add("hidden"); $("hint").classList.add("hidden");
-  $("pausecard").classList.add("hidden"); $("overcard").classList.add("hidden"); $("hurt").style.opacity = 0; showBest();
+  $("pausecard").classList.add("hidden"); $("shopcard").classList.add("hidden"); $("overcard").classList.add("hidden"); $("hurt").style.opacity = 0; showBest();
 }
 function gameOver() {
   mode = "over"; fireHeld = false; exitLock(); $("big").classList.add("hidden"); $("hint").classList.add("hidden"); saveBest(); sOops();
   $("overtxt").textContent = "You got to wave " + wave + " and popped " + score + " robots! Try again?";
   $("overcard").classList.remove("hidden");
 }
-function pauseGame() { if (mode !== "play") return; mode = "pause"; fireHeld = false; for (const k in keys) keys[k] = false; $("pausecard").classList.remove("hidden"); }
-function resumeGame() { if (mode !== "pause") return; mode = "play"; $("pausecard").classList.add("hidden"); lockPointer(); }
+function pauseGame() { if (mode !== "play") return; mode = "pause"; fireHeld = false; for (const k in keys) keys[k] = false; $("shopcard").classList.add("hidden"); $("pausecard").classList.remove("hidden"); }
+function openShop() { if (mode !== "pause") return; $("pausecard").classList.add("hidden"); $("shopcard").classList.remove("hidden"); drawShop(); }
+function closeShop() { $("shopcard").classList.add("hidden"); if (mode === "pause") $("pausecard").classList.remove("hidden"); }
+function resumeGame() { if (mode !== "pause") return; mode = "play"; $("pausecard").classList.add("hidden"); $("shopcard").classList.add("hidden"); lockPointer(); }
 
 // ---------- pointer lock / mouse look ----------
 function lockPointer() {
@@ -953,6 +999,7 @@ $("again").onclick = () => { startPlay(1); lockPointer(); };
 $("resume").onclick = resumeGame;
 $("tomenu").onclick = toMenu; $("tomenu2").onclick = toMenu;
 $("pausebtn").onclick = pauseGame;
+$("shopbtn").onclick = openShop; $("shopback").onclick = closeShop; $("buy").onclick = buyPower;
 
 // ---------- the game loop ----------
 function hurtPlayer(o) {
@@ -970,10 +1017,14 @@ function update(dt) {
   const ml = Math.hypot(mx, mz); if (ml > 1) { mx /= ml; mz /= ml; }
   const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw), spd = 5.2;
   P.x += (mx * cy + mz * sy) * spd * dt; P.z += (-mx * sy + mz * cy) * spd * dt;
-  resolve(P, 0.4);
-  if (jumpQueued && P.y <= 0.001) P.vy = 6.2; jumpQueued = false;
-  P.vy -= 18 * dt; P.y = Math.max(0, P.y + P.vy * dt); if (P.y === 0 && P.vy < 0) P.vy = 0;
-  if (ml > 0.1 && P.y === 0) P.bob += dt * 10;
+  resolve(P, 0.4, P.y, 1.6);
+  if (jumpQueued && P.onFloor) P.vy = 7.2; jumpQueued = false;
+  for (const b of solids) if (Math.abs(P.x - b.x) < b.hw && Math.abs(P.z - b.z) < b.hd && P.y < b.top && P.y + 1.6 > b.y0) P.y = b.top;   // never stuck inside a crate
+  { const yb = P.y; P.vy -= 16 * dt; let ny = yb + P.vy * dt, fl = 0;
+    for (const b of solids) if (b.top > fl && b.top <= yb + 0.05 && Math.abs(P.x - b.x) < b.hw + 0.12 && Math.abs(P.z - b.z) < b.hd + 0.12) fl = b.top;
+    if (ny <= fl) { ny = fl; if (P.vy < 0) P.vy = 0; }
+    P.y = ny; P.floor = fl; P.onFloor = P.y <= fl + 0.001; }
+  if (ml > 0.1 && P.onFloor) P.bob += dt * 10;
   camera.position.set(P.x, P.y + 1.6 + Math.sin(P.bob) * 0.035, P.z);
   camera.rotation.set(P.pitch, P.yaw, 0);
   gunAnim(dt, ml);
@@ -983,7 +1034,7 @@ function update(dt) {
     spawnT -= dt;
     if (queue > 0 && spawnT <= 0 && robots.length < CAP) { spawnRobot(); queue--; spawnT = 0.9; }
     if (queue === 0 && robots.length === 0 && mode === "play") {
-      fight = false; breakT = 3.6; banner("Great job! 🎉", 1.8);
+      fight = false; breakT = 3.6; addCoins(5); banner("Great job! +5 💰", 2.0); drawStats();
     }
   } else if (breakT > 0) { breakT -= dt; if (breakT <= 0) beginWave(wave + 1); }
   // robots
@@ -993,16 +1044,27 @@ function update(dt) {
     o.x += (dx / d * o.speed + o.kx) * dt; o.z += (dz / d * o.speed + o.kz) * dt;
     o.kx *= Math.pow(0.02, dt); o.kz *= Math.pow(0.02, dt);
     for (const q of robots) if (q !== o) { const ex = o.x - q.x, ez = o.z - q.z, ed = Math.hypot(ex, ez), mn = rr + 0.55 * q.s + 0.3; if (ed < mn && ed > 1e-4) { const push = (mn - ed) * 0.5; o.x += ex / ed * push; o.z += ez / ed * push; } }
-    resolve(o, rr);
+    resolve(o, rr, 0, 1.0);
+    // crate lookout: when a robot reaches the crate you stand on, it does a big springy hop (boing!) to bonk you
+    o.hopCd = (o.hopCd || 0) - dt; o.hopY = 0; let hopK = 1, lx = 0, lz = 0;
+    if (o.hopT > 0) {
+      o.hopT -= dt; const u = clamp(1 - o.hopT / 0.75, 0, 1), sn = Math.sin(Math.PI * u);
+      if (u > 0.55 && !o.hopHit) { o.hopHit = true; if (P.floor > 0.5 && Math.hypot(P.x - o.x, P.z - o.z) < rr + 3.6) hurtPlayer(o); }
+      o.hopY = sn * (P.floor + 0.6); const lg = Math.min(Math.max(d - 0.9, 0), 2.4) * sn; lx = dx / d * lg; lz = dz / d * lg; hopK = 1 + 0.2 * sn;
+    } else if (P.floor > 0.5 && P.onFloor && o.hopCd <= 0 && o.born > 0.9) {
+      const b = solids.find(q => Math.abs(P.x - q.x) < q.hw + 0.12 && Math.abs(P.z - q.z) < q.hd + 0.12 && Math.abs(q.top - P.floor) < 0.01);
+      if (b) { const cx = clamp(o.x, b.x - b.hw, b.x + b.hw), cz = clamp(o.z, b.z - b.hd, b.z + b.hd); if (Math.hypot(o.x - cx, o.z - cz) < rr + 0.3) { o.hopT = 0.75; o.hopHit = false; o.hopCd = 2.2; sBoing(); } }
+    }
     if (d < rr + 0.4 && P.y < 1.3 * o.s && o.born > 0.9) hurtPlayer(o);
     // animate
     o.ph += dt * 7 * Math.min(1.6, o.speed / 1.8);
     const bobY = Math.abs(Math.sin(o.ph)) * 0.12, e = o.born < 1 ? 1 - Math.pow(1 - o.born, 3) : 1;
-    o.root.position.set(o.x, bobY * o.s, o.z); o.root.scale.setScalar(o.s * Math.max(0.001, e));
+    o.root.position.set(o.x + lx, bobY * o.s + o.hopY, o.z + lz); o.root.scale.setScalar(o.s * Math.max(0.001, e));
     o.root.rotation.y = Math.atan2(dx, dz); o.root.rotation.z = Math.sin(o.ph) * 0.07;
     o.legs[0].rotation.x = Math.sin(o.ph) * 0.5; o.legs[1].rotation.x = -Math.sin(o.ph) * 0.5;
     o.arms[0].rotation.x = -Math.sin(o.ph) * 0.6; o.arms[1].rotation.x = Math.sin(o.ph) * 0.6; o.arms[0].rotation.z = 0.15; o.arms[1].rotation.z = -0.15;
     o.ant.rotation.z = Math.sin(o.ph * 0.8) * 0.35; o.ant.rotation.x = Math.cos(o.ph * 0.7) * 0.3;
+    if (o.hit <= 0) o.m.scale.set(1 / Math.sqrt(hopK), hopK, 1 / Math.sqrt(hopK));
     if (o.hit > 0) {
       o.hit -= dt; const k = Math.max(0, o.hit / 0.4), w = Math.sin(o.hit * 40) * 0.14 * k;
       o.m.scale.set(1 + w, 1 - w, 1 + w); const em = new THREE.Color(1, 1, 1).multiplyScalar(k * 0.7);
@@ -1019,7 +1081,7 @@ function update(dt) {
       s.g.position.x += s.vx * dt / steps; s.g.position.y += s.vy * dt / steps; s.g.position.z += s.vz * dt / steps;
       const p = s.g.position;
       if (p.y < 0.05 || s.life <= 0 || Math.abs(p.x) > ARENA + 2 || Math.abs(p.z) > ARENA + 2) { s.g.visible = false; break; }
-      for (const b of solids) if (Math.abs(p.x - b.x) < b.hw && Math.abs(p.z - b.z) < b.hd && p.y < 3.4) { s.g.visible = false; burst(p.x, p.y, p.z, 0.3, 0xffffff); break; }
+      for (const b of solids) if (Math.abs(p.x - b.x) < b.hw && Math.abs(p.z - b.z) < b.hd && p.y < b.top && p.y > b.y0 - 0.05) { s.g.visible = false; burst(p.x, p.y, p.z, 0.3, 0xffffff); break; }
       if (!s.g.visible) break;
       for (const t of trunks) if (Math.hypot(p.x - t.x, p.z - t.z) < t.r && p.y < 2) { s.g.visible = false; break; }
       if (!s.g.visible) break;
@@ -1027,12 +1089,12 @@ function update(dt) {
         if (o.born < 0.5) continue;
         const parts = [[1.05, 0.66], [1.75, 0.52]];
         let hit = false;
-        for (const [py, pr] of parts) { const cy2 = py * o.s; if (Math.hypot(p.x - o.x, p.y - cy2, p.z - o.z) < pr * o.s + 0.12) { hit = true; break; } }
+        for (const [py, pr] of parts) { const cy2 = py * o.s + (o.hopY || 0); if (Math.hypot(p.x - o.x, p.y - cy2, p.z - o.z) < pr * o.s + 0.12 * s.g.scale.x) { hit = true; break; } }
         if (!hit) continue;
-        s.g.visible = false; o.hp--; o.hit = 0.4; sHit();
+        s.g.visible = false; o.hp -= DMG[power]; o.hit = 0.4; sHit();
         const hl = Math.hypot(s.vx, s.vz) || 1; o.kx += s.vx / hl * 2.2; o.kz += s.vz / hl * 2.2;
         if (o.hp <= 0) {
-          burst(o.x, 1.2 * o.s, o.z, o.s, new THREE.Color(o.bodyM.color).getHex()); sBoing(); score++; drawStats(); removeRobot(o);
+          burst(o.x, 1.2 * o.s, o.z, o.s, new THREE.Color(o.bodyM.color).getHex()); sBoing(); score++; addCoins(TIERS[o.tier].coin); plusPop(o.x, 2.2 * o.s + (o.hopY || 0), o.z, "+" + TIERS[o.tier].coin + " \💰"); drawStats(); removeRobot(o);
         }
         break;
       }
@@ -1075,6 +1137,7 @@ function frame(dt) {
     sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUN_DIR.x, SUN_DIR.y, sz + SUN_DIR.z); sun.target.updateMatrixWorld(); }
   if (mode === "play" && !frozen) update(dt);
   else if (mode === "menu") idleUpdate(dt);
+  else if (mode === "pause") gunAnim(dt, 0);
   // keep animating dying confetti on game-over so it is not stuck
   else if (mode === "over") { for (const o of robots) o.ph += dt * 2; }
 }
@@ -1091,7 +1154,7 @@ function render() {
 }
 let last = performance.now();
 function loop(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = clamp((now - last) / 1000, 0, 0.05); last = now;
   frame(dt); render(); requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -1109,9 +1172,10 @@ window.__rb = {
   place: (x, z, yaw, pitch) => { P.x = x; P.z = z; P.yaw = yaw || 0; P.pitch = pitch || 0; },
   addRobot: (x, z, tier) => { const o = spawnRobot(); o.x = x; o.z = z; o.born = 1; o.root.position.set(x, 0, z); return o; },
   freeze: v => { frozen = v !== false; },
-  render,
+  render, openShop, buy: buyPower, addCoins: n => { addCoins(n); drawStats(); }, setPower: n => { power = clamp(n, 0, 4); savePower(); drawShop(); },
+  jump: () => { jumpQueued = true; }, key: (k, v) => { keys[k] = v; }, P,
   perf: () => { const gl = R.getContext(), t0 = performance.now(); for (let i = 0; i < 20; i++) { R.render(scene, camera); gl.finish(); } return { renderMs: +((performance.now() - t0) / 20).toFixed(1), calls: R.info.render.calls, tris: R.info.render.triangles }; },
-  state: () => ({ mode, wave, score, hearts: P.hearts, queue, robots: robots.map(o => ({ x: +o.x.toFixed(1), z: +o.z.toFixed(1), hp: o.hp, tier: o.tier })), px: +P.x.toFixed(1), pz: +P.z.toFixed(1), yaw: +P.yaw.toFixed(2), best: bestWave, shots: shots.filter(s => s.g.visible).length, bits: bits.filter(b => b.m.visible).length })
+  state: () => ({ mode, wave, score, hearts: P.hearts, queue, robots: robots.map(o => ({ x: +o.x.toFixed(1), z: +o.z.toFixed(1), hp: o.hp, tier: o.tier })), px: +P.x.toFixed(1), pz: +P.z.toFixed(1), yaw: +P.yaw.toFixed(2), best: bestWave, shots: shots.filter(s => s.g.visible).length, coins, power, y: +P.y.toFixed(2), floor: P.floor, onFloor: P.onFloor, bits: bits.filter(b => b.m.visible).length })
 };
 if (/play/.test(HASH)) {
   const w = /wave=(\d+)/.exec(HASH); startPlay(w ? +w[1] : 1); dragLook = true;
@@ -1131,6 +1195,21 @@ if (/play/.test(HASH)) {
     }
     fireHeld = false; { const t0 = performance.now(); __rb.sim(2); console.log("UPDATEMS " + ((performance.now() - t0) / 40).toFixed(2) + " " + JSON.stringify(__rb.perf())); }
     console.log("BOTTEST " + JSON.stringify(__rb.state()) + " " + hist.join(" | ")); } }
+  { const m = /coins=(\d+)/.exec(HASH); if (m) { coins = +m[1]; saveCoins(); drawStats(); } const q = /power=(\d)/.exec(HASH); if (q) { power = +q[1]; savePower(); } }
+  if (/climb/.test(HASH)) { P.x = 8; P.z = 1.5; P.yaw = 0; keys.KeyW = true; const log = [];
+    for (let i = 0; i < 120 && P.floor < 2.3; i++) { if (P.onFloor) jumpQueued = true; __rb.sim(0.05); if (i % 4 === 0) log.push("y" + P.y.toFixed(2) + "@" + P.z.toFixed(1)); }
+    keys.KeyW = false; console.log("CLIMB floor=" + P.floor + " y=" + P.y.toFixed(2) + " " + log.join(" ")); }
+  if (/dbg/.test(HASH)) setTimeout(() => console.log("DBG cam=" + camera.position.toArray().map(v => v.toFixed(2)) + " y=" + P.y + " vy=" + P.vy + " floor=" + P.floor + " mode=" + mode + " fog=" + scene.fog.near), 2500);
+  if (/crate1/.test(HASH)) { P.x = 0; P.z = 0; P.yaw = 0; keys.KeyW = true; for (let i = 0; i < 60 && P.floor < 1; i++) { if (P.onFloor && P.z < -0.2) jumpQueued = true; __rb.sim(0.05); } keys.KeyW = false; __rb.sim(0.3); { const m = /pitch=(-?[0-9.]+)/.exec(HASH); P.yaw = 0.6; P.pitch = m ? +m[1] : -0.5; } __rb.sim(0.06); console.log("CRATE1 cam=" + camera.position.toArray().map(v => v.toFixed(2)) + " pitch=" + P.pitch + " floor=" + P.floor + " y=" + P.y.toFixed(2) + " z=" + P.z.toFixed(2)); }
+  if (/pausetest/.test(HASH)) { __rb.sim(0.1); pauseGame(); if (/shop/.test(HASH)) openShop(); }
+  if (/zaptest/.test(HASH)) { const out = [];
+    for (let lv = 0; lv < 5; lv++) { power = lv; const row = [];
+      for (let t = 0; t < 3; t++) { clearRobots(); queue = 0; fight = false; P.x = 0; P.z = 12; P.floor = 0;
+        const q = makeRobot(t, 0xff5a5a); q.x = 0; q.z = 4; q.born = 1; q.speed = 0; q.root.position.set(0, 0, 4); robots.push(q);
+        let n = 0; while (robots.includes(q) && n < 30) { __rb.aimAt(robots.indexOf(q)); __rb.shoot(); __rb.sim(0.3); n++; q.x = 0; q.z = 4; }
+        row.push(TIERS[t].name + "=" + n); }
+      out.push("L" + (lv + 1) + ":" + row.join(",")); }
+    clearRobots(); power = 0; console.log("ZAPTEST " + out.join(" | ") + " coins=" + coins + " saved=" + localStorage.getItem("robot-blaster-coins")); }
   if (/recoil/.test(HASH)) { __rb.shoot(); gunAnim(0.03, 0); if (/noball/.test(HASH)) for (const q of shots) q.g.visible = false; }
   if (/walk/.test(HASH)) { P.bob = 0.9; for (let i = 0; i < 12; i++) { P.bob += 0.25; clock += 0.05; gunAnim(0.05, 1); } }
   if (/over/.test(HASH)) { P.hearts = 1; __rb.hurt(); }
