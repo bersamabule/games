@@ -3484,6 +3484,7 @@ cv.addEventListener("pointerdown", e => {
     press();
     if (before === "none" && J.pressed === "early") p.early = popups[popups.length - 1] || null;
   }
+  if (screen === "battle" && e.pointerType === "mouse" && e.button === 0) battlePunch();   // Noah's rule: LEFT CLICK punches (right-drag turns the camera without punching)
 });
 cv.addEventListener("pointermove", e => {
   const p = ptrs.get(e.pointerId); if (!p) return;
@@ -3507,7 +3508,7 @@ function ptrUp(e) {
   const p = ptrs.get(e.pointerId); if (!p) return;
   ptrs.delete(e.pointerId);
   if (land && screen === "play" && e.type === "pointerup" && !p.drag && !p.joy && (p.type !== "mouse" || p.btn === 0)) press();   // a tap on a planet: jump
-  if (screen === "battle" && e.type === "pointerup" && !p.drag && !p.joy && (p.type !== "mouse" || p.btn === 0)) battlePunch();   // a tap in a battle: punch
+  if (screen === "battle" && e.type === "pointerup" && !p.drag && !p.joy && p.type !== "mouse") battlePunch();   // a finger tap in a battle: punch
   if (p.joy) joy = null;
   if (camPtrs().length < 2) pinch = null;
   dragging = camPtrs().some(q => q.drag);
@@ -3929,7 +3930,7 @@ const BT = {
   back: "⬅ Kembali",
   ready: "Siap...",
   go: "Mulai! 🥊",
-  hintKeys: "Panah untuk bergerak, SPASI untuk meninju!",
+  hintKeys: "Panah untuk bergerak, KLIK untuk meninju!",
   hintTouch: "Joystick untuk bergerak, ketuk untuk meninju!",
   hint2: "Dorong mereka ke kolam! 💦",
   win: "🏆 Kamu menang!",
@@ -4555,8 +4556,7 @@ function battleKey(k, e) {
     if ((k === " " || k === "Enter") && !e.repeat) resBtns[resSel].onclick();
     return;
   }
-  if (FLY_KEYS[k]) held.add(FLY_KEYS[k]);
-  if (k === " " && !e.repeat) battlePunch();
+  if (FLY_KEYS[k]) held.add(FLY_KEYS[k]);   // (punching is a left click now, not SPACE: Noah's rule)
 }
 
 // flying with the jetpack: arrow keys (left, right, up, down) and W/S (forwards and backwards, the way the camera looks)

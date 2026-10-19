@@ -1,0 +1,37 @@
+{
+  "name": "Robot Blaster",
+  "short_name": "Robot Blaster",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "description": "Zap the silly robots in a sunny park before they bonk you! Move the mouse to look, W A S D to walk, click to zap. Works on phones too.",
+  "lang": "en",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#3f9be6",
+  "theme_color": "#3f9be6",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
