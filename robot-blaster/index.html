@@ -525,6 +525,9 @@ const sBonk = () => { tone(170, 0.2, "triangle", 0.2, 0, 70); tone(340, 0.08, "s
 const sHit = () => tone(420, 0.1, "square", 0.04, 0, 300);
 const sJingle = () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.28, "triangle", 0.1, i * 0.1)); };
 const sOops = () => { [392, 330, 262].forEach((f, i) => tone(f, 0.3, "sine", 0.12, i * 0.18)); };
+// the blaster can fire every frame, so its pew and hit sounds play at most every few hundredths of a second
+const quiet = (f, ms) => { let t = -1e9; return () => { const n = performance.now(); if (n - t >= ms) { t = n; f(); } }; };
+const sPewQ = quiet(sPew, 60), sHitQ = quiet(sHit, 50);
 
 // ---------- the toy blaster (view model): sculpted, bevelled, premium toy ----------
 // It is drawn in its own little scene on top of the world (depth cleared), so it can never poke into a wall or crate.
@@ -862,13 +865,14 @@ function makeShot() {
 const fwd = new THREE.Vector3(), rgt = new THREE.Vector3(), upv = new THREE.Vector3();
 function shoot() {
   if (fireCd > 0) return;
-  fireCd = 0.26; gunFire(); sPew();
+  fireCd = 0; gunFire(); sPewQ();   // no waiting between zaps (Noah: "no maximum fire rate"): holding fires every frame
   camera.updateMatrixWorld(true);
   camera.getWorldDirection(fwd); rgt.setFromMatrixColumn(camera.matrixWorld, 0); upv.setFromMatrixColumn(camera.matrixWorld, 1);
   const target = camera.position.clone().addScaledVector(fwd, 40);
   const start = camera.position.clone().addScaledVector(fwd, 0.7).addScaledVector(rgt, 0.2).addScaledVector(upv, -0.2);
   const dir = target.sub(start).normalize();
-  let s = shots.find(q => !q.g.visible); if (!s) { s = makeShot(); shots.push(s); }
+  let s = shots.find(q => !q.g.visible);
+  if (!s) { if (shots.length < (PHONE ? 30 : 60)) { s = makeShot(); shots.push(s); } else s = shots.reduce((a, q) => q.life < a.life ? q : a); }   // pool full: reuse the oldest zap
   const zm = zapMs[power >= 3 ? 2 : (zapN++) % 3]; s.full = 1 + power * 0.3; s.g.scale.setScalar(s.full * 0.25); s.glow.scale.setScalar(0.75 + power * 0.2); s.core.material = zm.core; s.glow.material = zm.glow; s.col = zm.col;
   s.g.position.copy(start); s.g.visible = true; s.vx = dir.x * 38; s.vy = dir.y * 38; s.vz = dir.z * 38; s.life = 1.6; (s.hits = s.hits || new Set()).clear();
 }
@@ -1095,7 +1099,7 @@ function update(dt) {
         for (const [py, pr] of parts) { const cy2 = py * o.s + (o.hopY || 0); if (Math.hypot(p.x - o.x, p.y - cy2, p.z - o.z) < pr * o.s + 0.12 * s.g.scale.x) { hit = true; break; } }
         if (!hit) continue;
         if (pierce) s.hits.add(o); else s.g.visible = false;
-        o.hp -= DMG[power]; o.hit = 0.4; sHit();
+        o.hp -= DMG[power]; o.hit = 0.4; sHitQ();
         const hl = Math.hypot(s.vx, s.vz) || 1; o.kx += s.vx / hl * 2.2; o.kz += s.vz / hl * 2.2;
         if (o.hp <= 0) {
           burst(o.x, 1.2 * o.s, o.z, o.s, new THREE.Color(o.bodyM.color).getHex()); sBoing(); score++; addCoins(TIERS[o.tier].coin); plusPop(o.x, 2.2 * o.s + (o.hopY || 0), o.z, "+" + TIERS[o.tier].coin + " \💰"); drawStats(); removeRobot(o);
