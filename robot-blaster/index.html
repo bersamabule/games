@@ -63,6 +63,7 @@
   .upg .uhead { font-size: clamp(24px, 5vw, 38px); font-weight: 700; color: #ff4f86; }
   .upg .uhead span { display: block; font-size: 0.6em; color: #2a3a6a; }
   .upg p { font-size: clamp(16px, 3.2vw, 24px); }
+  .upg p.pierce { color: #e0457b; font-weight: 700; } .upg p.pierce:empty { display: none; }
   #scoins { background: rgba(200,140,0,0.85) !important; transition: transform 0.18s; }
   .plus { position: fixed; transform: translate(-50%, -50%); font-size: 30px; font-weight: 700; color: #ffe14a; text-shadow: 0 3px 0 #b36b00, 0 0 10px rgba(255,200,0,0.8); pointer-events: none; animation: plusup 1s ease-out forwards; z-index: 5; }
   @keyframes plusup { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -70px; } }
@@ -112,7 +113,7 @@
   <div id="best"></div>
 </div>
 <div id="pausecard" class="card hidden"><div class="box"><h2>Paused</h2><div class="row"><button id="resume" class="btn">Resume</button><button id="shopbtn" class="btn pink">🛒 Shop</button><button id="tomenu" class="btn orange">Menu</button></div></div></div>
-<div id="shopcard" class="card hidden"><div class="box"><h2>🛒 Shop</h2><p id="shopcoins" class="coinline">You have 💰 0</p><div class="upg"><div class="uhead">💥 Blaster power <span id="shoplvl"></span></div><p id="shopl1"></p><p id="shopl2"></p><p id="shopl3"></p><button id="buy" class="btn">Buy</button></div><div class="row"><button id="shopback" class="btn orange">Back</button></div></div></div>
+<div id="shopcard" class="card hidden"><div class="box"><h2>🛒 Shop</h2><p id="shopcoins" class="coinline">You have 💰 0</p><div class="upg"><div class="uhead">💥 Blaster power <span id="shoplvl"></span></div><p id="shopl1"></p><p id="shopl2"></p><p id="shopl3"></p><p id="shopl4" class="pierce"></p><button id="buy" class="btn">Buy</button></div><div class="row"><button id="shopback" class="btn orange">Back</button></div></div></div>
 <div id="overcard" class="card hidden"><div class="box"><h2>The robots got you!</h2><p id="overtxt">Try again?</p><div class="row"><button id="again" class="btn">Try again</button><button id="tomenu2" class="btn orange">Menu</button></div></div></div>
 <div id="nogl">Oh no! This screen cannot show 3D.</div>
 
@@ -702,9 +703,9 @@ function showBest() { $("best").textContent = bestWave ? "Best wave: " + bestWav
 showBest();
 function saveBest() { if (wave > bestWave) { bestWave = wave; try { localStorage.setItem("robot-blaster-best", String(bestWave)); } catch (e) {} showBest(); } }
 function drawHearts() { let s = ""; for (let i = 0; i < 5; i++) s += i < P.hearts ? "❤️" : "🤍"; $("hearts").textContent = s; }
-const DMG = [1, 1.5, 2, 3, 5], PRICE = [15, 40, 80, 150];
+const DMG = [1, 1.5, 2, 3, 5, 100], PRICE = [15, 40, 80, 150, 250], MAXP = DMG.length - 1;   // level 6 (MAXP): power 100, and zaps go right through robots
 let coins = 0, power = 0;
-try { coins = Math.max(0, +localStorage.getItem("robot-blaster-coins") || 0); power = clamp((+localStorage.getItem("robot-blaster-power") || 0) | 0, 0, 4); } catch (e) {}
+try { coins = Math.max(0, +localStorage.getItem("robot-blaster-coins") || 0); power = clamp((+localStorage.getItem("robot-blaster-power") || 0) | 0, 0, MAXP); } catch (e) {}
 function saveCoins() { try { localStorage.setItem("robot-blaster-coins", String(coins)); } catch (e) {} }
 function savePower() { try { localStorage.setItem("robot-blaster-power", String(power)); } catch (e) {} }
 function addCoins(n) { coins += n; saveCoins(); const c = $("scoins"); c.style.transform = "scale(1.25)"; setTimeout(() => { c.style.transform = ""; }, 180); }
@@ -718,18 +719,18 @@ function plusPop(x, y, z, txt) {
 }
 const zapsFor = (hp, lv) => Math.ceil(hp / DMG[lv] - 1e-9);
 function drawShop() {
-  $("shopcoins").textContent = "You have \uD83D\uDCB0 " + coins; $("shoplvl").textContent = "Level " + (power + 1) + " of 5";
+  $("shopcoins").textContent = "You have \uD83D\uDCB0 " + coins; $("shoplvl").textContent = "Level " + (power + 1) + " of " + (MAXP + 1);
   const names = ["small", "big", "giant"];
   for (let i = 0; i < 3; i++) {
-    const now = zapsFor(TIERS[i].hp, power), nx = power < 4 ? zapsFor(TIERS[i].hp, power + 1) : now;
-    $("shopl" + (i + 1)).textContent = power < 4 ? "Zaps to pop a " + names[i] + " robot: " + now + " \→ " + nx : "Zaps to pop a " + names[i] + " robot: " + now;
+    const now = zapsFor(TIERS[i].hp, power), nx = power < MAXP ? zapsFor(TIERS[i].hp, power + 1) : now;
+    $("shopl" + (i + 1)).textContent = power < MAXP && nx < now ? "Zaps to pop a " + names[i] + " robot: " + now + " \→ " + nx : "Zaps to pop a " + names[i] + " robot: " + now;
   }
-  const b = $("buy");
-  if (power >= 4) { b.textContent = "MAX! \⭐"; b.disabled = true; }
+  $("shopl4").textContent = power === MAXP ? "\uD83D\uDCAF Power 100! Zaps go right through robots!" : power === MAXP - 1 ? "Next: \uD83D\uDCAF power 100, and zaps go right through robots!" : "";  const b = $("buy");
+  if (power >= MAXP) { b.textContent = "MAX! \⭐"; b.disabled = true; }
   else { const pr = PRICE[power]; b.disabled = coins < pr; b.textContent = coins >= pr ? "Buy for \uD83D\uDCB0 " + pr : "Need \uD83D\uDCB0 " + pr; }
 }
 function buyPower() {
-  if (power >= 4 || coins < PRICE[power]) return;
+  if (power >= MAXP || coins < PRICE[power]) return;
   coins -= PRICE[power]; power++; saveCoins(); savePower(); drawShop(); drawStats();
   [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.25, "triangle", 0.12, i * 0.08)); flash = 1; kick = 0.5; pumpT = 0.28;
 }
@@ -868,8 +869,8 @@ function shoot() {
   const start = camera.position.clone().addScaledVector(fwd, 0.7).addScaledVector(rgt, 0.2).addScaledVector(upv, -0.2);
   const dir = target.sub(start).normalize();
   let s = shots.find(q => !q.g.visible); if (!s) { s = makeShot(); shots.push(s); }
-  const zm = zapMs[power >= 3 ? 2 : (zapN++) % 3]; s.g.scale.setScalar(1 + power * 0.3); s.glow.scale.setScalar(0.75 + power * 0.2); s.core.material = zm.core; s.glow.material = zm.glow; s.col = zm.col;
-  s.g.position.copy(start); s.g.visible = true; s.vx = dir.x * 38; s.vy = dir.y * 38; s.vz = dir.z * 38; s.life = 1.6;
+  const zm = zapMs[power >= 3 ? 2 : (zapN++) % 3]; s.full = 1 + power * 0.3; s.g.scale.setScalar(s.full * 0.25); s.glow.scale.setScalar(0.75 + power * 0.2); s.core.material = zm.core; s.glow.material = zm.glow; s.col = zm.col;
+  s.g.position.copy(start); s.g.visible = true; s.vx = dir.x * 38; s.vy = dir.y * 38; s.vz = dir.z * 38; s.life = 1.6; (s.hits = s.hits || new Set()).clear();
 }
 
 // ---------- waves ----------
@@ -1077,6 +1078,7 @@ function update(dt) {
   for (const s of shots) {
     if (!s.g.visible) continue;
     s.life -= dt; const steps = 3;
+    s.g.scale.setScalar(s.full * Math.min(1, 0.25 + (1.6 - s.life) * 6));   // starts small by the blaster, full size once it's a few metres away
     for (let i = 0; i < steps && s.g.visible; i++) {
       s.g.position.x += s.vx * dt / steps; s.g.position.y += s.vy * dt / steps; s.g.position.z += s.vz * dt / steps;
       const p = s.g.position;
@@ -1085,13 +1087,15 @@ function update(dt) {
       if (!s.g.visible) break;
       for (const t of trunks) if (Math.hypot(p.x - t.x, p.z - t.z) < t.r && p.y < 2) { s.g.visible = false; break; }
       if (!s.g.visible) break;
-      for (const o of robots) {
-        if (o.born < 0.5) continue;
+      const pierce = power === MAXP;   // top level: the zap keeps going through every robot it meets
+      for (const o of pierce ? robots.slice() : robots) {
+        if (o.born < 0.5 || s.hits.has(o)) continue;
         const parts = [[1.05, 0.66], [1.75, 0.52]];
         let hit = false;
         for (const [py, pr] of parts) { const cy2 = py * o.s + (o.hopY || 0); if (Math.hypot(p.x - o.x, p.y - cy2, p.z - o.z) < pr * o.s + 0.12 * s.g.scale.x) { hit = true; break; } }
         if (!hit) continue;
-        s.g.visible = false; o.hp -= DMG[power]; o.hit = 0.4; sHit();
+        if (pierce) s.hits.add(o); else s.g.visible = false;
+        o.hp -= DMG[power]; o.hit = 0.4; sHit();
         const hl = Math.hypot(s.vx, s.vz) || 1; o.kx += s.vx / hl * 2.2; o.kz += s.vz / hl * 2.2;
         if (o.hp <= 0) {
           burst(o.x, 1.2 * o.s, o.z, o.s, new THREE.Color(o.bodyM.color).getHex()); sBoing(); score++; addCoins(TIERS[o.tier].coin); plusPop(o.x, 2.2 * o.s + (o.hopY || 0), o.z, "+" + TIERS[o.tier].coin + " \💰"); drawStats(); removeRobot(o);
@@ -1172,7 +1176,7 @@ window.__rb = {
   place: (x, z, yaw, pitch) => { P.x = x; P.z = z; P.yaw = yaw || 0; P.pitch = pitch || 0; },
   addRobot: (x, z, tier) => { const o = spawnRobot(); o.x = x; o.z = z; o.born = 1; o.root.position.set(x, 0, z); return o; },
   freeze: v => { frozen = v !== false; },
-  render, openShop, buy: buyPower, addCoins: n => { addCoins(n); drawStats(); }, setPower: n => { power = clamp(n, 0, 4); savePower(); drawShop(); },
+  render, openShop, buy: buyPower, addCoins: n => { addCoins(n); drawStats(); }, setPower: n => { power = clamp(n, 0, MAXP); savePower(); drawShop(); },
   jump: () => { jumpQueued = true; }, key: (k, v) => { keys[k] = v; }, P,
   perf: () => { const gl = R.getContext(), t0 = performance.now(); for (let i = 0; i < 20; i++) { R.render(scene, camera); gl.finish(); } return { renderMs: +((performance.now() - t0) / 20).toFixed(1), calls: R.info.render.calls, tris: R.info.render.triangles }; },
   state: () => ({ mode, wave, score, hearts: P.hearts, queue, robots: robots.map(o => ({ x: +o.x.toFixed(1), z: +o.z.toFixed(1), hp: o.hp, tier: o.tier })), px: +P.x.toFixed(1), pz: +P.z.toFixed(1), yaw: +P.yaw.toFixed(2), best: bestWave, shots: shots.filter(s => s.g.visible).length, coins, power, y: +P.y.toFixed(2), floor: P.floor, onFloor: P.onFloor, bits: bits.filter(b => b.m.visible).length })
@@ -1203,7 +1207,7 @@ if (/play/.test(HASH)) {
   if (/crate1/.test(HASH)) { P.x = 0; P.z = 0; P.yaw = 0; keys.KeyW = true; for (let i = 0; i < 60 && P.floor < 1; i++) { if (P.onFloor && P.z < -0.2) jumpQueued = true; __rb.sim(0.05); } keys.KeyW = false; __rb.sim(0.3); { const m = /pitch=(-?[0-9.]+)/.exec(HASH); P.yaw = 0.6; P.pitch = m ? +m[1] : -0.5; } __rb.sim(0.06); console.log("CRATE1 cam=" + camera.position.toArray().map(v => v.toFixed(2)) + " pitch=" + P.pitch + " floor=" + P.floor + " y=" + P.y.toFixed(2) + " z=" + P.z.toFixed(2)); }
   if (/pausetest/.test(HASH)) { __rb.sim(0.1); pauseGame(); if (/shop/.test(HASH)) openShop(); }
   if (/zaptest/.test(HASH)) { const out = [];
-    for (let lv = 0; lv < 5; lv++) { power = lv; const row = [];
+    for (let lv = 0; lv <= MAXP; lv++) { power = lv; const row = [];
       for (let t = 0; t < 3; t++) { clearRobots(); queue = 0; fight = false; P.x = 0; P.z = 12; P.floor = 0;
         const q = makeRobot(t, 0xff5a5a); q.x = 0; q.z = 4; q.born = 1; q.speed = 0; q.root.position.set(0, 0, 4); robots.push(q);
         let n = 0; while (robots.includes(q) && n < 30) { __rb.aimAt(robots.indexOf(q)); __rb.shoot(); __rb.sim(0.3); n++; q.x = 0; q.z = 4; }
