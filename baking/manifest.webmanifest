@@ -1,0 +1,37 @@
+{
+  "name": "Baking",
+  "short_name": "Baking",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "description": "Bake a birthday cake, pizza, cookies or ice cream. Tap the jars to make them any colour, then sell them to duck customers for coins! Works on phones too.",
+  "lang": "en",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#ffd666",
+  "theme_color": "#ffd666",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

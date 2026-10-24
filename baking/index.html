@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Baking</title>
+<link rel="icon" href="icon.png">
+<style>
+  @font-face { font-family: "Fredoka"; src: url("fonts/Fredoka.ttf") format("truetype");
+               font-weight: 300 700; font-stretch: 75% 125%; font-display: swap; }
+  :root { --ink: #4a2c2a; --play: #3ccf5a; --play-dark: #23a03f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #ffe3b8;
+               font-family: "Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+               color: var(--ink); user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hidden { display: none !important; }
+  button { font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+  #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 18px; text-align: center; padding: 16px; background: radial-gradient(ellipse at center, rgba(255,240,215,0.55), rgba(255,200,150,0.25)); }
+  #menu h1 { margin: 0; font-size: clamp(64px, 16vw, 150px); font-weight: 700; color: #fff; line-height: 1;
+             text-shadow: 0 6px 0 #e0457b, 0 12px 18px rgba(120,40,60,0.45); letter-spacing: 2px; }
+  #menu p { margin: 0; font-size: clamp(22px, 4.5vw, 38px); font-weight: 600; color: #fff; text-shadow: 0 3px 8px rgba(100,40,40,0.6); }
+  #play { font-size: clamp(34px, 7vw, 56px); font-weight: 700; color: #fff; background: var(--play); border: 0; border-radius: 999px;
+          padding: 14px 64px; box-shadow: 0 8px 0 var(--play-dark), 0 14px 22px rgba(0,0,0,0.3); transition: transform 0.1s; }
+  #play:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--play-dark); }
+  #picks { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+  #picks button { font-size: clamp(22px, 4.4vw, 36px); font-weight: 700; color: #fff; border: 0; border-radius: 28px; padding: 12px 24px; min-width: 130px;
+                  display: flex; flex-direction: column; align-items: center; box-shadow: 0 7px 0 rgba(0,0,0,0.25), 0 12px 20px rgba(0,0,0,0.25); }
+  @media (max-height: 480px) { #menu { gap: 8px; } #menu h1 { font-size: 48px; } #menu p { display: none; } #picks { gap: 10px; } #picks button { padding: 6px 14px; min-width: 100px; } #picks button b { font-size: 36px; } }
+  #picks button b { font-size: clamp(46px, 9vw, 76px); font-weight: 400; line-height: 1.1; }
+  #picks button:active { transform: translateY(5px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+  #home { position: fixed; top: 12px; left: 12px; width: 56px; height: 56px; font-size: 30px; border: 0; border-radius: 50%;
+          background: rgba(255,255,255,0.92); box-shadow: 0 4px 0 #d9b99a, 0 6px 12px rgba(0,0,0,0.25); }
+  #hint { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); width: max-content; max-width: 92vw; text-align: center;
+          font-size: clamp(18px, 3.6vw, 28px); font-weight: 600; color: #fff; padding: 8px 22px; border-radius: 28px;
+          background: rgba(140,60,80,0.62); text-shadow: 0 2px 4px rgba(80,30,30,0.6); pointer-events: none; }
+  #count { position: fixed; top: 14px; right: 14px; font-size: 18px; font-weight: 600; color: #fff; padding: 4px 14px; border-radius: 18px;
+           background: rgba(140,60,80,0.55); pointer-events: none; }
+  #ring { position: fixed; width: 88px; height: 88px; border-radius: 50%; transform: translate(-50%, -50%); --p: 0; pointer-events: none;
+          background: conic-gradient(#ffd23f calc(var(--p) * 1%), rgba(255,255,255,0.55) 0); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  #ring b { position: absolute; inset: 10px; border-radius: 50%; background: #fff7e0; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--ink); }
+  #big { position: fixed; left: 0; right: 0; top: 16%; text-align: center; padding: 0 12px; font-size: clamp(34px, 8vw, 86px); font-weight: 700; color: #fff;
+         text-shadow: 0 5px 0 #e0457b, 0 10px 18px rgba(120,40,60,0.5); pointer-events: none; animation: bigpop 0.6s ease-out; }
+  @keyframes bigpop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+  #again { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); font-size: clamp(26px, 5vw, 40px); font-weight: 700; color: #fff;
+           background: var(--play); border: 0; border-radius: 999px; padding: 12px 40px; box-shadow: 0 7px 0 var(--play-dark), 0 12px 20px rgba(0,0,0,0.3); }
+  #again { white-space: nowrap; }
+  @media (max-width: 420px) { #again, #sell { padding: 10px 26px; font-size: 24px; } #sell.up { bottom: 160px; } }
+  #again:active { transform: translate(-50%, 5px); box-shadow: 0 2px 0 var(--play-dark); }
+  #sell { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); font-size: clamp(26px, 5vw, 40px); font-weight: 700; color: #fff; white-space: nowrap;
+          background: #ffa21f; border: 0; border-radius: 999px; padding: 12px 40px; box-shadow: 0 7px 0 #d97a00, 0 12px 20px rgba(0,0,0,0.3); }
+  #sell.up { bottom: 168px; }
+  #sell:active { transform: translate(-50%, 5px); box-shadow: 0 2px 0 #d97a00; }
+  #coins { position: fixed; top: 52px; right: 14px; font-size: 18px; font-weight: 600; color: #fff; padding: 4px 14px; border-radius: 18px; background: rgba(214,140,10,0.8); pointer-events: none; }
+  #coins.m { top: 14px; }
+  #coins.bump { animation: coinbump 0.5s ease-out; }
+  @keyframes coinbump { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
+  #say { position: fixed; transform: translate(-50%, -100%); max-width: min(78vw, 400px); text-align: center; font-size: clamp(20px, 4vw, 30px); font-weight: 700; color: var(--ink);
+         background: #fff; padding: 8px 18px; border-radius: 24px; box-shadow: 0 5px 14px rgba(0,0,0,0.3); pointer-events: none; }
+  #say::after { content: ""; position: absolute; left: 50%; bottom: -12px; margin-left: -10px; border: 10px solid transparent; border-top-color: #fff; border-bottom: 0; }
+  #nogl { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-size: 28px; padding: 20px; text-align: center; }
+</style>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ffd666"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Baking"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('sw',e)})})}</script></head>
+<body>
+<canvas id="gl"></canvas>
+<div id="menu">
+  <h1>Baking</h1>
+  <p>Let's bake something yummy! 🧁</p>
+  <button id="play">Play</button>
+  <div id="picks" class="hidden"><button data-r="cake" style="background:#ff6fa5"><b>🎂</b>Cake</button><button data-r="pizza" style="background:#ff8a3c"><b>🍕</b>Pizza</button><button data-r="cookies" style="background:#b8742f"><b>🍪</b>Cookies</button><button data-r="icecream" style="background:#4aaee8"><b>🍦</b>Ice cream</button></div>
+</div>
+<button id="home" class="hidden" aria-label="Home">🏠</button>
+<div id="hint" class="hidden"></div>
+<div id="count" class="hidden">🎂 Cakes baked: 0</div>
+<div id="ring" class="hidden"><b>6</b></div>
+<div id="big" class="hidden">🎂 You baked a birthday cake!</div>
+<button id="sell" class="hidden">🏪 Sell it</button>
+<button id="again" class="hidden">Bake another cake</button>
+<div id="coins" class="hidden">💰 0</div>
+<div id="say" class="hidden"></div>
+<div id="nogl">Oh no! This screen cannot show 3D.</div>
+
+<!-- three.js r186 (MIT licence, lib/three-LICENSE.txt): draws the 3D kitchen. It is in the game folder, so no internet is needed. -->
+<script src="lib/three.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const PHONE = matchMedia("(pointer: coarse)").matches || Math.min(screen.width, screen.height) < 600;
+const R = new THREE.WebGLRenderer({ canvas: $("gl"), antialias: true });
+R.setPixelRatio(Math.min(devicePixelRatio || 1, PHONE ? 1.5 : 1.75));
+R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;
+R.setClearColor(0xffe3b8);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffe3b8);
+const camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 60);
+
+// ---------- little helpers: canvas textures and shapes ----------
+function tex(w, h, draw, rx, ry) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx || 1, ry || 1); return t;
+}
+const floorTex = tex(256, 256, (g, w, h) => {
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = (i + j) % 2 ? "#f6ead2" : "#e9a89a"; g.fillRect(i * w / 2, j * h / 2, w / 2, h / 2); }
+  g.strokeStyle = "rgba(120,70,50,0.25)"; g.lineWidth = 3; g.strokeRect(0, 0, w, h); g.strokeRect(w / 2, 0, 0, h); g.strokeRect(0, h / 2, w, 0);
+}, 3, 3);
+const wallTex = tex(256, 256, (g, w, h) => {
+  g.fillStyle = "#ffe9a8"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "rgba(255,255,255,0.55)";
+  for (let y = 16; y < h; y += 64) for (let x = 16; x < w; x += 64) { g.beginPath(); g.arc(x + (y % 128 ? 32 : 0), y, 6, 0, 7); g.fill(); }
+}, 4, 2);
+const woodTex = tex(256, 128, (g, w, h) => {
+  g.fillStyle = "#c98d52"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 40; i++) { g.strokeStyle = `rgba(110,60,25,${0.08 + Math.random() * 0.15})`; g.lineWidth = 1 + Math.random() * 2;
+    g.beginPath(); const y = Math.random() * h; g.moveTo(0, y); g.bezierCurveTo(w * .3, y + 6, w * .6, y - 6, w, y + 2); g.stroke(); }
+}, 2, 1);
+const M = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.6, metalness: 0 }, o || {}));
+function box(w, h, d, mat, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true; (parent || scene).add(m); return m;
+}
+function cyl(rt, rb, h, mat, x, y, z, parent, seg) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 24), mat); m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true; (parent || scene).add(m); return m;
+}
+
+// ---------- lights: sun through the window + soft sky light ----------
+scene.add(new THREE.HemisphereLight(0xfff4e0, 0xd9a07a, 1.15));
+const sun = new THREE.DirectionalLight(0xfff0cc, 2.6);
+sun.position.set(6, 4.5, 1.5); sun.target.position.set(0, 0.8, -1.5);
+sun.castShadow = true; sun.shadow.mapSize.set(PHONE ? 1024 : 2048, PHONE ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 0.5, far: 20 });
+sun.shadow.radius = 4; sun.shadow.bias = -0.0005;
+scene.add(sun, sun.target);
+const lamp = new THREE.PointLight(0xffd9a0, 6, 7); lamp.position.set(0, 1.9, 0.5); scene.add(lamp);
+
+// ---------- the room (x -3..3, z -3..3, 2.8 high) ----------
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), M(0xffffff, { map: floorTex, roughness: 0.35 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const wallM = M(0xffffff, { map: wallTex, roughness: 0.9 });
+box(6, 2.8, 0.1, wallM, 0, 1.4, -3.05);                       // back wall
+box(0.1, 2.8, 6, wallM, -3.05, 1.4, 0);                       // left wall
+const ceil = box(6.2, 0.1, 6.2, M(0xfff8ee), 0, 2.85, 0); ceil.castShadow = false;
+box(6, 0.12, 0.06, M(0xffffff), 0, 0.06, -2.97);              // skirting
+// right wall with a window hole (built from 4 boxes)
+const rw = (d, h, y, z) => box(0.1, h, d, wallM, 3.05, y, z);
+rw(6, 1.1, 0.55, 0); rw(6, 0.5, 2.55, 0); rw(1.6, 1.2, 1.7, -2.2); rw(1.6, 1.2, 1.7, 2.2);
+const frameM = M(0xffffff, { roughness: 0.4 });
+const wf = (w, h, y, z) => box(0.14, h, w, frameM, 3.0, y, z);
+wf(3.0, 0.1, 1.1, 0); wf(3.0, 0.1, 2.3, 0); wf(0.1, 1.2, 1.7, -1.5); wf(0.1, 1.2, 1.7, 1.5); wf(0.06, 1.2, 1.7, 0);
+const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.2), new THREE.MeshBasicMaterial({ map: tex(64, 64, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#7cc8ff"); gr.addColorStop(1, "#d8f1ff"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(20, 40, 8, 0, 7); g.arc(30, 36, 10, 0, 7); g.arc(42, 40, 8, 0, 7); g.fill(); }) }));
+sky.position.set(3.1, 1.7, 0); sky.rotation.y = -Math.PI / 2; scene.add(sky);
+const curtM = M(0xff8fb1, { side: THREE.DoubleSide });
+for (const z of [-1.75, 1.75]) { const c = box(0.08, 1.4, 0.45, curtM, 2.92, 1.7, z); c.castShadow = false; }
+box(0.1, 0.1, 4, M(0x8a5a35), 2.9, 2.45, 0);
+
+// ---------- counter along the back wall ----------
+const cabM = M(0xff9ec0), topM = M(0xffffff, { map: woodTex, roughness: 0.45 });
+box(2.05, 0.86, 0.64, cabM, -1.95, 0.43, -2.65);               // left cabinet
+box(3.0, 0.86, 0.64, cabM, 1.5, 0.43, -2.65);                  // right cabinet
+box(6, 0.07, 0.72, topM, 0, 0.895, -2.63);                     // counter top
+const knobM = M(0xffd23f, { metalness: 0.6, roughness: 0.3 });
+const doors = [-2.5, -1.4, 0.75, 1.5, 2.25];
+for (const x of doors) { box(0.66, 0.7, 0.02, M(0xffb3cf), x, 0.43, -2.325); const k = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), knobM); k.position.set(x + 0.2, 0.62, -2.3); scene.add(k); }
+
+// ---------- the oven (gap between the cabinets, x -0.7..0.45 around -0.4) ----------
+const oven = new THREE.Group(); oven.position.set(-0.45, 0, -2.65); scene.add(oven);
+const steel = M(0xdfe5ea, { metalness: 0.7, roughness: 0.28 }), dark = M(0x2a2a30, { roughness: 0.5 });
+box(1.0, 0.86, 0.64, steel, 0, 0.43, 0, oven);
+box(1.0, 0.16, 0.05, steel, 0, 0.78, 0.34, oven);              // control strip
+const ovnKnobs = [-0.3, -0.1, 0.1, 0.3].map(x => { const k = cyl(0.04, 0.04, 0.05, M(0x333338, { roughness: 0.4 }), x, 0.78, 0.39, oven, 16); k.rotation.x = Math.PI / 2; return k; });
+for (const k of ovnKnobs) { const t = box(0.01, 0.035, 0.012, M(0xffffff), 0, 0.03, 0, k); }
+const inside = box(0.78, 0.5, 0.02, M(0xffa43c, { emissive: 0x883300, emissiveIntensity: 0.9 }), 0, 0.37, 0.31, oven); inside.castShadow = false;
+const hinge = new THREE.Group(); hinge.position.set(0, 0.12, 0.33); oven.add(hinge);   // the door turns about its bottom edge
+const doorBody = new THREE.Group(); hinge.add(doorBody);
+box(0.92, 0.06, 0.05, steel, 0, 0.03, 0, doorBody); box(0.92, 0.06, 0.05, steel, 0, 0.5, 0, doorBody);
+box(0.07, 0.5, 0.05, steel, -0.425, 0.28, 0, doorBody); box(0.07, 0.5, 0.05, steel, 0.425, 0.28, 0, doorBody);
+const glass = box(0.78, 0.44, 0.02, new THREE.MeshStandardMaterial({ color: 0x223344, transparent: true, opacity: 0.62, roughness: 0.05, metalness: 0.2 }), 0, 0.28, 0, doorBody);
+glass.castShadow = false;
+const handle = cyl(0.02, 0.02, 0.7, steel, 0, 0.58, 0.08, doorBody, 12); handle.rotation.z = Math.PI / 2;
+for (const x of [-0.3, 0.3]) box(0.03, 0.03, 0.08, steel, x, 0.55, 0.04, doorBody);
+const ovenParts = [];
+oven.traverse(o => { if (o.isMesh) ovenParts.push(o); });
+let ovenOpen = false, doorAng = 0;
+
+// ---------- mixing bowl + wooden spoon on the counter ----------
+const bowl = new THREE.Group(); bowl.position.set(1.3, 0.93, -2.55); scene.add(bowl);
+const bowlM = M(0x6ec6ff, { roughness: 0.25, metalness: 0.1 });
+const pts = []; for (let i = 0; i <= 12; i++) { const a = i / 12 * Math.PI / 2; pts.push(new THREE.Vector2(0.06 + Math.sin(a) * 0.29, 0.3 - Math.cos(a) * 0.27)); }
+pts.push(new THREE.Vector2(0.3, 0.32), new THREE.Vector2(0.27, 0.32));
+const bowlMesh = new THREE.Mesh(new THREE.LatheGeometry(pts, 32), Object.assign(bowlM, { side: THREE.DoubleSide }));
+bowlMesh.castShadow = bowlMesh.receiveShadow = true; bowl.add(bowlMesh);
+const lumpTex = tex(128, 128, (g, w, h) => { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 90; i++) { g.fillStyle = Math.random() < 0.5 ? "rgba(200,170,110,0.45)" : "rgba(255,255,255,0.9)"; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 0, 7); g.fill(); } });
+const batterM = M(0xf3ead2, { roughness: 0.45, side: THREE.DoubleSide, map: lumpTex });
+const batter = new THREE.Mesh(new THREE.BufferGeometry(), batterM); batter.visible = false; bowl.add(batter);
+const spoon = new THREE.Group(); spoon.position.set(0, 0.2, 0); spoon.rotation.set(0.4, 0.5, -0.5); bowl.add(spoon);
+const wood = M(0xb97a3e, { roughness: 0.7 });
+cyl(0.018, 0.018, 0.6, wood, 0, 0.3, 0, spoon, 10);
+const sp = new THREE.Mesh(new THREE.SphereGeometry(0.06, 14, 10), wood); sp.scale.set(1, 0.4, 1.4); sp.position.y = -0.03; sp.castShadow = true; spoon.add(sp);
+
+// ---------- shelf with jars ----------
+box(1.6, 0.05, 0.28, M(0xb97a3e), -1.8, 1.65, -2.86);
+box(0.05, 0.14, 0.2, wood, -2.5, 1.58, -2.87); box(0.05, 0.14, 0.2, wood, -1.1, 1.58, -2.87);
+const jarCols = [0xff6b6b, 0xffd23f, 0x7ee081, 0x6ec6ff, 0xc89bff], jars = [];
+jarCols.forEach((c, i) => {
+  const x = -2.45 + i * 0.3, h = 0.22 + (i % 2) * 0.06;
+  const jg = new THREE.Group(); scene.add(jg);
+  const jar = cyl(0.1, 0.1, h, new THREE.MeshStandardMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.45, roughness: 0.1 }), x, 1.675 + h / 2, -2.86, jg, 20);
+  jar.castShadow = false;
+  const fill = cyl(0.088, 0.088, h * 0.7, M(c, { roughness: 0.8 }), x, 1.675 + h * 0.37, -2.86, jg, 20);
+  cyl(0.105, 0.105, 0.04, M(0xc9915a), x, 1.675 + h + 0.02, -2.86, jg, 20);
+  jg.userData = { fill, col: c, on: false, top: new THREE.Vector3(x, 1.675 + h + 0.1, -2.86), tap: () => jarTap(jg) }; jars.push(jg);
+});
+// a few cute extras: a pink stool and a rug
+const rug = cyl(0.85, 0.85, 0.02, M(0xff7aa8, { roughness: 1 }), 0, 0.012, 0, scene, 40); rug.castShadow = false;
+cyl(0.55, 0.55, 0.021, M(0xfff0f5, { roughness: 1 }), 0, 0.013, 0, scene, 40).castShadow = false;
+const stool = new THREE.Group(); stool.position.set(-2.2, 0, 0.3); scene.add(stool);
+cyl(0.25, 0.25, 0.08, M(0x6ec6ff), 0, 0.5, 0, stool); for (const [x, z] of [[-.15, -.15], [.15, -.15], [-.15, .15], [.15, .15]]) cyl(0.025, 0.025, 0.5, wood, x, 0.25, z, stool, 8);
+
+// ---------- camera: drag to look, wheel / pinch to zoom ----------
+const tgt = new THREE.Vector3(0, 0.95, -1.6);
+const view = { az: 0.0, el: 0.2, dist: 4.0 };
+const D_MIN = 1.6, D_MAX = 5.8, EL_MIN = 0.02, EL_MAX = 1.2;
+let menuSpin = true;
+function placeCamera() {
+  if (shopMode) { const P = innerWidth < innerHeight, sw = Math.sin(performance.now() / 3000) * 0.12; camera.position.set(SX + 0.3 + sw, P ? 2.6 : 2.0, P ? 5.9 : 4.4); camera.lookAt(SX + 0.3, P ? 0.8 : 0.75, -0.2); return; }
+  const v = view, az = menuSpin ? v.az + Math.sin(performance.now() / 4000) * 0.18 : v.az;
+  const cx = tgt.x + Math.sin(az) * Math.cos(v.el) * v.dist, cz = tgt.z + Math.cos(az) * Math.cos(v.el) * v.dist;
+  camera.position.set(clamp(cx, -2.8, 2.8), Math.max(0.35, tgt.y + Math.sin(v.el) * v.dist), clamp(cz, -2.6, 2.8));
+  camera.lookAt(tgt);
+}
+const ptrs = new Map(); let pinch = null;
+const cv = $("gl");
+cv.addEventListener("pointerdown", e => {
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, drag: false });
+  if (ptrs.size >= 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, dist: view.dist }; for (const q of ptrs.values()) q.drag = true; }
+});
+cv.addEventListener("pointermove", e => {
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (pinch) { if (ptrs.size >= 2) { const [a, b] = [...ptrs.values()]; view.dist = clamp(pinch.dist * pinch.d / (Math.hypot(a.x - b.x, a.y - b.y) || 1), D_MIN, D_MAX); } return; }
+  if (!p.drag) { if (Math.hypot(p.x - p.sx, p.y - p.sy) <= 10) return; p.drag = true; turn(p.x - p.sx, p.y - p.sy); return; }
+  turn(dx, dy);
+});
+function turn(dx, dy) { focusT = 0; const k = 3.2 / Math.max(320, innerHeight); view.az = clamp(view.az - dx * k, -1.3, 1.3); view.el = clamp(view.el + dy * k, EL_MIN, EL_MAX); }
+function up(e) {
+  const p = ptrs.get(e.pointerId); if (!p) return; ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (e.type === "pointerup" && !p.drag && !menuSpin) tapAt(e.clientX, e.clientY);   // a quick click is a tap, not a drag
+}
+cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+cv.addEventListener("wheel", e => { e.preventDefault(); focusT = 0; view.dist = clamp(view.dist * Math.exp(clamp(e.deltaY, -200, 200) * 0.0012), D_MIN, D_MAX); }, { passive: false });
+addEventListener("contextmenu", e => e.preventDefault());
+
+// ---------- sounds (WebAudio, nothing to download) ----------
+let ac = null;
+function getAc() {
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch (e) { ac = null; }
+  return ac;
+}
+function tone(f, dur, type, vol, delay, f2) {
+  const a = getAc(); if (!a) return;
+  try {
+    const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol || 0.2, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+function ding() { for (const [f, v] of [[1318, 0.22], [1976, 0.1], [2637, 0.05]]) tone(f, 1.1, "sine", v); }
+function pop() { tone(300, 0.14, "sine", 0.28, 0, 800); }
+function bloop() { tone(220, 0.18, "sine", 0.2, 0, 330); }
+function poof() {
+  const a = getAc(); if (!a) return;
+  try {
+    const n = (a.sampleRate * 0.3) | 0, b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = a.createBufferSource(); s.buffer = b; const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
+    const g = a.createGain(); g.gain.value = 0.35; s.connect(f).connect(g).connect(a.destination); s.start();
+  } catch (e) {}
+}
+function jingle() {   // Happy Birthday, first two lines
+  const N = { G4: 392, A4: 440, B4: 493.9, C5: 523.25, D5: 587.3 }, beat = 0.3;
+  const song = [["G4", .75], ["G4", .25], ["A4", 1], ["G4", 1], ["C5", 1], ["B4", 2], ["G4", .75], ["G4", .25], ["A4", 1], ["G4", 1], ["D5", 1], ["C5", 2]];
+  let t = 0.1; for (const [n, d] of song) { tone(N[n], d * beat * 1.1, "triangle", 0.22, t); t += d * beat; }
+}
+
+// ---------- tiny animation helpers ----------
+const tweens = [];
+const ease = { out: p => 1 - (1 - p) * (1 - p), back: p => 1 + 2.7 * Math.pow(p - 1, 3) + 1.7 * Math.pow(p - 1, 2) };
+function tween(dur, fn, done) { tweens.push({ t: 0, dur: Math.max(0.001, dur), fn, done }); }
+function later(s, f) { tween(s, null, f); }
+function runTweens(dt) {
+  const cur = tweens.splice(0);
+  for (const w of cur) { w.t += dt; const p = Math.min(1, w.t / w.dur); if (w.fn) w.fn(p); if (p >= 1) { if (w.done) w.done(); } else tweens.push(w); }
+}
+
+// ---------- the ingredients on the counter ----------
+const CTR = 0.93;
+const items = [];
+function addItem(name, grp, x, z) {
+  grp.position.set(x, CTR, z === undefined ? -2.55 : z); scene.add(grp);
+  const mats = []; grp.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; mats.push(o.material); } });
+  grp.userData = { name, home: grp.position.clone(), mats, on: false, in: false, tap: () => putIn(grp) };
+  items.push(grp); return grp;
+}
+function bag(label, paper, band, emoji) {
+  const g = new THREE.Group();
+  const t = tex(128, 192, (c, w, h) => {
+    c.fillStyle = paper; c.fillRect(0, 0, w, h); c.fillStyle = band; c.fillRect(0, 70, w, 76);
+    c.fillStyle = "#fff"; c.textAlign = "center"; c.font = "700 32px Fredoka, 'Arial Rounded MT Bold', sans-serif"; c.fillText(label, w / 2, 118);
+    c.font = "34px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif"; c.fillStyle = "#000"; c.fillText(emoji, w / 2, 50);
+  });
+  box(0.24, 0.32, 0.1, M(0xffffff, { map: t, roughness: 0.85 }), 0, 0.16, 0, g);
+  box(0.255, 0.035, 0.11, M(paper, { roughness: 0.9 }), 0, 0.335, 0, g);
+  return g;
+}
+function eggMesh(col) { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.SphereGeometry(0.065, 20, 16), M(col, { roughness: 0.35 })); m.scale.set(1, 1.3, 1); m.position.y = 0.085; g.add(m); return g; }
+function butterMesh() {
+  const g = new THREE.Group(); box(0.22, 0.07, 0.11, M(0xffe680, { roughness: 0.5 }), 0, 0.035, 0, g);
+  box(0.1, 0.074, 0.112, M(0xffffff), -0.06, 0.037, 0, g); box(0.1, 0.076, 0.03, M(0x4da3ff), -0.06, 0.037, 0, g); return g;
+}
+function milkMesh(label, labCol, bodyCol, capCol, fs) {
+  label = label || "MILK"; labCol = labCol || "#4da3ff"; bodyCol = bodyCol === undefined ? 0xffffff : bodyCol; capCol = capCol || 0x3b8be0;
+  const g = new THREE.Group();
+  const prof = [[0, 0], [.06, 0], [.068, .015], [.068, .19], [.05, .25], [.032, .285], [.032, .31], [0, .31]].map(a => new THREE.Vector2(a[0], a[1]));
+  const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 24), M(bodyCol, { roughness: 0.25 })); g.add(body);
+  const lab = tex(256, 64, (c, w, h) => { c.fillStyle = labCol; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.textAlign = "center"; c.font = "700 " + (fs || 44) + "px Fredoka, 'Arial Rounded MT Bold', sans-serif"; c.fillText(label, w / 2, 47); });
+  const band = cyl(0.0695, 0.0695, 0.11, M(0xffffff, { map: lab, roughness: 0.3 }), 0, 0.1, 0, g, 24); band.rotation.y = Math.PI;
+  cyl(0.038, 0.038, 0.04, M(capCol), 0, 0.33, 0, g, 16); return g;
+}
+addItem("flour", bag("FLOUR", "#fff3dc", "#d98a3d", "🌾"), 0.42);
+addItem("sugar", bag("SUGAR", "#ffe3ef", "#ff6fa5", "✨"), 0.76);
+addItem("egg", eggMesh(0xfff0d8), 1.85);
+addItem("egg", eggMesh(0xf0cf9f), 2.05);
+addItem("butter", butterMesh(), 2.37);
+addItem("milk", milkMesh(), 2.7);
+addItem("water", milkMesh("WATER", "#4da3ff", 0xdff4ff, 0x3b8be0, 34), 0.76);
+addItem("oil", milkMesh("OIL", "#3ccf5a", 0xf2d24a, 0x3ccf5a, 44), 2.37);
+addItem("chips", bag("CHIPS", "#f1dfc6", "#6b3a1e", "🍫"), 2.7);
+addItem("cream", milkMesh("CREAM", "#ff7ab0", 0xfff4fa, 0xff7ab0, 36), 2.05);
+function glow(g, v) { for (const m of g.userData.mats) { m.emissive.setHex(0xffe27a); m.emissiveIntensity = v; } }
+
+// ---------- bowl batter (follows the bowl's inside shape) ----------
+let batterH = 0;
+function setBatter(h) {
+  batterH = h; batter.visible = h > 0.005; if (!batter.visible) return;
+  const amax = Math.acos(clamp((0.3 - (0.03 + h)) / 0.27, -1, 1)), q = [new THREE.Vector2(0, 0.035)];
+  for (let i = 0; i <= 8; i++) { const a = amax * i / 8; q.push(new THREE.Vector2(0.06 + Math.sin(a) * 0.29 * 0.96, 0.3 - Math.cos(a) * 0.27 + 0.004)); }
+  q.push(new THREE.Vector2(0, q[q.length - 1].y));
+  batter.geometry.dispose(); batter.geometry = new THREE.LatheGeometry(q, 32);
+}
+const C_LUMPY = new THREE.Color(0xf3ead2), C_SMOOTH = new THREE.Color(0xffd35c);
+let swirlTex = null; const dyes = [];
+function batterMix(f) {
+  if (swirlTex && f >= 1) { batterM.color.set(0xffffff); if (batterM.map !== swirlTex) { batterM.map = swirlTex; batterM.needsUpdate = true; } return; }
+  batterM.color.copy(C_LUMPY).lerp(C_SMOOTH, f);
+  if (f >= 1 && batterM.map) { batterM.map = null; batterM.needsUpdate = true; } else if (f < 1 && batterM.map !== lumpTex) { batterM.map = lumpTex; batterM.needsUpdate = true; }
+}
+function mkSwirl(cols) {
+  return tex(128, 128, (g, w, h) => { const n = cols.length * 2;
+    for (let y = 0; y < h; y += 2) { const off = Math.sin(y / h * Math.PI * 4) * 0.04; g.fillStyle = cols[cols.length - 1]; g.fillRect(0, y, w, 2);
+      for (let k = 0; k < n; k++) { g.fillStyle = cols[k % cols.length]; g.fillRect((k / n + off) * w, y, w / n + 1, 2); } } });
+}
+function mkSponge(cols) {
+  return tex(64, 128, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#b4a89c"); gr.addColorStop(0.3, "#e8e2dc"); gr.addColorStop(1, "#ffffff"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    const n = cols.length * 2; g.globalAlpha = 0.9;
+    for (let y = 0; y < h; y += 2) { const off = Math.sin(y / h * Math.PI * 4) * 0.04; for (let k = 0; k < n; k++) { g.fillStyle = cols[k % cols.length]; g.fillRect((k / n + off) * w, y, w / n + 1, 2); } }
+    g.globalAlpha = 1; for (let i = 0; i < 50; i++) { g.fillStyle = "rgba(150,90,30,0.2)"; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 0, 7); g.fill(); } });
+}
+
+// ---------- cake tin, oven glow, cake, plate, icing, candles ----------
+const TIN_POS = new THREE.Vector3(1.95, CTR, -2.5), CAKE_POS = new THREE.Vector3(1.95, CTR + 0.03, -2.5);
+const tin = new THREE.Group(); tin.visible = false; scene.add(tin);
+const tinM = M(0xc7cdd4, { metalness: 0.7, roughness: 0.35, side: THREE.DoubleSide });
+{ const w = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.2, 0.09, 32, 1, true), tinM); w.position.y = 0.045; w.castShadow = true; tin.add(w);
+  cyl(0.2, 0.2, 0.01, tinM, 0, 0.005, 0, tin, 32);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.007, 8, 32), tinM); rim.rotation.x = Math.PI / 2; rim.position.y = 0.09; tin.add(rim); }
+const tinBatterM = M(0xffd35c, { roughness: 0.4 });
+const tinBatter = cyl(0.205, 0.205, 1, tinBatterM, 0, 0.01, 0, tin, 32);
+function setTinBatter(h) { tinBatter.visible = h > 0.003; tinBatter.scale.y = Math.max(0.001, h); tinBatter.position.y = 0.01 + h / 2; }
+
+const bakeDisc = new THREE.Group(); bakeDisc.visible = false; oven.add(bakeDisc);   // what you see through the oven window
+const bdTin = cyl(0.19, 0.19, 0.01, steel, 0, 0.38, 0.323, bakeDisc, 32); bdTin.rotation.x = Math.PI / 2;
+const bdCake = cyl(0.165, 0.165, 0.012, M(0xf3d88a, { roughness: 0.6 }), 0, 0.38, 0.33, bakeDisc, 32); bdCake.rotation.x = Math.PI / 2;
+const C_PALE = new THREE.Color(0xfbe08a), C_GOLD = new THREE.Color(0xd08a2e);
+const ovenLight = new THREE.PointLight(0xff8a2a, 0, 2.2); ovenLight.position.set(-0.45, 0.5, -2.1); scene.add(ovenLight);
+const E_COLD = new THREE.Color(0x883300), E_HOT = new THREE.Color(0xd24a00);
+let heat = 0, heatGoal = 0; const ringPos = new THREE.Vector3(-0.45, 1.25, -2.4);
+
+const cake = new THREE.Group(); cake.visible = false; cake.position.copy(CAKE_POS); scene.add(cake);
+const plate = new THREE.Group(); plate.position.y = -0.015; cake.add(plate);
+cyl(0.3, 0.27, 0.03, M(0xffffff, { roughness: 0.2 }), 0, 0, 0, plate, 40);
+{ const r = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.012, 8, 40), M(0xff8fb1)); r.rotation.x = Math.PI / 2; r.position.y = 0.012; plate.add(r); }
+let dyed = false;
+const spongeTex = tex(64, 128, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#b8692a"); gr.addColorStop(0.3, "#d9913a"); gr.addColorStop(0.5, "#f3c264"); gr.addColorStop(1, "#f6cf7a");
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) { g.fillStyle = "rgba(150,90,30,0.22)"; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 0, 7); g.fill(); } });
+// pale sponge for a dyed cake, so the jar colour shows true instead of going muddy on the golden sponge
+const spongeTexDyed = tex(64, 128, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#b4a89c"); gr.addColorStop(0.3, "#e8e2dc"); gr.addColorStop(1, "#ffffff");
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) { g.fillStyle = "rgba(60,40,20,0.14)"; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 0, 7); g.fill(); } });
+const spongeMat = M(0xffffff, { map: spongeTex, roughness: 0.8 });
+{ const prof = [[0, 0], [.21, 0], [.215, .02], [.215, .13], [.2, .17], [.15, .19], [.08, .2], [0, .205]].map(a => new THREE.Vector2(a[0], a[1]));
+  const sp = new THREE.Mesh(new THREE.LatheGeometry(prof, 36), spongeMat); sp.castShadow = sp.receiveShadow = true; cake.add(sp); }
+const icing = new THREE.Group(); icing.visible = false; cake.add(icing);
+const iceM = M(0xff8fb8, { roughness: 0.35, side: THREE.DoubleSide }), iceDotM = M(0xffb6d0, { roughness: 0.3 }), iceDrips = [], iceDots = [];
+{ const iM = iceM;
+  const prof = [[0, .222], [.1, .219], [.17, .207], [.222, .178], [.228, .13], [.224, .1]].map(a => new THREE.Vector2(a[0], a[1]));
+  const top = new THREE.Mesh(new THREE.LatheGeometry(prof, 36), iM); top.castShadow = true; icing.add(top);
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, d = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), iM); d.scale.set(1, 1.2 + (i % 3) * 0.5, 1); d.position.set(Math.cos(a) * 0.222, 0.1 - (i % 3) * 0.008, Math.sin(a) * 0.222); icing.add(d); iceDrips.push(d); }
+  const dM = iceDotM;
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, d = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), dM); d.position.set(Math.cos(a) * 0.19, 0.215, Math.sin(a) * 0.19); icing.add(d); iceDots.push(d); }
+  const cols = [0xffd23f, 0x4da3ff, 0x3ccf5a, 0xffffff, 0xb36bff, 0xff5d5d];
+  for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * 0.16, s = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.008, 0.03), M(cols[i % 6], { roughness: 0.5 }));
+    s.position.set(Math.cos(a) * r, 0.226, Math.sin(a) * r); s.rotation.y = Math.random() * 6.283; icing.add(s); } }
+const haloTex = tex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,230,150,0.95)"); gr.addColorStop(0.4, "rgba(255,170,60,0.4)"); gr.addColorStop(1, "rgba(255,150,40,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+const candles = [], CCOL = ["#ff5d8f", "#3ccf5a", "#4da3ff", "#ffb02e", "#b36bff"];
+CCOL.forEach((col, i) => {
+  const a = i / 5 * Math.PI * 2 + 0.3, g = new THREE.Group(); g.position.set(Math.cos(a) * 0.1, 0.215, Math.sin(a) * 0.1); g.visible = false; cake.add(g);
+  const st = tex(32, 64, (c, w, h) => { c.fillStyle = "#fff"; c.fillRect(0, 0, w, h); c.strokeStyle = col; c.lineWidth = 8; for (let y = -16; y < h + 16; y += 16) { c.beginPath(); c.moveTo(0, y + 16); c.lineTo(w, y); c.stroke(); } });
+  cyl(0.014, 0.014, 0.11, M(0xffffff, { map: st, roughness: 0.5 }), 0, 0.055, 0, g, 12);
+  cyl(0.002, 0.002, 0.016, M(0x333333), 0, 0.118, 0, g, 6);
+  const fl = new THREE.Group(); fl.position.y = 0.14; fl.visible = false; g.add(fl);
+  const f1 = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff9a1f })); f1.scale.set(1, 1.9, 1); fl.add(f1);
+  const f2 = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0a0 })); f2.scale.set(1, 1.8, 1); f2.position.y = -0.004; fl.add(f2);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); halo.scale.set(0.14, 0.14, 1); fl.add(halo);
+  g.userData = { flame: fl, rest: g.position.y }; candles.push(g);
+});
+const cakeLight = new THREE.PointLight(0xffb866, 0, 2.2); cakeLight.position.set(0, 0.45, 0); cake.add(cakeLight);
+cake.userData = { on: false, tap: () => cakeTap() };
+
+// confetti and smoke
+const CONF = [], confCols = [0xff5d8f, 0xffd23f, 0x3ccf5a, 0x4da3ff, 0xb36bff, 0xff9a3f, 0xffffff];
+{ const cg = new THREE.PlaneGeometry(0.035, 0.02); const cm = confCols.map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+  for (let i = 0; i < 70; i++) { const m = new THREE.Mesh(cg, cm[i % 7]); m.visible = false; scene.add(m); CONF.push({ m, v: new THREE.Vector3(), life: 0, spin: new THREE.Vector3() }); } }
+function burst(o) {
+  o = o || { x: CAKE_POS.x, y: 1.4, z: CAKE_POS.z, w: 0.4 };
+  for (const c of CONF) {
+    c.m.position.set(o.x + (Math.random() - 0.5) * o.w, o.y + Math.random() * 0.3, o.z + (Math.random() - 0.5) * 0.5 * o.w);
+    c.v.set((Math.random() - 0.5) * 1.8, 0.8 + Math.random() * 1.8, (Math.random() - 0.5) * 0.9); c.spin.set(Math.random() * 8, Math.random() * 8, Math.random() * 8); c.life = 0; c.m.visible = true; c.landed = false;
+  }
+}
+const SMOKE = [];
+for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshBasicMaterial({ color: 0xcfcfd6, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); SMOKE.push({ m, life: 9 }); }
+let smokeN = 0;
+function puff(p) { const s = SMOKE[smokeN++ % SMOKE.length]; s.m.position.copy(p); s.life = 0; s.m.visible = true; }
+
+// the arrow that shows what to tap
+const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.14, 4), new THREE.MeshBasicMaterial({ color: 0xffd23f })); arrow.rotation.x = Math.PI; arrow.visible = false; scene.add(arrow);
+const _v = new THREE.Vector3();
+let arrowFn = null;
+const arrowBowl = v => v.set(1.3, 1.5, -2.55), arrowOven = v => v.set(-0.45, 1.2, -2.5), arrowCake = v => v.set(cake.position.x, cake.position.y + (icing.visible ? 0.62 : 0.5), cake.position.z);
+
+// ---------- pizza and cookies ----------
+let recipe = "cake", rollN = 0, topN = 0, eatN = 0, ballN = 0, pizzas = 0, cookiesN = 0, icecreams = 0;
+try { pizzas = parseInt(localStorage.getItem("baking-pizzas"), 10) || 0; cookiesN = parseInt(localStorage.getItem("baking-cookies"), 10) || 0; icecreams = parseInt(localStorage.getItem("baking-icecreams"), 10) || 0; } catch (e) {}
+const SLOTS = [0.42, 0.76, 1.85, 2.05, 2.37, 2.7];
+const REC = {
+  cake: { items: [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5]], ovenStep: 3 },
+  pizza: { items: [[0, 0], [6, 1], [7, 4]], ovenStep: 7, eatStep: 8, doneStep: 9, big: "🍕 You baked a pizza!",
+    hints: { 1: "Let's bake a pizza! Tap the things to put them in the bowl. Tap a jar to make it a colour!", 2: "Tap the bowl to make dough! Tap a jar to change the colour!",
+      3: "Tap the dough to roll it flat!", 4: "Tap the pizza to put the sauce on!", 5: "Tap the pizza to sprinkle the cheese!", 6: "Tap the pizza to put on pepperoni!",
+      7: "Tap the oven to bake!", 8: "Yum! Tap the pizza to eat it!", 9: "Yay! Great job, baker!" } },
+  cookies: { items: [[0, 0], [1, 1], [2, 2], [4, 4], [8, 5]], ovenStep: 4, eatStep: 5, doneStep: 6, big: "🍪 You baked cookies!",
+    hints: { 1: "Let's bake cookies! Tap the things to put them in the bowl. Tap a jar to make it a colour!", 2: "Tap the bowl to make dough! Tap a jar to change the colour!",
+      3: "Tap the tray to put cookie dough on it!", 4: "Tap the oven to bake!", 5: "Yum! Tap the cookies to eat them!", 6: "Yay! Great job, baker!" } },
+  icecream: { items: [[5, 0], [1, 1], [9, 4]], ovenStep: 3, eatStep: 6, doneStep: 7, big: "🍦 You made ice cream!",
+    hints: { 1: "Let's make ice cream! Tap the things to put them in the bowl. Tap a jar for a yummy flavour!", 2: "Tap the bowl to mix! Tap a jar to change the flavour!",
+      3: "Tap the freezer to make it cold!", 4: "Tap the cone to add yummy scoops!", 5: "Tap for sprinkles! Then tap for a cherry!", 6: "Yum! Tap the ice cream to lick it!", 7: "Yay! Great job, baker!" } }
+};
+const panM = M(0xc7cdd4, { metalness: 0.7, roughness: 0.35 });
+const doughM = M(0xf7e2b8, { roughness: 0.8 }), cookM = M(0xe2b878, { roughness: 0.8 });
+function doughColor(m) { if (swirlTex) { m.color.set(0xffffff); m.map = swirlTex; } else { m.color.copy(C_SMOOTH); m.map = null; } m.needsUpdate = true; }
+
+const pizza = new THREE.Group(); pizza.visible = false; pizza.position.copy(TIN_POS); scene.add(pizza);
+cyl(0.28, 0.28, 0.015, panM, 0, 0.0075, 0, pizza, 40);
+const dball = new THREE.Mesh(new THREE.SphereGeometry(0.12, 20, 14), doughM); dball.scale.y = 0.8; dball.position.y = 0.11; dball.castShadow = true; pizza.add(dball);
+const crust = cyl(0.25, 0.25, 0.03, doughM, 0, 0.03, 0, pizza, 40);
+const rimP = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.02, 10, 40), doughM); rimP.rotation.x = Math.PI / 2; rimP.position.y = 0.045; rimP.castShadow = true; pizza.add(rimP);
+const sauce = cyl(0.215, 0.215, 0.006, M(0xd62f2f, { roughness: 0.4 }), 0, 0.0475, 0, pizza, 40);
+const cheeseTex = tex(128, 128, (g, w, h) => { g.fillStyle = "#ffe27a"; g.fillRect(0, 0, w, h); for (let i = 0; i < 60; i++) { g.fillStyle = Math.random() < 0.5 ? "rgba(255,170,40,0.5)" : "rgba(255,248,200,0.7)"; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 3 + Math.random() * 7, 0, 7); g.fill(); } });
+const cheeseM = M(0xffffff, { map: cheeseTex, roughness: 0.5 });
+const cheese = cyl(0.205, 0.205, 0.01, cheeseM, 0, 0.053, 0, pizza, 40);
+function setCrust(sxz, sy) { crust.scale.set(sxz, sy, sxz); crust.position.y = 0.015 + 0.015 * sy; }
+const toppings = [];
+["pep", "pep", "green", "pep", "pep", "olive"].forEach((kind, i) => {
+  const a = (i * 60 + 15) * Math.PI / 180, g = new THREE.Group(); g.position.set(Math.cos(a) * 0.12, 0, Math.sin(a) * 0.12); g.visible = false; pizza.add(g);
+  if (kind === "pep") {
+    cyl(0.045, 0.045, 0.012, M(0xb3261e, { roughness: 0.55 }), 0, 0.064, 0, g, 20);
+    for (const [x, z] of [[-0.018, -0.01], [0.015, 0.012], [0.005, -0.025], [-0.01, 0.022]]) cyl(0.007, 0.007, 0.002, M(0x6e1410), x, 0.071, z, g, 8);
+  } else if (kind === "green") { const t = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.008, 8, 20), M(0x3ccf5a)); t.rotation.x = Math.PI / 2; t.position.y = 0.066; g.add(t); }
+  else { const t = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.009, 8, 16), M(0x2a2a30)); t.rotation.x = Math.PI / 2; t.position.y = 0.066; g.add(t); }
+  g.children.forEach((m, k) => { m.userData.m0 = m.material; m.userData.dark = k > 0 ? 0.45 : 0.75; });   // k > 0: the little dots on a pepperoni
+  g.userData.rest = 0; toppings.push(g);
+});
+pizza.userData = { on: false, tap: () => pizzaTap() };
+
+const tray = new THREE.Group(); tray.visible = false; tray.position.copy(TIN_POS); scene.add(tray);
+box(0.5, 0.012, 0.34, panM, 0, 0.006, 0, tray);
+for (const z of [-0.17, 0.17]) box(0.5, 0.03, 0.01, panM, 0, 0.015, z, tray);
+for (const x of [-0.25, 0.25]) box(0.01, 0.03, 0.34, panM, x, 0.015, 0, tray);
+const cooks = [], chips = [], chipM = M(0x4a2a1a, { roughness: 0.6 });
+for (const z of [-0.085, 0.085]) for (const x of [-0.15, 0, 0.15]) {
+  const c = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), cookM); c.position.set(x, 0.045, z); c.scale.set(1, 0.7, 1); c.castShadow = true; c.visible = false;
+  for (const [cx, cy, cz] of [[-0.02, 0.043, 0.01], [0.018, 0.04, -0.015], [0.005, 0.047, 0.02], [0.02, 0.03, 0.03]]) { const ch = new THREE.Mesh(new THREE.SphereGeometry(0.01, 6, 5), chipM); ch.position.set(cx, cy, cz); c.add(ch); chips.push(ch); }
+  tray.add(c); cooks.push(c);
+}
+tray.userData = { on: false, tap: () => trayTap() };
+
+// ice cream: a waffle cone in a holder, 3 scoops, sprinkles and a cherry; and a little freezer
+const cone = new THREE.Group(); cone.visible = false; cone.position.copy(TIN_POS); scene.add(cone);
+const coneTex = tex(128, 128, (g, w, h) => { g.fillStyle = "#e8b86a"; g.fillRect(0, 0, w, h); g.strokeStyle = "#b9803a"; g.lineWidth = 4;
+  for (let i = -h; i < w + h; i += 22) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke(); g.beginPath(); g.moveTo(i + h, 0); g.lineTo(i, h); g.stroke(); } }, 3, 1);
+cyl(0.09, 0.0, 0.3, M(0xffffff, { map: coneTex, roughness: 0.8 }), 0, 0.18, 0, cone, 24);
+cyl(0.1, 0.1, 0.02, M(0xff8fb8), 0, 0.01, 0, cone, 24);
+for (let i = 0; i < 3; i++) { const a = i / 3 * 6.283 + 0.5; cyl(0.007, 0.007, 0.24, M(0xff8fb8), Math.cos(a) * 0.08, 0.13, Math.sin(a) * 0.08, cone, 6); }
+{ const r = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.01, 8, 24), M(0xff8fb8)); r.rotation.x = Math.PI / 2; r.position.y = 0.25; cone.add(r); }
+const scoops = [], scoopY = [0.36, 0.5, 0.625], scoopR = [0.095, 0.085, 0.075];
+scoopY.forEach((y, i) => { const g = new THREE.Group(); g.position.y = y; g.visible = false; cone.add(g);
+  const sp = new THREE.Mesh(new THREE.SphereGeometry(scoopR[i], 20, 14), M(0xfff1c9, { roughness: 0.45 })); sp.castShadow = true; g.add(sp);
+  const fr = new THREE.Mesh(new THREE.TorusGeometry(scoopR[i] * 0.9, 0.018, 8, 20), sp.material); fr.rotation.x = Math.PI / 2; fr.position.y = -scoopR[i] * 0.55; g.add(fr);
+  g.userData = { sp, fr, rest: y }; scoops.push(g); });
+const sprinkles = new THREE.Group(); sprinkles.visible = false; cone.add(sprinkles);
+for (let i = 0; i < 36; i++) { const sc = 1 + (i % 2), a = i * 2.4, up = 0.25 + (i * 0.37 % 1) * 0.65, r = scoopR[sc] * 1.02, k = Math.sqrt(1 - up * up);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.006, 0.022), M(confCols[i % 7], { roughness: 0.5 })); m.position.set(Math.cos(a) * k * r, scoopY[sc] + up * r, Math.sin(a) * k * r); m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); sprinkles.add(m); }
+const cherry = new THREE.Group(); cherry.position.y = 0.725; cherry.visible = false; cone.add(cherry);
+{ const c = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 10), M(0xd01030, { roughness: 0.25 })); c.castShadow = true; cherry.add(c); cyl(0.003, 0.003, 0.06, M(0x2f7a2f), 0.012, 0.05, 0, cherry, 6).rotation.z = -0.3; }
+cone.userData = { on: false, tap: () => coneTap() };
+const freezer = new THREE.Group(); freezer.position.set(-1.9, CTR, -2.58); freezer.visible = false; scene.add(freezer);
+const snowT = tex(128, 128, (g, w, h) => { g.fillStyle = "#ffffff"; g.fillRect(0, 0, w, h); g.strokeStyle = "#6ec6ff"; g.lineWidth = 6; g.lineCap = "round"; g.translate(w / 2, h / 2);
+  for (let k = 0; k < 3; k++) { g.rotate(Math.PI / 3); g.beginPath(); g.moveTo(-48, 0); g.lineTo(48, 0); g.moveTo(32, 0); g.lineTo(42, 10); g.moveTo(32, 0); g.lineTo(42, -10); g.moveTo(-32, 0); g.lineTo(-42, 10); g.moveTo(-32, 0); g.lineTo(-42, -10); g.stroke(); } });
+box(0.62, 0.6, 0.5, M(0xf4faff, { roughness: 0.3 }), 0, 0.3, 0, freezer); box(0.64, 0.05, 0.52, M(0x8fd3ff), 0, 0.62, 0, freezer);
+box(0.56, 0.52, 0.02, M(0xcfeeff, { emissive: 0x7fc8ff, emissiveIntensity: 0.5 }), 0, 0.3, 0.252, freezer).castShadow = false;
+const fHinge = new THREE.Group(); fHinge.position.set(-0.31, 0.3, 0.27); freezer.add(fHinge);
+box(0.6, 0.58, 0.04, M(0xffffff, { map: snowT, roughness: 0.3 }), 0.3, 0, 0, fHinge); cyl(0.012, 0.012, 0.18, M(0x8fd3ff), 0.52, 0.05, 0.05, fHinge, 8);
+freezer.userData = { on: false, tap: () => freezeTap() };
+const arrowFreezer = v => v.set(-1.9, 1.7, -2.5), FOCF = { x: -1.2, y: 1.15, z: -2.5, az: 0, el: 0.25, dist: 3.3 };
+const focFor = n => { const rc = REC[recipe]; return n <= 2 ? FOCI[1] : n === rc.ovenStep ? (recipe === "icecream" ? FOCF : FOCI[3]) : FOCI[4]; };
+const objOf = () => recipe === "pizza" ? pizza : recipe === "icecream" ? cone : tray;
+const FLAV = { red: "strawberry", yellow: "banana", green: "mint", blue: "bubblegum", purple: "grape" };
+const flavour = () => dyes.length > 1 ? "rainbow" : dyes.length ? FLAV[colName(dyes[0])] : "vanilla";
+function paintScoops() {
+  const n = dyes.length, W = new THREE.Color(0xffffff);
+  scoops.forEach((g, i) => { const c = n ? new THREE.Color(dyes[i % n]).lerp(W, 0.3) : new THREE.Color(0xfff1c9); g.userData.sp.material = g.userData.fr.material = colM(c); });
+}
+function coneTap() {
+  if (busy) return;
+  if (step === 4) {
+    const g = scoops[ballN++]; paintScoops(); g.visible = true; pop(); tone(500 + ballN * 150, 0.12, "triangle", 0.12, 0.05);
+    tween(0.5, p => { g.position.y = g.userData.rest + 0.3 * (1 - ease.out(p)) + Math.abs(Math.sin(p * Math.PI * 2)) * 0.03 * (1 - p); g.scale.set(1 + 0.15 * Math.sin(p * Math.PI), 1 - 0.12 * Math.sin(p * Math.PI), 1 + 0.15 * Math.sin(p * Math.PI)); }, () => { g.position.y = g.userData.rest; g.scale.set(1, 1, 1); });
+    if (ballN >= 3) { busy = true; later(0.8, () => goStep(5)); }
+  } else if (step === 5) {
+    topN++;
+    if (topN === 1) { sprinkles.visible = true; sprinkles.scale.set(0.01, 0.01, 0.01); pop(); tone(1200, 0.2, "triangle", 0.1, 0.05); tween(0.4, p => sprinkles.scale.setScalar(Math.max(0.01, ease.back(p)))); }
+    else { busy = true; cherry.visible = true; pop(); tween(0.5, p => { cherry.position.y = 0.725 + 0.3 * (1 - ease.out(p)) + Math.abs(Math.sin(p * Math.PI * 2)) * 0.03 * (1 - p); }, () => { cherry.position.y = 0.725; celebrateAlt(); later(0.8, () => goStep(6)); }); }
+  } else if (step === 6) {
+    eatN++; $("sell").classList.add("hidden"); tone(500, 0.12, "sine", 0.2, 0, 900); tone(800, 0.1, "sine", 0.15, 0.1, 1100); cone.scale.setScalar(Math.max(0.01, 1 - 0.25 * eatN));
+    tween(0.2, q => { cone.rotation.z = 0.12 * Math.sin(q * Math.PI); }, () => { cone.rotation.z = 0; });
+    if (eatN >= 4) { busy = true; cone.visible = false; later(0.6, () => goStep(7)); }
+  }
+}
+function freezeTap() {
+  if (busy || step !== 3) return;
+  busy = true; arrowFn = null; tapList = []; ding(); setHint("The freezer is opening...");
+  tween(0.4, p => { fHinge.rotation.y = -1.4 * ease.out(p); });
+  later(0.5, () => {
+    const from = bowl.position.clone(), to = new THREE.Vector3(-1.9, CTR + 0.3, -2.4);
+    tween(0.7, p => { bowl.position.lerpVectors(from, to, ease.out(p)); bowl.position.y += Math.sin(p * Math.PI) * 0.4; bowl.scale.setScalar(1 - 0.75 * p); }, () => {
+      bowl.visible = false; pop(); tween(0.4, p => { fHinge.rotation.y = -1.4 * (1 - ease.out(p)); });
+      later(0.5, () => {
+        ringPos.set(-1.9, 1.3, -2.3); $("ring").classList.remove("hidden"); setHint("Brrr! It is getting cold...");
+        tween(4, p => { $("ring").style.setProperty("--p", (p * 100).toFixed(1)); $("ring").firstChild.textContent = Math.max(1, Math.ceil(4 - 4 * p)); }, () => {
+          $("ring").classList.add("hidden"); ding(); later(0.25, ding); showBig("Brrr! ❄️"); setHint("Brrr! Ice cream is ready!");
+          for (let i = 0; i < 10; i++) { _v.set(-1.9 + (Math.random() - 0.5) * 0.5, CTR + 0.35 + Math.random() * 0.3, -2.3); puff(_v); SMOKE[(smokeN - 1) % SMOKE.length].m.material.color.set(0xd8f2ff); }
+          tween(0.4, p => { fHinge.rotation.y = -1.4 * ease.out(p); });
+          later(1.0, () => {
+            for (const s of SMOKE) s.m.material.color.set(0xcfcfd6);
+            bowl.position.set(1.3, CTR, -2.55); bowl.scale.set(1, 1, 1); bowl.visible = true; setBatter(0);
+            cone.visible = true; cone.position.copy(TIN_POS); cone.scale.setScalar(0.01); tween(0.4, p => cone.scale.setScalar(Math.max(0.01, ease.back(p)))); pop();
+            tween(0.4, p => { fHinge.rotation.y = -1.4 * (1 - ease.out(p)); }, () => goStep(4));
+          });
+        });
+      });
+    });
+  });
+}
+
+// the icing, sauce, cheese, toppings and chocolate chips match the jar colours ("the stuff on it matches the dough color")
+const matM = {};
+function colM(c) { const k = c.getHex(); return matM[k] || (matM[k] = M(k, { roughness: 0.45 })); }
+function mkCheese(cols) {
+  return tex(128, 128, (g, w, h) => { g.fillStyle = cols[0]; g.fillRect(0, 0, w, h); g.globalAlpha = 0.85;
+    for (let i = 0; i < 70; i++) { g.fillStyle = cols[1 + i % (cols.length - 1)]; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 3 + Math.random() * 9, 0, 7); g.fill(); } });
+}
+function matchFood() {
+  const js = dyes.map(d => new THREE.Color(d)), n = js.length, W = new THREE.Color(0xffffff), css = c => "#" + c.getHexString();
+  const tint = (c, k) => c.clone().lerp(W, k), shade = (c, k) => c.clone().multiplyScalar(k);
+  if (!n) {
+    iceM.color.set(0xff8fb8); iceM.map = null; iceDotM.color.set(0xffb6d0);
+    for (const d of iceDrips) d.material = iceM; for (const d of iceDots) d.material = iceDotM;
+    sauce.material.color.set(0xd62f2f); sauce.material.map = null; cheeseM.map = cheeseTex;
+    for (const t of toppings) for (const m of t.children) m.material = m.userData.m0;
+    for (const ch of chips) ch.material = chipM;
+  } else if (n === 1) {   // one jar: lighter icing and cheese, darker sauce, toppings and chips, all the same colour
+    const c = js[0];
+    iceM.color.copy(tint(c, 0.2)); iceM.map = null; iceDotM.color.copy(tint(c, 0.45));
+    for (const d of iceDrips) d.material = iceM; for (const d of iceDots) d.material = iceDotM;
+    sauce.material.color.copy(shade(c, 0.7)); sauce.material.map = null;
+    cheeseM.map = mkCheese([tint(c, 0.45), tint(c, 0.7), shade(c, 0.85)].map(css));
+    for (const t of toppings) for (const m of t.children) m.material = colM(shade(c, m.userData.dark));
+    for (const ch of chips) ch.material = colM(shade(c, 0.55));
+  } else {   // two or more jars: rainbow icing, sauce and cheese, and each topping and chip takes a jar colour in turn
+    iceM.color.set(0xffffff); iceM.map = mkSwirl(js.map(c => css(tint(c, 0.2))));
+    iceDrips.forEach((d, i) => { d.material = colM(tint(js[i % n], 0.2)); }); iceDots.forEach((d, i) => { d.material = colM(tint(js[i % n], 0.45)); });
+    sauce.material.color.set(0xffffff); sauce.material.map = mkSwirl(js.map(c => css(shade(c, 0.7))));
+    cheeseM.map = mkCheese(js.map(c => css(tint(c, 0.4))));
+    toppings.forEach((t, i) => { for (const m of t.children) m.material = colM(shade(js[i % n], m.userData.dark)); });
+    chips.forEach((ch, i) => { ch.material = colM(shade(js[i % n], 0.75)); });
+  }
+  iceM.needsUpdate = sauce.material.needsUpdate = cheeseM.needsUpdate = true;
+}
+
+function popIn(m) { m.visible = true; m.scale.set(0.01, 1, 0.01); pop(); tween(0.5, p => { const s = Math.max(0.01, ease.back(p)); m.scale.set(s, 1, s); }); }
+function bakedLook() {
+  // jar-coloured dough keeps its colour (or stripes) in the oven, just a little toasty
+  const m = recipe === "pizza" ? doughM : cookM;
+  if (dyed) { doughColor(m); m.color.multiplyScalar(0.88); }
+  else { m.map = null; m.color.set(recipe === "pizza" ? 0xe3a650 : 0xc98a3d); m.needsUpdate = true; }
+  if (recipe === "pizza") { if (dyed) { cheeseM.color.setScalar(0.92); sauce.material.color.multiplyScalar(0.85); } else { cheeseM.color.set(0xffc23a); sauce.material.color.set(0xb02020); } }
+  else for (const c of cooks) { c.scale.set(1.45, 0.55, 1.45); c.position.y = 0.03; }
+}
+function doughStart() {
+  const obj = recipe === "pizza" ? pizza : tray;
+  doughColor(recipe === "pizza" ? doughM : cookM);
+  obj.visible = true; obj.position.copy(TIN_POS); obj.scale.setScalar(0.01);
+  tween(0.4, p => obj.scale.setScalar(Math.max(0.01, ease.back(p))));
+  tween(0.9, p => setBatter(0.17 * (1 - p) + 0.001), () => { setBatter(0); goStep(3); });
+}
+function pizzaTap() {
+  if (busy) return;
+  if (step === 3) {
+    rollN++; bloop(); if (rollN === 1) { dball.visible = false; crust.visible = true; }
+    const S = [[0.6, 3], [0.82, 1.8], [1, 1]][rollN - 1]; setCrust(S[0], S[1]);
+    tween(0.25, q => { pizza.scale.set(1 + 0.06 * Math.sin(q * Math.PI), 1 - 0.05 * Math.sin(q * Math.PI), 1 + 0.06 * Math.sin(q * Math.PI)); }, () => pizza.scale.set(1, 1, 1));
+    if (rollN >= 3) { busy = true; rimP.visible = true; later(0.6, () => goStep(4)); }
+  } else if (step === 4) { busy = true; popIn(sauce); later(0.7, () => goStep(5)); }
+  else if (step === 5) { busy = true; popIn(cheese); later(0.7, () => goStep(6)); }
+  else if (step === 6) {
+    const t = toppings[topN++]; t.visible = true; pop(); tone(700, 0.08, "sine", 0.15, 0.05, 400);
+    tween(0.4, p => { t.position.y = 0.3 * (1 - ease.out(p)); }, () => { t.position.y = 0; });
+    if (topN >= 6) { busy = true; later(0.8, () => goStep(7)); }
+  } else if (step === 8) {
+    eatN++; $("sell").classList.add("hidden"); poof(); tone(300, 0.1, "square", 0.08, 0, 150); pizza.scale.setScalar(Math.max(0.01, 1 - 0.25 * eatN));
+    if (eatN >= 4) { busy = true; pizza.visible = false; later(0.6, () => goStep(9)); }
+  }
+}
+function trayTap() {
+  if (busy) return;
+  if (step === 3) {
+    const c = cooks[ballN++]; c.visible = true; pop();
+    tween(0.4, p => { c.position.y = 0.045 + 0.3 * (1 - ease.out(p)); }, () => { c.position.y = 0.045; });
+    if (ballN >= 6) { busy = true; later(0.8, () => goStep(4)); }
+  } else if (step === 5) {
+    cooks[eatN++].visible = false; $("sell").classList.add("hidden"); poof(); tone(300, 0.1, "square", 0.08, 0, 150);
+    if (eatN >= 6) { busy = true; later(0.6, () => goStep(6)); }
+  }
+}
+function ovenOutAlt(o) {
+  setHint("Careful, it is hot!");
+  later(0.55, () => {
+    bakeDisc.visible = false; heatGoal = 0.1; bakedLook(); o.visible = true;
+    const start = new THREE.Vector3(-0.45, 0.19, -2.62), mid = new THREE.Vector3(-0.45, 0.19, -2.06); o.position.copy(start);
+    tween(0.6, p => { o.position.lerpVectors(start, mid, ease.out(p)); }, () => {
+      ovenOpen = false; const from = o.position.clone();
+      tween(0.9, p => { o.position.lerpVectors(from, TIN_POS, ease.out(p)); o.position.y += Math.sin(p * Math.PI) * 0.55; }, () => {
+        o.position.copy(TIN_POS); pop(); heatGoal = 0; ovenPhase = 0; celebrateAlt(); goStep(REC[recipe].eatStep);
+      });
+    });
+  });
+}
+function celebrateAlt() {
+  showBig(REC[recipe].big); jingle(); burst();
+  try {
+    if (recipe === "icecream") { icecreams++; localStorage.setItem("baking-icecreams", String(icecreams)); } else if (recipe === "pizza") { pizzas++; localStorage.setItem("baking-pizzas", String(pizzas)); } else { cookiesN++; localStorage.setItem("baking-cookies", String(cookiesN)); }
+  } catch (e) {}
+  updateCount();
+}
+function goStepAlt(n) {
+  const rc = REC[recipe], obj = objOf();
+  step = n; busy = false; setHint(rc.hints[n]); $("sell").classList.toggle("hidden", n !== rc.eatStep); $("sell").classList.remove("up"); focusOn(focFor(n));
+  if (n === 1) activate([...items.filter(i => !i.userData.in), ...jars]);
+  else if (n === 2) activate([bowl, ...jars], arrowBowl);
+  else if (n === rc.ovenStep) { ovenPhase = 0; if (recipe === "icecream") activate([freezer], arrowFreezer); else activate([oven], arrowOven); }
+  else if (n === rc.doneStep) { activate([]); setAgain(); $("again").classList.remove("hidden"); }
+  else activate([obj], v => v.set(obj.position.x, obj.position.y + (recipe === "icecream" ? 1.0 : 0.5), obj.position.z));
+}
+function resetAlt() {
+  const rc = REC[recipe], ids = rc.items.map(a => a[0]);
+  items.forEach((it, i) => {
+    const k = ids.indexOf(i);
+    if (k < 0) { it.visible = false; it.userData.in = true; }
+    else { it.userData.home.x = SLOTS[rc.items[k][1]]; it.position.copy(it.userData.home); it.visible = true; it.userData.in = false; }
+  });
+  if (recipe !== "cake") { C_LUMPY.set(0xf1e4c4); C_SMOOTH.set(recipe === "pizza" ? 0xf7e2b8 : recipe === "icecream" ? 0xfff1c9 : 0xe2b878); }
+  cone.visible = false; cone.scale.set(1, 1, 1); cone.rotation.z = 0; cone.position.copy(TIN_POS); for (const g of scoops) { g.visible = false; g.position.y = g.userData.rest; g.scale.set(1, 1, 1); } sprinkles.visible = false; cherry.visible = false; cherry.position.y = 0.725; freezer.visible = recipe === "icecream"; fHinge.rotation.y = 0; bowl.visible = true;
+  pizza.visible = false; tray.visible = false; pizza.scale.set(1, 1, 1); tray.scale.set(1, 1, 1); pizza.position.copy(TIN_POS); tray.position.copy(TIN_POS);
+  doughM.map = null; doughM.color.set(0xf7e2b8); doughM.needsUpdate = true; cheeseM.color.set(0xffffff); sauce.material.color.set(0xd62f2f);
+  cookM.map = null; cookM.color.set(0xe2b878); cookM.needsUpdate = true;
+  for (const c of cooks) { c.visible = false; c.scale.set(1, 0.7, 1); c.position.y = 0.045; }
+  rollN = topN = eatN = ballN = 0; dball.visible = true; crust.visible = false; setCrust(1, 1); rimP.visible = false; sauce.visible = false; sauce.scale.set(1, 1, 1);
+  cheese.visible = false; cheese.scale.set(1, 1, 1); for (const t of toppings) { t.visible = false; t.position.y = 0; }
+}
+function jumpAlt(n) {
+  resetKitchen(); const rc = REC[recipe];
+  if (n >= 2) { for (const it of items) { it.visible = false; it.userData.in = true; } nIn = rc.items.length; setBatter(0.17); }
+  if (n >= 3) { mixN = 6; batterMix(1); if (recipe !== "icecream") { setBatter(0); const o = recipe === "pizza" ? pizza : tray; o.visible = true; doughColor(recipe === "pizza" ? doughM : cookM); } }
+  if (recipe === "icecream") {
+    if (n >= 4) { setBatter(0); cone.visible = true; }
+    if (n >= 5) { ballN = 3; paintScoops(); for (const g of scoops) g.visible = true; }
+    if (n >= 6) { topN = 2; sprinkles.visible = true; cherry.visible = true; }
+    if (n >= 7) cone.visible = false;
+  } else if (recipe === "pizza") {
+    if (n >= 4) { rollN = 3; dball.visible = false; crust.visible = true; setCrust(1, 1); rimP.visible = true; }
+    if (n >= 5) sauce.visible = true;
+    if (n >= 6) cheese.visible = true;
+    if (n >= 7) { topN = 6; for (const t of toppings) t.visible = true; }
+    if (n >= 8) bakedLook();
+    if (n >= 9) pizza.visible = false;
+  } else {
+    if (n >= 4) { ballN = 6; for (const c of cooks) c.visible = true; }
+    if (n >= 5) bakedLook();
+    if (n >= 6) for (const c of cooks) c.visible = false;
+  }
+  goStep(n); focusOn(focFor(n), true);
+  if (n === rc.eatStep) showBig(rc.big);
+}
+
+// ---------- the story: step by step ----------
+const HINTS = {
+  1: "Let's bake a birthday cake! Tap the things to put them in the bowl. Tap a jar to make it a colour!", 2: "Tap the bowl to mix! Tap a jar to change the colour!", 3: "Tap the oven to bake!",
+  4: "Tap the cake to put the icing on!", 5: "Tap the cake to add candles! Tap the jars to put yummy bits on the cake!", 6: "Tap the cake to blow out the candles!", 7: "Yay! Great job, baker!"
+};
+const FOCI = {
+  1: { x: -0.1, y: 1.25, z: -2.5, az: 0, el: 0.2, dist: 4.0 }, 2: { x: -0.1, y: 1.25, z: -2.5, az: 0, el: 0.2, dist: 4.0 },
+  3: { x: 0.75, y: 0.85, z: -2.4, az: 0, el: 0.3, dist: 3.6 }, 4: { x: 1.95, y: 1.12, z: -2.5, az: -0.1, el: 0.35, dist: 1.9 }
+};
+FOCI[6] = FOCI[7] = FOCI[4]; FOCI[5] = { x: 0.0, y: 1.35, z: -2.5, az: 0, el: 0.2, dist: 4.4 };
+let focus = null, focusT = 0;
+function focusOn(f, instant) {
+  const m = innerWidth < innerHeight ? 1.4 : 1; focus = { tgt: new THREE.Vector3(f.x, f.y, f.z), az: f.az, el: f.el, dist: Math.min(D_MAX, f.dist * m) };
+  if (instant) { tgt.copy(focus.tgt); view.az = f.az; view.el = f.el; view.dist = focus.dist; focusT = 0; } else focusT = 1.6;
+}
+let step = 1, busy = false, nIn = 0, mixN = 0, stirGoal = 0, stirPhase = 0, ovenPhase = 0, baking = false, bakeT = 0;
+let nCandles = 0, flamesOn = false, flameScale = 0, lightGoal = 0, tapList = [], cakes = 0;
+try { cakes = parseInt(localStorage.getItem("baking-cakes"), 10) || 0; } catch (e) {}
+function updateCount() { $("count").textContent = recipe === "pizza" ? "🍕 Pizzas baked: " + pizzas : recipe === "cookies" ? "🍪 Cookies baked: " + cookiesN : recipe === "icecream" ? "🍦 Ice creams made: " + icecreams : "🎂 Cakes baked: " + cakes; }
+function setHint(s) { $("hint").textContent = s; }
+function activate(list, fn) { for (const g of tapList) g.userData.on = false; tapList = list.slice(); for (const g of tapList) g.userData.on = true; arrowFn = fn || null; }
+function goStep(n) {
+  if (recipe !== "cake") return goStepAlt(n);
+  step = n; busy = false; setHint(HINTS[n]); focusOn(FOCI[n]); $("sell").classList.toggle("hidden", n !== 7); $("sell").classList.add("up");
+  if (n === 1) activate([...items.filter(i => !i.userData.in), ...jars]);
+  else if (n === 2) activate([bowl, ...jars], arrowBowl);
+  else if (n === 3) { ovenPhase = 0; activate([oven], arrowOven); }
+  else if (n === 5) activate([cake, ...jars], arrowCake);
+  else if (n === 4 || n === 6) activate([cake], arrowCake);
+  else { activate([]); setAgain(); $("again").classList.remove("hidden"); }
+}
+bowl.userData.tap = () => stir(); oven.userData.tap = () => ovenTap();
+const bits = [];
+function dye(col) {
+  // the first jar mostly replaces the yellow; more jars blend with it
+  const c = new THREE.Color(col); C_LUMPY.lerp(c, dyed ? 0.4 : 0.7); C_SMOOTH.lerp(c, dyed ? 0.5 : 0.85); dyed = true; batterMix(clamp(mixN / 6, 0, 1));
+  const hex = "#" + c.getHexString(); if (!dyes.includes(hex)) dyes.push(hex);
+  if (dyes.length >= 2) {   // two or more colours: a rainbow cake
+    const cols = dyes.map(d => "#" + new THREE.Color(d).lerp(new THREE.Color(0xffffff), 0.15).getHexString());
+    swirlTex = mkSwirl(cols); batterMix(clamp(mixN / 6, 0, 1));
+    tinBatterM.color.set(0xffffff); tinBatterM.map = swirlTex; tinBatterM.needsUpdate = true;
+    spongeMat.color.set(0xffffff); spongeMat.map = mkSponge(cols); spongeMat.needsUpdate = true;
+  } else { tinBatterM.color.copy(C_SMOOTH); spongeMat.map = spongeTexDyed; spongeMat.color.copy(C_SMOOTH); spongeMat.needsUpdate = true; }
+  matchFood();
+  if (recipe === "icecream" && (step === 1 || step === 2)) setHint((dyes.length > 1 ? "Rainbow ice cream! Wow! " : "Mmm, " + flavour() + "! ") + REC.icecream.hints[step]);
+}
+function jarTap(jg) {
+  if (step === 1 || step === 2) {
+    const u = jg.userData; tone(600, 0.1, "sine", 0.2, 0, 1000);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M(u.col)); ball.position.copy(u.top); scene.add(ball);
+    const from = u.top.clone(), to = new THREE.Vector3(1.3, 1.25, -2.55);
+    tween(0.7, p => { ball.position.lerpVectors(from, to, p); ball.position.y += Math.sin(p * Math.PI) * 0.4; }, () => {
+      scene.remove(ball); pop(); dye(u.col); tween(0.25, q => { bowl.scale.y = 1 - 0.08 * Math.sin(q * Math.PI); });
+    });
+    return;
+  }
+  if (step !== 5) return; const u = jg.userData; tone(600, 0.1, "sine", 0.2, 0, 1000);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M(u.col)); ball.position.copy(u.top); scene.add(ball);
+  const from = u.top.clone(), to = new THREE.Vector3(CAKE_POS.x + (Math.random() - 0.5) * 0.2, CAKE_POS.y + 0.4, CAKE_POS.z + (Math.random() - 0.5) * 0.2);
+  tween(0.7, p => { ball.position.lerpVectors(from, to, p); ball.position.y += Math.sin(p * Math.PI) * 0.3; }, () => {
+    scene.remove(ball); pop();
+    if (!cake.visible) return;
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * 0.17, m = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), M(u.col, { roughness: 0.5 }));
+      m.position.set(Math.cos(a) * r, 0.232, Math.sin(a) * r); cake.add(m); bits.push(m);
+    }
+    while (bits.length > 120) cake.remove(bits.shift());
+  });
+}
+function cakeTap() { if (step === 4) addIcing(); else if (step === 5) addCandle(); else if (step === 6) blowOut(); }
+
+function putIn(it) {
+  if (busy || step !== 1) return;
+  const u = it.userData; u.on = false; u.in = true; glow(it, 0); tapList = tapList.filter(g => g !== it);
+  tone(500, 0.1, "sine", 0.2, 0, 900);
+  const from = it.position.clone(), to = new THREE.Vector3(1.3, 1.25, -2.55);
+  tween(0.7, p => { const e = ease.out(p); it.position.lerpVectors(from, to, e); it.position.y += Math.sin(p * Math.PI) * 0.55; it.rotation.y = p * 6; it.scale.setScalar(1 - 0.55 * p); }, () => {
+    it.visible = false; nIn++; pop(); setBatter(0.02 + 0.15 * nIn / REC[recipe].items.length); batterMix(0); batterM.color.copy(C_LUMPY);
+    tween(0.25, q => { bowl.scale.y = 1 - 0.08 * Math.sin(q * Math.PI); });
+    if (nIn >= REC[recipe].items.length) { busy = true; setHint("Great! Everything is in!"); later(0.7, () => goStep(2)); }
+  });
+}
+function applySpoon() { spoon.position.set(Math.cos(stirPhase) * 0.12, 0.2, Math.sin(stirPhase) * 0.12); batter.rotation.y = -stirPhase * 0.3; }
+function stir() {
+  if (busy || step !== 2) return;
+  mixN++; stirGoal += Math.PI * 2; bloop(); batterMix(mixN / 6);
+  if (mixN >= 6) {
+    busy = true; arrowFn = null; setHint(recipe === "cake" ? "Look! Smooth and yellow!" : recipe === "icecream" ? "Look! Smooth and creamy!" : "Look! Smooth dough!"); tapList = [];
+    later(1.0, () => { pop(); tone(1047, 0.4, "triangle", 0.15, 0); tone(1319, 0.5, "triangle", 0.15, 0.12); later(0.5, recipe === "cake" ? pour : recipe === "icecream" ? () => goStep(3) : doughStart); });
+  }
+}
+function pour() {
+  const lip = new THREE.Vector3(), stream = cyl(0.014, 0.014, 1, M(0xffd35c, { roughness: 0.3 }), 0, 0, 0, scene, 10);
+  stream.visible = false; stream.castShadow = false;
+  tin.visible = true; tin.position.copy(TIN_POS); setTinBatter(0); tin.scale.setScalar(0.01);
+  focusOn(FOCI[3]);
+  tween(0.4, p => tin.scale.setScalar(Math.max(0.01, ease.back(p))));
+  tween(0.6, p => { const e = ease.out(p); bowl.position.set(1.3 + 0.12 * e, CTR + 0.4 * e, -2.55); bowl.rotation.z = -1.0 * e; }, () => {
+    stream.visible = true; tone(260, 1.0, "sawtooth", 0.05, 0, 200);
+    tween(1.0, p => {
+      setBatter(0.17 * (1 - p) + 0.001); setTinBatter(0.065 * p);
+      bowl.updateMatrixWorld(); lip.set(0.3, 0.32, 0); bowl.localToWorld(lip);
+      const topY = TIN_POS.y + 0.01 + 0.065 * p, len = Math.max(0.02, lip.y - topY);
+      stream.scale.y = len; stream.position.set(lip.x, topY + len / 2, lip.z);
+    }, () => {
+      stream.visible = false; scene.remove(stream); setBatter(0);
+      tween(0.5, p => { const e = 1 - ease.out(p); bowl.position.set(1.3 + 0.12 * e, CTR + 0.4 * e, -2.55); bowl.rotation.z = -1.0 * e; }, () => { bowl.position.set(1.3, CTR, -2.55); bowl.rotation.z = 0; goStep(3); });
+    });
+  });
+}
+function ovenTap() {
+  if (busy || step !== (recipe === "cake" ? 3 : REC[recipe].ovenStep)) return;
+  const inObj = recipe === "cake" ? tin : recipe === "pizza" ? pizza : tray; busy = true; arrowFn = null; tapList = []; ovenOpen = true; ding();
+  if (ovenPhase === 0) {
+    setHint("The oven is opening...");
+    later(0.55, () => {
+      const from = inObj.position.clone(), to = new THREE.Vector3(-0.45, 0.19, -2.06);
+      tween(0.7, p => { inObj.position.lerpVectors(from, to, ease.out(p)); inObj.position.y += Math.sin(p * Math.PI) * 0.4; }, () => {
+        tween(0.6, p => { inObj.position.z = -2.06 - 0.56 * ease.out(p); }, () => {
+          inObj.visible = false; ovenOpen = false; pop();
+          later(0.7, () => {
+            C_PALE.copy(C_SMOOTH).lerp(new THREE.Color(0xffffff), 0.3); C_GOLD.copy(C_SMOOTH).multiplyScalar(0.75); ovenPhase = 1; baking = true; bakeT = 0; heatGoal = 1; bakeDisc.visible = true; bdCake.material.color.copy(C_PALE);
+            $("ring").classList.remove("hidden"); setHint("Yum! It smells so good. Wait for the ding...");
+          });
+        });
+      });
+    });
+  } else {
+    if (recipe !== "cake") { ovenOutAlt(inObj); return; }
+    setHint("Careful, it is hot!");
+    later(0.55, () => {
+      bakeDisc.visible = false; heatGoal = 0.1; cake.visible = true; plate.visible = false; icing.visible = false; for (const c of candles) c.visible = false;
+      const start = new THREE.Vector3(-0.45, 0.19, -2.62), mid = new THREE.Vector3(-0.45, 0.19, -2.06);
+      cake.position.copy(start);
+      tween(0.6, p => { cake.position.lerpVectors(start, mid, ease.out(p)); }, () => {
+        ovenOpen = false;
+        const from = cake.position.clone();
+        tween(0.9, p => { cake.position.lerpVectors(from, CAKE_POS, ease.out(p)); cake.position.y += Math.sin(p * Math.PI) * 0.55; }, () => {
+          plate.visible = true; cake.position.copy(CAKE_POS); pop(); heatGoal = 0; ovenPhase = 0;
+          tween(0.3, q => cake.scale.set(1 + 0.08 * Math.sin(q * Math.PI), 1 - 0.1 * Math.sin(q * Math.PI), 1 + 0.08 * Math.sin(q * Math.PI)), () => { cake.scale.set(1, 1, 1); goStep(4); });
+        });
+      });
+    });
+  }
+}
+function finishBake() {
+  baking = false; ovenPhase = 2; $("ring").classList.add("hidden"); ding(); later(0.25, ding);
+  setHint("Ding! Tap the oven to take it out!"); busy = false; activate([oven], arrowOven);
+}
+function addIcing() {
+  busy = true; arrowFn = null; icing.visible = true; icing.scale.set(0.01, 0.01, 0.01); pop(); tone(880, 0.3, "triangle", 0.12, 0.1); tone(1175, 0.3, "triangle", 0.12, 0.2); tapList = [];
+  tween(0.7, p => icing.scale.setScalar(Math.max(0.01, ease.back(p))), () => { goStep(5); });
+}
+function addCandle() {
+  if (busy || nCandles >= 5) return; const c = candles[nCandles++]; c.visible = true; c.position.y = c.userData.rest + 0.35; pop();
+  tween(0.45, p => { c.position.y = c.userData.rest + 0.35 * (1 - ease.out(p)) + Math.abs(Math.sin(p * Math.PI * 2)) * 0.04 * (1 - p); }, () => { c.position.y = c.userData.rest; });
+  if (nCandles >= 5) { busy = true; arrowFn = null; setHint("Wow! 5 candles!"); tapList = []; later(0.7, () => lightCandles(true)); }
+}
+function showBig(t) {
+  const b = $("big"); b.textContent = t || "🎂 You baked a birthday cake!"; b.classList.remove("hidden"); b.style.animation = "none"; void b.offsetWidth; b.style.animation = ""; later(3.8, () => b.classList.add("hidden"));
+}
+function lightCandles(count) {
+  flamesOn = true; flameScale = 0; for (const c of candles) c.userData.flame.visible = true; lightGoal = 1.5;
+  tween(0.5, p => { flameScale = ease.out(p); });
+  jingle(); burst(); showBig();
+  if (count) { cakes++; try { localStorage.setItem("baking-cakes", String(cakes)); } catch (e) {} updateCount(); }
+  goStep(6);
+}
+function blowOut() {
+  busy = true; arrowFn = null; tapList = []; poof(); setHint("Puff! Well done!");
+  for (const c of candles) { c.userData.flame.getWorldPosition(_v); puff(_v); }
+  lightGoal = 0;
+  tween(0.35, p => { flameScale = 1 - p; }, () => { flamesOn = false; for (const c of candles) c.userData.flame.visible = false; });
+  later(1.1, () => goStep(7));
+}
+function resetKitchen() {
+  tweens.length = 0; busy = false; dyed = false; C_LUMPY.set(0xf3ead2); C_SMOOTH.set(0xffd35c); tinBatterM.color.set(0xffd35c); spongeMat.color.set(0xffffff); spongeMat.map = spongeTex; spongeMat.needsUpdate = true; tinBatterM.map = null; tinBatterM.needsUpdate = true; swirlTex = null; dyes.length = 0; nIn = 0; mixN = 0; stirGoal = stirPhase = 0; ovenPhase = 0; baking = false; bakeT = 0; heatGoal = 0; heat = 0;
+  nCandles = 0; flamesOn = false; flameScale = 0; lightGoal = 0; cakeLight.intensity = 0; ovenLight.intensity = 0; ovenOpen = false;
+  for (const it of items) { it.visible = true; it.position.copy(it.userData.home); it.rotation.set(0, 0, 0); it.scale.set(1, 1, 1); it.userData.in = false; glow(it, 0); }
+  bowl.position.set(1.3, CTR, -2.55); bowl.rotation.set(0, 0, 0); bowl.scale.set(1, 1, 1); spoon.position.set(0, 0.2, 0); batter.rotation.y = 0; batterMix(0); setBatter(0);
+  tin.visible = false; tin.scale.set(1, 1, 1); setTinBatter(0); bakeDisc.visible = false;
+  cake.visible = false; cake.position.copy(CAKE_POS); cake.scale.set(1, 1, 1); plate.visible = true; icing.visible = false;
+  for (const c of candles) { c.visible = false; c.position.y = c.userData.rest; c.userData.flame.visible = false; }
+  for (const b of bits) cake.remove(b); bits.length = 0;
+  for (const c of CONF) c.m.visible = false; for (const s of SMOKE) { s.m.visible = false; s.life = 9; }
+  for (const id of ["ring", "big", "again", "sell"]) $(id).classList.add("hidden");
+  leaveShop(); resetAlt(); matchFood(); activate([]); arrow.visible = false;
+}
+function jumpTo(n) {   // test hook: step n with everything before it done
+  resetKitchen();
+  if (n >= 2) { for (const it of items) { it.visible = false; it.userData.in = true; } nIn = 6; setBatter(0.17); }
+  if (n >= 3) { mixN = 6; batterMix(1); setBatter(0); tin.visible = true; tin.position.copy(TIN_POS); setTinBatter(0.065); }
+  if (n >= 4) { tin.visible = false; cake.visible = true; }
+  if (n >= 5) icing.visible = true;
+  if (n >= 6) { for (const c of candles) c.visible = true; nCandles = 5; }
+  goStep(n); focusOn(FOCI[n], true);
+  if (n === 6) lightCandles(false);
+  if (n === 7) { for (const c of candles) c.visible = true; nCandles = 5; }
+}
+window.__bake = { sell, shopState: () => ({ coins, screenName, duck: !!duckObj }), pizzaTap, trayTap, startPlay, jumpAlt, sim: sec => { for (let i = 0; i < sec * 20; i++) bakeFrame(0.05, performance.now()); }, jumpTo, goStep, putIn: i => putIn(items[i]), stir, ovenTap, cakeTap, items, state: () => ({ step, busy, nIn, mixN, ovenPhase, nCandles, cakes, active: tapList.length }) };
+
+function tapAt(x, y) {
+  ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  if (busy || !tapList.length) return;
+  for (const h of ray.intersectObjects(tapList, true)) { let o = h.object; while (o) { if (o.userData.tap && o.userData.on) { o.userData.tap(); return; } o = o.parent; } }
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+
+function bakeFrame(dt, t) {
+  runTweens(dt);
+  if (focusT > 0 && focus) { focusT -= dt; const k = 1 - Math.exp(-dt * 3.2); tgt.lerp(focus.tgt, k); view.az += (focus.az - view.az) * k; view.el += (focus.el - view.el) * k; view.dist += (focus.dist - view.dist) * k; }
+  const s = Math.sin(t / 1000 * 6);
+  items.forEach((it, i) => { const u = it.userData; if (u.on) { it.position.y = CTR + 0.025 * Math.abs(Math.sin(t / 1000 * 4 + i)); glow(it, 0.25 + 0.2 * s); } });
+  for (const j of jars) { const m = j.userData.fill.material; m.emissive.setHex(j.userData.on ? 0xffffff : 0); m.emissiveIntensity = j.userData.on ? 0.15 + 0.15 * s : 0; }
+  if (arrowFn) { arrowFn(_v); arrow.visible = true; arrow.position.set(_v.x, _v.y + 0.07 * Math.sin(t / 1000 * 6), _v.z); arrow.scale.setScalar(1 + 0.1 * s); } else arrow.visible = false;
+  if (stirPhase < stirGoal) { stirPhase = Math.min(stirGoal, stirPhase + dt * 14); applySpoon(); }
+  heat += (heatGoal - heat) * Math.min(1, dt * 3);
+  inside.material.emissive.copy(E_COLD).lerp(E_HOT, heat); inside.material.emissiveIntensity = 0.9 + heat * 1.6 + (heat > 0.5 ? 0.2 * Math.sin(t / 180) : 0);
+  ovenLight.intensity = heat * 3.5;
+  if (baking) {
+    bakeT += dt; const p = Math.min(1, bakeT / 6);
+    $("ring").style.setProperty("--p", (p * 100).toFixed(1)); $("ring").firstChild.textContent = Math.max(1, Math.ceil(6 - bakeT));
+    bdCake.material.color.copy(C_PALE).lerp(C_GOLD, p); bdCake.scale.set(0.85 + 0.2 * p, 1, 0.85 + 0.2 * p);
+    if (bakeT >= 6) finishBake();
+  }
+  if (flamesOn) {
+    candles.forEach((c, i) => { const f = c.userData.flame, k = flameScale * (0.9 + 0.12 * Math.sin(t / 70 + i * 2) + 0.06 * Math.random()); f.scale.set(k, k * (0.95 + 0.1 * Math.sin(t / 55 + i)), k); });
+  }
+  cakeLight.intensity += (lightGoal * (0.92 + 0.12 * Math.sin(t / 60)) - cakeLight.intensity) * Math.min(1, dt * 6);
+  for (const c of CONF) if (c.m.visible) {
+    c.life += dt; if (!c.landed) {
+      c.v.y -= 3 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.spin.x * dt; c.m.rotation.y += c.spin.y * dt;
+      const fl = shopMode ? (Math.abs(c.m.position.x - SX) < 2.2 && c.m.position.z > -0.2 && c.m.position.z < 0.5 ? CT + 0.005 : 0.01) : (c.m.position.z < -2.28 && c.m.position.x > 0.02) ? CTR + 0.005 : 0.01;
+      if (c.m.position.y <= fl) { c.m.position.y = fl; c.landed = true; c.m.rotation.set(-Math.PI / 2, 0, Math.random() * 6); }
+    }
+    if (c.life > 7) c.m.visible = false;
+  }
+  for (const sm of SMOKE) if (sm.m.visible) { sm.life += dt; sm.m.position.y += 0.25 * dt; sm.m.scale.setScalar(1 + sm.life * 3); sm.m.material.opacity = Math.max(0, 0.55 * (1 - sm.life / 1.2)); if (sm.life > 1.2) sm.m.visible = false; }
+}
+
+// ---------- the bakery shop (far off to the side: the kitchen camera never sees it) ----------
+const SX = 24, CT = 0.86;
+const shop = new THREE.Group(); shop.position.x = SX; scene.add(shop);
+let shopMode = false, duckObj = null, shopFood = null, carry = false, coins = 0, salePrice = 0, doorPivot = null, register = null;
+try { coins = parseInt(localStorage.getItem("baking-coins"), 10) || 0; } catch (e) {}
+{
+  const P = (g, mat, x, y, z, rx) => { const m = new THREE.Mesh(g, mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; shop.add(m); return m; };
+  const sb = (w, h, d, mat, x, y, z) => box(w, h, d, mat, x, y, z, shop);
+  const wallS = M(0xffffff, { map: tex(128, 128, (g, w, h) => { g.fillStyle = "#fff0d6"; g.fillRect(0, 0, w, h); g.fillStyle = "#ffc9dc"; for (let x = 0; x < w; x += 32) g.fillRect(x, 0, 16, h); }, 4, 2), roughness: 0.9 });
+  const white = M(0xffffff, { roughness: 0.4 }), woodM = M(0xffffff, { map: woodTex, roughness: 0.5 });
+  const glassM = o => new THREE.MeshStandardMaterial({ color: 0xcfeeff, transparent: true, opacity: o, roughness: 0.05 });
+  const gold = M(0xffd23f, { metalness: 0.6, roughness: 0.3 });
+  const fl = P(new THREE.PlaneGeometry(7, 8.8), M(0xffffff, { map: tex(128, 128, (g, w, h) => { for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = (i + j) % 2 ? "#fff6e3" : "#a8e6cf"; g.fillRect(i * w / 2, j * h / 2, w / 2, h / 2); } }, 3.5, 4.4), roughness: 0.35 }), 0, 0, 1.1, -Math.PI / 2); fl.receiveShadow = true;
+  sb(7.1, 0.1, 9, new THREE.MeshBasicMaterial({ color: 0xffeed6 }), 0, 3.45, 1.1).castShadow = false;
+  sb(0.1, 3.4, 9, wallS, -3.45, 1.7, 1.1); sb(0.1, 3.4, 9, wallS, 3.45, 1.7, 1.1);
+  // back wall with a door hole (x -2.4..-1.4, up to 2) and a window hole (x 1.0..2.4, y 1..2)
+  const bw = (w, h, cx, cy) => sb(w, h, 0.1, wallS, cx, cy, -3.25);
+  bw(1.0, 3.4, -2.95, 1.7); bw(1.0, 1.4, -1.9, 2.7); bw(2.4, 3.4, -0.2, 1.7); bw(1.4, 1.0, 1.7, 0.5); bw(1.4, 1.4, 1.7, 2.7); bw(1.0, 3.4, 2.9, 1.7);
+  // outside, seen through the door and the window
+  P(new THREE.PlaneGeometry(50, 14), M(0x9be37a, { roughness: 1 }), 0, -0.01, -10.2, -Math.PI / 2);
+  P(new THREE.PlaneGeometry(50, 16), new THREE.MeshBasicMaterial({ map: tex(64, 64, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#7cc8ff"); gr.addColorStop(1, "#d8f1ff"); g.fillStyle = gr; g.fillRect(0, 0, w, h); }) }), 0, 7, -17);
+  cyl(0.12, 0.15, 1.4, M(0x9a6a3a), 1.9, 0.7, -6, shop, 10);
+  for (const [x, y, r] of [[1.9, 1.9, 0.8], [1.4, 1.6, 0.55], [2.4, 1.6, 0.55]]) P(new THREE.SphereGeometry(r, 16, 12), M(0x4fbf5f), x, y, -6);
+  P(new THREE.SphereGeometry(0.5, 16, 12), new THREE.MeshBasicMaterial({ color: 0xfff3a0 }), -1.2, 3.2, -14);
+  // door (swings open to the outside about its left edge)
+  const doorP = new THREE.Group(); doorP.position.set(-2.4, 0, -3.25); shop.add(doorP); doorPivot = doorP;
+  box(1.0, 2.0, 0.06, M(0xff8fb1, { roughness: 0.5 }), 0.5, 1.0, 0, doorP); box(0.5, 0.6, 0.02, M(0xbfe9ff, { roughness: 0.1 }), 0.5, 1.4, 0.04, doorP);
+  const kn = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), knobM); kn.position.set(0.88, 1.0, 0.06); doorP.add(kn);
+  sb(1.2, 0.08, 0.14, white, -1.9, 2.04, -3.2); sb(0.08, 2.05, 0.14, white, -2.44, 1.02, -3.2); sb(0.08, 2.05, 0.14, white, -1.36, 1.02, -3.2);
+  // window with sill, cross bars, glass and flowers
+  for (const [w, h, x, y] of [[1.6, 0.08, 1.7, 2.04], [1.6, 0.08, 1.7, 0.98], [0.08, 1.1, 0.96, 1.5], [0.08, 1.1, 2.44, 1.5], [0.06, 1.0, 1.7, 1.5], [1.4, 0.06, 1.7, 1.5]]) sb(w, h, 0.14, white, x, y, -3.2);
+  sb(1.4, 1.0, 0.02, glassM(0.2), 1.7, 1.5, -3.2).castShadow = false;
+  sb(1.7, 0.06, 0.3, woodM, 1.7, 0.97, -3.1);
+  [[1.25, 0xff5d8f], [1.7, 0xffd23f], [2.15, 0xb36bff]].forEach(([x, c]) => { cyl(0.07, 0.05, 0.1, M(0xc9694a), x, 1.05, -3.08, shop, 12); P(new THREE.SphereGeometry(0.075, 12, 8), M(c), x, 1.17, -3.08); });
+  // striped valance, sign, bunting
+  const stripe = M(0xffffff, { map: tex(128, 32, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? "#ffffff" : "#ff5d6c"; g.fillRect(i * w / 8, 0, w / 8, h); } }, 6, 1), roughness: 0.7 });
+  sb(6.9, 0.4, 0.2, stripe, 0, 3.2, -3.1);
+  for (let i = 0; i < 28; i++) P(new THREE.SphereGeometry(0.125, 10, 8), M(i % 2 ? 0xffffff : 0xff5d6c), -3.3 + i * 0.245, 2.98, -3.0).scale.set(1, 0.7, 0.8);
+  const signT = tex(512, 128, (g, w, h) => { g.fillStyle = "#fff3d6"; g.fillRect(0, 0, w, h); g.strokeStyle = "#e0457b"; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10);
+    g.fillStyle = "#e0457b"; g.textAlign = "center"; g.textBaseline = "middle"; g.font = "700 78px Fredoka, 'Arial Rounded MT Bold', sans-serif"; g.fillText("Bakery", w / 2, h / 2 + 4);
+    g.font = "56px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif"; g.fillText("🥐", 62, h / 2 + 4); g.fillText("🧁", w - 62, h / 2 + 4); });
+  sb(2.4, 0.6, 0.06, M(0xffffff, { map: signT, roughness: 0.6 }), -0.2, 2.6, -3.17);
+  const flagCols = [0xff5d8f, 0xffd23f, 0x3ccf5a, 0x4da3ff, 0xb36bff];
+  for (let i = 0; i < 16; i++) { const f = new THREE.Mesh(new THREE.CircleGeometry(0.12, 3), new THREE.MeshBasicMaterial({ color: flagCols[i % 5], side: THREE.DoubleSide })); f.rotation.z = Math.PI / 2; f.position.set(-3.3 + i * 0.44, 2.85 - 0.25 * Math.sin(i / 15 * Math.PI), -1.9); shop.add(f); }
+  // shelves with treats
+  const treat = (k, x, y, z, c) => {
+    if (k === 0) { cyl(0.05, 0.035, 0.06, M(0xffffff), x, y + 0.03, z, shop, 12); P(new THREE.SphereGeometry(0.055, 12, 8), M(c), x, y + 0.085, z).scale.set(1, 0.8, 1); P(new THREE.SphereGeometry(0.015, 8, 6), M(0xff3355), x, y + 0.14, z); }
+    else if (k === 1) { const b = cyl(0.03, 0.03, 0.3, M(0xd9923e), x, y + 0.035, z, shop, 10); b.rotation.z = Math.PI / 2; b.rotation.y = 0.3; }
+    else if (k === 2) { cyl(0.09, 0.09, 0.07, M(c), x, y + 0.035, z, shop, 20); cyl(0.092, 0.092, 0.012, M(0xffffff), x, y + 0.07, z, shop, 20); P(new THREE.SphereGeometry(0.02, 8, 6), M(0xff3355), x, y + 0.09, z); }
+    else P(new THREE.TorusGeometry(0.05, 0.022, 8, 16), M(c), x, y + 0.04, z, Math.PI / 2);
+  };
+  const tc = [0xff8fb8, 0x8fd3ff, 0xffd84a, 0xc89bff];
+  for (const [y, n] of [[1.45, 0], [1.95, 1]]) { sb(2.2, 0.05, 0.3, woodM, -0.2, y, -3.05); for (let i = 0; i < 7; i++) treat((i + n) % 4, -1.15 + i * 0.32, y + 0.025, -3.05, tc[(i + n * 2) % 4]); }
+  for (const y of [1.0, 1.5]) { sb(0.3, 0.05, 1.8, woodM, -3.25, y, -2.1); for (let i = 0; i < 5; i++) treat((i + (y > 1.2 ? 1 : 0)) % 4, -3.25, y + 0.025, -2.85 + i * 0.36, tc[i % 4]); }
+  // pendant lamps
+  for (const x of [-1.8, 0, 1.8]) { cyl(0.008, 0.008, 0.7, M(0x333333), x, 3.05, -0.4, shop, 6); P(new THREE.SphereGeometry(0.13, 14, 10), new THREE.MeshBasicMaterial({ color: 0xfff1b8 }), x, 2.65, -0.4); }
+  // counter, glass case, register, tip jar
+  sb(4.4, CT - 0.03, 0.7, M(0xff9ec0), 0, (CT - 0.03) / 2, 0.2);
+  sb(4.6, 0.06, 0.8, woodM, 0, CT - 0.03, 0.2);
+  for (let i = 0; i < 6; i++) { sb(0.5, 0.5, 0.02, M(0xffb3cf), -1.9 + i * 0.76, 0.42, 0.56); P(new THREE.SphereGeometry(0.025, 10, 8), knobM, -1.9 + i * 0.76 + 0.17, 0.5, 0.58); }
+  const caseG = new THREE.Group(); caseG.position.set(-1.6, CT, 0.15); shop.add(caseG);
+  box(0.9, 0.04, 0.45, white, 0, 0.02, 0, caseG); box(0.9, 0.36, 0.45, glassM(0.22), 0, 0.22, 0, caseG).castShadow = false;
+  [[-0.28, 0xff8fb8], [0, 0x8fd3ff], [0.28, 0xffd84a]].forEach(([x, c]) => { cyl(0.07, 0.05, 0.08, M(0xffffff), x, 0.08, 0, caseG, 14); const s = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), M(c)); s.position.set(x, 0.16, 0); s.scale.y = 0.85; caseG.add(s); });
+  const reg = new THREE.Group(); reg.position.set(1.0, CT, 0.05); shop.add(reg); register = reg;
+  box(0.42, 0.16, 0.32, M(0xe34a4a, { roughness: 0.4 }), 0, 0.08, 0, reg); box(0.38, 0.04, 0.16, M(0xffe9a8), 0, 0.2, 0.06, reg).rotation.x = -0.35;
+  box(0.32, 0.14, 0.03, M(0x1d2a22), 0, 0.3, -0.1, reg).rotation.x = -0.25; box(0.28, 0.1, 0.01, new THREE.MeshBasicMaterial({ color: 0x7dff9c }), 0, 0.3, -0.083, reg).rotation.x = -0.25;
+  box(0.4, 0.04, 0.12, gold, 0, 0.03, 0.2, reg);
+  cyl(0.08, 0.08, 0.2, glassM(0.3), 1.7, CT + 0.1, 0.1, shop, 16).castShadow = false; cyl(0.062, 0.062, 0.06, gold, 1.7, CT + 0.04, 0.1, shop, 16);
+}
+
+// ---------- the duck customer ----------
+const DUCKS = [[0xffd84a, 0xff8a1f], [0xfdfdfd, 0xff9a2a], [0xffa23a, 0xffd23f], [0xff9ec9, 0xff8a1f], [0x8fd3ff, 0xff8a1f]];
+function mkDuck(dk, hat) {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const bm = M(dk[0], { roughness: 0.55 }), om = M(dk[1], { roughness: 0.5 }), white = M(0xffffff, { roughness: 0.2 }), blk = M(0x1a1a1a, { roughness: 0.15 });
+  const sph = (r, mat, x, y, z, sx, sy, sz, par) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; (par || body).add(m); return m; };
+  sph(0.2, bm, 0, 0.27, 0, 1, 0.85, 1.15);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 12), bm); tail.position.set(0, 0.36, -0.24); tail.rotation.x = -1.0; body.add(tail);
+  const head = new THREE.Group(); head.position.set(0, 0.5, 0.1); body.add(head);
+  sph(0.14, bm, 0, 0, 0, 1, 1, 1, head);
+  for (const sx of [-1, 1]) {
+    sph(0.03, M(0xff7fa0, { roughness: 0.6 }), sx * 0.09, -0.035, 0.09, 1, 0.7, 0.5, head);
+    sph(0.034, white, sx * 0.058, 0.04, 0.115, 1, 1, 1, head); sph(0.022, blk, sx * 0.058, 0.04, 0.138, 1, 1, 1, head); sph(0.008, new THREE.MeshBasicMaterial({ color: 0xffffff }), sx * 0.058 + 0.008, 0.05, 0.157, 1, 1, 1, head);
+  }
+  sph(0.055, om, 0, -0.025, 0.14, 1.1, 0.45, 1.3, head); sph(0.045, om, 0, -0.05, 0.13, 1, 0.35, 1.1, head);
+  const wings = [-1, 1].map(sx => { const wg = new THREE.Group(); wg.position.set(sx * 0.19, 0.32, 0); body.add(wg); sph(0.09, bm, sx * 0.02, -0.05, 0, 0.35, 1, 1.1, wg); wg.userData.sx = sx; return wg; });
+  const feet = [-1, 1].map(sx => { const f = new THREE.Group(); f.position.set(sx * 0.08, 0.01, 0.07); root.add(f); box(0.09, 0.016, 0.13, om, 0, 0, 0.02, f); return f; });
+  const part = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; head.add(m); return m; };
+  if (hat === "party") { part(new THREE.ConeGeometry(0.075, 0.2, 16), M(0xff5d8f), 0, 0.2, -0.01).rotation.z = 0.15; sph(0.022, M(0xffd23f), 0.015, 0.31, -0.01, 1, 1, 1, head); }
+  else if (hat === "top") { part(new THREE.CylinderGeometry(0.075, 0.075, 0.15, 20), M(0x2a2a30), 0, 0.22, 0); part(new THREE.CylinderGeometry(0.13, 0.13, 0.015, 24), M(0x2a2a30), 0, 0.145, 0); part(new THREE.CylinderGeometry(0.077, 0.077, 0.03, 20), M(0xe0457b), 0, 0.17, 0); }
+  else if (hat === "flower") { for (let i = 0; i < 5; i++) { const a = i / 5 * 6.283; sph(0.03, M(0xff5d8f), 0.07 + Math.cos(a) * 0.04, 0.12 + Math.sin(a) * 0.04, 0.05, 1, 1, 0.6, head); } sph(0.025, M(0xffd23f), 0.07, 0.12, 0.06, 1, 1, 0.7, head); }
+  else if (hat === "crown") { part(new THREE.CylinderGeometry(0.08, 0.07, 0.06, 16), M(0xffd23f, { metalness: 0.6, roughness: 0.3 }), 0, 0.17, 0); for (let i = 0; i < 5; i++) { const a = i / 5 * 6.283; part(new THREE.ConeGeometry(0.02, 0.05, 6), M(0xffd23f, { metalness: 0.6, roughness: 0.3 }), Math.cos(a) * 0.065, 0.225, Math.sin(a) * 0.065); } }
+  const hold = new THREE.Object3D(); hold.position.set(0, 0.27, 0.32); body.add(hold);   // where the food sits when the duck carries it
+  root.scale.setScalar(1.5); root.userData = { body, head, wings, feet, hold };
+  return root;
+}
+function duckPose(d, ph, up) {   // waddle: side-to-side wobble, a little bob, feet take turns; up: true = wings flap up high, "hold" = wings out in front under the food
+  const u = d.userData, s = Math.sin(ph), h = up === "hold";
+  u.body.rotation.z = s * (h ? 0.08 : 0.16); u.body.position.y = Math.abs(s) * 0.035; u.feet[0].position.y = 0.01 + Math.max(0, s) * 0.05; u.feet[1].position.y = 0.01 + Math.max(0, -s) * 0.05;
+  for (const w of u.wings) {
+    const sx = w.userData.sx, m = w.children[0];
+    w.position.z = h ? 0.12 : 0; m.rotation.y = h ? Math.PI / 2 : 0; m.scale.y = h ? 1.6 : 1; m.scale.z = h ? 0.75 : 1.1;   // holding: the wing turns flat, palm up, and reaches under the food
+    w.rotation.set(h ? -1.25 : 0, h ? -sx * 0.75 : 0, h ? 0 : sx * (up ? 2.3 + 0.3 * Math.sin(ph * 2) : 0.15 + 0.1 * s), "YXZ");
+  }
+}
+function carryFood(d) { if (carry && shopFood) { const h = d.userData.hold; h.getWorldPosition(shopFood.position); h.getWorldQuaternion(shopFood.quaternion); } }
+function walk(d, x, z, speed, done) {
+  const from = d.position.clone(), dx = x - from.x, dz = z - from.z, dist = Math.hypot(dx, dz), yaw = Math.atan2(dx, dz), y0 = d.rotation.y;
+  tween(0.2, p => { d.rotation.y = y0 + (yaw - y0) * p; carryFood(d); }, () => {
+    tween(Math.max(0.05, dist / speed), p => { d.position.set(from.x + dx * p, 0, from.z + dz * p); duckPose(d, p * dist * 9, carry && "hold"); carryFood(d); }, () => { duckPose(d, 0, carry && "hold"); done && done(); });
+  });
+}
+function route(d, pts, speed, done) { const [x, z] = pts[0]; walk(d, SX + x, z, speed, () => pts.length > 1 ? route(d, pts.slice(1), speed, done) : done && done()); }
+function faceTo(d, yaw, done) { const y0 = d.rotation.y; tween(0.3, p => { d.rotation.y = y0 + (yaw - y0) * p; }, done); }
+function say(t) { $("say").textContent = t; $("say").classList.remove("hidden"); }
+function colName(h) {   // which jar colour is this? (nearest of the five)
+  const c = new THREE.Color(h), names = ["red", "yellow", "green", "blue", "purple"]; let best = 0, bd = 9;
+  jarCols.forEach((j, i) => { const k = new THREE.Color(j), dd = Math.abs(k.r - c.r) + Math.abs(k.g - c.g) + Math.abs(k.b - c.b); if (dd < bd) { bd = dd; best = i; } });
+  return names[best];
+}
+function saleLine() {
+  const f = recipe, c = dyes.length > 1 ? "rainbow" : dyes.length ? colName(dyes[0]) : "";
+  if (f === "icecream") { const fl = flavour(); return fl === "vanilla" ? pick(["Ice cream! My favourite!", "Vanilla ice cream! Yum!"]) : fl === "rainbow" ? pick(["A rainbow ice cream! WOW!", "Ooh! Rainbow ice cream!"]) : pick(["A " + fl + " ice cream! Yum!", "I love " + fl + " ice cream!"]); }
+  if (!c) return pick(f === "cake" ? ["Yummy cake! Quack!", "A birthday cake! Yay!"] : f === "pizza" ? ["Yummy pizza! Quack!", "Pizza! My favourite!"] : ["Ooh, cookies! Quack!", "Yummy cookies! Yay!"]);
+  const what = f === "cookies" ? c + " cookies" : "a " + c + " " + f;
+  return pick(["Ooh! " + what.charAt(0).toUpperCase() + what.slice(1) + "! WOW!", "I love " + c + " " + f + "! Quack!"]);
+}
+const pick = a => a[(Math.random() * a.length) | 0];
+const COINS = [];
+for (let i = 0; i < 10; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.012, 18), M(0xffd23f, { metalness: 0.6, roughness: 0.25, emissive: 0x664400, emissiveIntensity: 0.4 })); c.rotation.x = Math.PI / 2; c.visible = false; scene.add(c); COINS.push(c); }
+function updateCoins(bump) {
+  const e = $("coins"); e.textContent = "💰 " + coins;
+  if (bump) { e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump"); }
+}
+function setAgain() { $("again").textContent = recipe === "icecream" ? "Make another ice cream" : "Bake another " + (recipe === "cookies" ? "batch" : recipe); }
+function leaveShop() {
+  shopMode = false; carry = false; if (duckObj) { scene.remove(duckObj); duckObj = null; } if (shopFood) shopFood.rotation.set(0, 0, 0); shopFood = null;
+  for (const c of COINS) c.visible = false; if (doorPivot) doorPivot.rotation.y = 0; $("say").classList.add("hidden");
+}
+function sell() {
+  if (screenName === "shop") return;
+  const food = recipe === "cake" ? cake : recipe === "pizza" ? pizza : recipe === "icecream" ? cone : tray, FY = CT + (food === cake ? 0.03 : 0), FS = food === cone ? 1 : 1.3;
+  screenName = "shop"; shopMode = true; busy = true; arrowFn = null; activate([]); for (const id of ["sell", "again", "big"]) $(id).classList.add("hidden");
+  salePrice = 10 + 5 * dyes.length; shopFood = food; carry = false;
+  food.visible = true; food.position.set(SX + 0.4, FY, 0.1); food.scale.setScalar(0.01); tween(0.5, p => food.scale.setScalar(FS * Math.max(0.01, ease.back(p))));
+  setHint("Ding-a-ling! A customer is coming!"); tone(1568, 0.3, "sine", 0.15); tone(2093, 0.5, "sine", 0.12, 0.12);
+  tween(0.5, p => { doorPivot.rotation.y = 1.35 * ease.out(p); });
+  const d = duckObj = mkDuck(pick(DUCKS), pick([null, "party", "top", "flower", "crown"]));
+  d.position.set(SX - 1.9, 0, -4.3); scene.add(d); duckPose(d, 0, false);
+  const atCounter = () => faceTo(d, 0.55, () => {
+    const hd = d.userData.head; tween(0.4, p => { hd.rotation.x = 0.45 * p; }); say(saleLine()); setHint("Look! The duck likes it!"); tone(700, 0.12, "triangle", 0.15); tone(900, 0.15, "triangle", 0.15, 0.1);
+    later(2.4, pay);
+  });
+  const pay = () => {
+    const hd = d.userData.head; tween(0.3, p => { hd.rotation.x = 0.45 * (1 - p); }); setHint("Ka-ching!");
+    const n = salePrice / 5 + 2, to = new THREE.Vector3(SX + 1.0, CT + 0.3, 0.1), from = new THREE.Vector3(d.position.x + 0.2, 0.95, d.position.z - 0.1);
+    for (let i = 0; i < n; i++) later(i * 0.13, () => {
+      const c = COINS[i % COINS.length]; c.visible = true; c.position.copy(from);
+      tween(0.55, p => { c.position.lerpVectors(from, to, ease.out(p)); c.position.y += Math.sin(p * Math.PI) * 0.5; c.rotation.z = p * 14; }, () => {
+        c.visible = false; tone(1760 + i * 90, 0.18, "triangle", 0.14); tone(2637, 0.3, "sine", 0.06, 0.03); tween(0.2, q => { register.scale.y = 1 + 0.25 * Math.sin(q * Math.PI); });
+      });
+    });
+    later(n * 0.13 + 0.7, paid);
+  };
+  const paid = () => {
+    coins += salePrice; try { localStorage.setItem("baking-coins", String(coins)); } catch (e) {}
+    updateCoins(true); showBig("+" + salePrice + " 💰"); burst({ x: SX, y: 2.3, z: 0.1, w: 1.8 }); ding(); tone(1047, 0.2, "triangle", 0.15, 0.1); tone(1319, 0.2, "triangle", 0.15, 0.25); tone(1568, 0.5, "triangle", 0.15, 0.4);
+    say("Thank you! Quack!"); setHint("You sold it! +" + salePrice + " coins!");
+    tween(0.7, p => { d.position.y = Math.abs(Math.sin(p * Math.PI * 2)) * 0.15; duckPose(d, p * 20, true); }, () => { d.position.y = 0; carry = true; goOut(); });
+  };
+  const goOut = () => {   // the food hops into the duck's wings, and the duck carries it in front of its tummy out of the door
+    const from = food.position.clone(), q0 = food.quaternion.clone(), to = new THREE.Vector3(), q1 = new THREE.Quaternion(), hold = d.userData.hold, HS = food === cone ? 0.33 : 0.55; $("say").classList.add("hidden");
+    if (food === cone) hold.position.set(0, 0.25, 0.28);   // the thin cone sits closer, between the wing tips, and low enough to miss the beak
+    duckPose(d, 0, "hold");
+    tween(0.5, p => { hold.getWorldPosition(to); hold.getWorldQuaternion(q1); food.position.lerpVectors(from, to, ease.out(p)); food.position.y += Math.sin(p * Math.PI) * 0.5; food.quaternion.slerpQuaternions(q0, q1, ease.out(p)); food.scale.setScalar(FS + (HS - FS) * p); }, () => {
+      route(d, [[-2.75, 1.4], [-2.75, -0.7], [-1.9, -2.5]], 2.2, () => { route(d, [[-1.9, -4.3]], 2.2, () => {
+        d.visible = false; food.visible = false; carry = false; tween(0.5, p => { doorPivot.rotation.y = 1.35 * (1 - ease.out(p)); }); tone(1568, 0.25, "sine", 0.12);
+        setHint("Sold! You have " + coins + " coins!"); busy = false; setAgain(); $("again").classList.remove("hidden");
+      }); });
+    });
+  };
+  later(0.3, () => route(d, [[-1.9, -2.5], [-2.75, -0.7], [-2.75, 1.4], [-0.55, 1.4]], 2.2, atCounter));
+}
+$("coins").classList.add("m"); updateCoins(); $("coins").classList.toggle("hidden", !coins);
+
+// ---------- screens ----------
+let screenName = "menu";
+function showMenu() { screenName = "menu"; menuSpin = true; resetKitchen(); freezer.visible = false; $("coins").classList.add("m"); $("coins").classList.toggle("hidden", !coins); tgt.set(0, 0.95, -1.6); $("count").classList.add("hidden"); $("menu").classList.remove("hidden"); $("play").classList.remove("hidden"); $("picks").classList.add("hidden"); $("home").classList.add("hidden"); $("hint").classList.add("hidden"); }
+function startPlay(r) {
+  recipe = r || "cake";
+  screenName = "kitchen"; menuSpin = false; view.az = 0; view.el = 0.2; view.dist = 4.0;
+  resetKitchen(); updateCount(); $("count").classList.remove("hidden"); $("coins").classList.remove("m", "hidden"); updateCoins(); goStep(1); focusOn(FOCI[1], true);
+  $("menu").classList.add("hidden"); $("home").classList.remove("hidden"); $("hint").classList.remove("hidden");
+}
+$("play").addEventListener("click", () => { $("play").classList.add("hidden"); $("picks").classList.remove("hidden"); });
+for (const b of document.querySelectorAll("#picks button")) b.addEventListener("click", () => startPlay(b.dataset.r));
+$("home").addEventListener("click", showMenu);
+$("again").addEventListener("click", () => { resetKitchen(); screenName = "kitchen"; goStep(1); });
+$("sell").addEventListener("click", () => sell());
+$("sell").addEventListener("pointerdown", e => e.stopPropagation());
+$("again").addEventListener("pointerdown", e => e.stopPropagation());
+$("home").addEventListener("pointerdown", e => e.stopPropagation());
+addEventListener("keydown", e => {
+  if (e.key === "Escape" && (screenName === "kitchen" || screenName === "shop")) showMenu();
+  else if ((e.key === "Enter" || e.key === " ") && screenName === "menu") { e.preventDefault(); if (!$("play").classList.contains("hidden")) $("play").click(); }
+  else if (e.key === " " && (screenName === "kitchen" || screenName === "shop")) e.preventDefault();
+});
+addEventListener("click", () => document.activeElement?.blur?.());
+
+function resize() { R.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.fov = innerWidth < innerHeight ? 68 : 50; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  doorAng += ((ovenOpen ? 1.45 : 0) - doorAng) * Math.min(1, dt * 9);
+  hinge.rotation.x = doorAng;
+  if (screenName === "kitchen" || screenName === "shop") bakeFrame(dt, t);
+  placeCamera();
+  R.render(scene, camera);
+  if (shopMode && duckObj && !$("say").classList.contains("hidden")) {
+    const sy = $("say"); duckObj.userData.head.getWorldPosition(_v); _v.y += 0.35; _v.project(camera);
+    const hw = sy.offsetWidth / 2 + 8; sy.style.left = clamp((_v.x * 0.5 + 0.5) * innerWidth, hw, innerWidth - hw) + "px"; sy.style.top = Math.max(sy.offsetHeight + 70, (-_v.y * 0.5 + 0.5) * innerHeight - 4) + "px";
+  }
+  if (!$("ring").classList.contains("hidden")) { _v.copy(ringPos).project(camera); $("ring").style.left = (_v.x * 0.5 + 0.5) * innerWidth + "px"; $("ring").style.top = (-_v.y * 0.5 + 0.5) * innerHeight + "px"; }
+  requestAnimationFrame(frame);
+}
+if (location.hash.includes("play")) startPlay();
+if (location.hash.includes("pick")) $("play").click();
+if (location.hash.includes("oven")) { ovenOpen = true; doorAng = 1.45; }
+{ const m = /cake=(\d)/.exec(location.hash); if (m && screenName === "kitchen") jumpTo(clamp(+m[1], 1, 7)); }
+{ const m = /(pizza|cookies|icecream)=(\d)/.exec(location.hash); if (m) { startPlay(m[1]); jumpAlt(clamp(+m[2], 1, 9)); } }
+{ const m = /sell(=(\d+(\.\d+)?))?/.exec(location.hash); if (m) { sell(); if (m[2]) window.__bake.sim(+m[2]); } }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

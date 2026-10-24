@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pillow Pile</title>
+<link rel="icon" href="icon.png">
+<style>
+  @font-face { font-family: "Fredoka"; src: url("fonts/Fredoka.ttf") format("truetype"); font-weight: 300 700; font-display: swap; }
+  :root { --ink: #3a3026; --cream: #f6efe2; --accent: #d9785f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2a221b; font-family: "Fredoka", "Trebuchet MS", sans-serif; color: var(--ink); user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hidden { display: none !important; }
+  .btn { font: 700 clamp(24px, 4vw, 38px) "Fredoka", sans-serif; color: #fff; border: 0; border-radius: 999px; padding: 12px 54px; background: var(--accent); box-shadow: 0 7px 0 #a85a45, 0 12px 20px rgba(0,0,0,.35); cursor: pointer; }
+  .btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #a85a45; }
+  #hud { position: fixed; left: 14px; top: 14px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  #hud div { background: rgba(246,239,226,.92); border-radius: 16px; padding: 6px 16px; box-shadow: 0 4px 10px rgba(0,0,0,.3); min-width: 150px; }
+  #hud small { display: block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; opacity: .65; }
+  #hud b { font-size: clamp(22px, 3.4vw, 34px); }
+  #tools { position: fixed; right: 14px; top: 14px; display: flex; gap: 8px; }
+  #tools button { width: 48px; height: 48px; border: 0; border-radius: 50%; font-size: 22px; background: rgba(246,239,226,.92); box-shadow: 0 4px 10px rgba(0,0,0,.3); cursor: pointer; }
+  .card { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 16px; background: rgba(30,22,14,.55); }
+  .card .box { background: var(--cream); border-radius: 30px; padding: 26px 38px; box-shadow: 0 10px 0 #cbbfa8, 0 20px 34px rgba(0,0,0,.4); display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 94vw; }
+  .card h1 { margin: 0; font-size: clamp(40px, 8vw, 84px); line-height: 1; color: var(--accent); }
+  .card h2 { margin: 0; font-size: clamp(30px, 6vw, 52px); color: var(--accent); }
+  .card p { margin: 0; font-size: clamp(16px, 2.6vw, 22px); font-weight: 500; }
+  .keys { display: grid; grid-template-columns: auto auto; gap: 4px 18px; text-align: left; font-size: clamp(15px, 2.4vw, 20px); }
+  .keys b { background: #fff; border-radius: 8px; padding: 0 9px; box-shadow: 0 2px 0 #cbbfa8; }
+  #touch { position: fixed; left: 0; right: 0; bottom: 12px; display: flex; justify-content: space-between; padding: 0 14px; pointer-events: none; }
+  #touch .grp { display: flex; gap: 10px; pointer-events: auto; }
+  #touch button { width: 64px; height: 64px; border: 3px solid #fff; border-radius: 50%; font-size: 28px; color: #fff; background: rgba(217,120,95,.9); box-shadow: 0 5px 0 rgba(0,0,0,.25); touch-action: none; }
+  #nogl { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #f6efe2; font-size: 28px; padding: 20px; text-align: center; }
+</style>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#e0c8a5"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pillow Pile"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('sw',e)})})}</script></head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hud" class="hidden"><div><small>Score</small><b id="score">0</b></div><div><small>Level</small><b id="level">1</b></div><div><small>Lines</small><b id="lines">0</b></div><div><small>Best</small><b id="best">0</b></div></div>
+<div id="tools" class="hidden"><button id="pausebtn" aria-label="Pause">&#9208;</button><button id="musicbtn" aria-label="Music">&#127925;</button></div>
+<div id="touch" class="hidden">
+  <div class="grp"><button data-k="left">&#9664;</button><button data-k="right">&#9654;</button></div>
+  <div class="grp"><button data-k="down">&#9660;</button><button data-k="rot">&#10227;</button><button data-k="drop">&#10515;</button></div>
+</div>
+<div id="menu" class="card"><div class="box">
+  <h1>Pillow Pile</h1>
+  <p>Stack the soft pillows and fill the lines!</p>
+  <div class="keys"><b>&#8592; &#8594;</b><span>move the pillow</span><b>&#8593;</b><span>turn it round</span><b>&#8595;</b><span>fall faster</span><b>Space</b><span>drop it all the way</span><b>P</b><span>pause</span><b>M</b><span>music on / off</span></div>
+  <button id="play" class="btn">Play</button>
+  <p id="bestline" style="opacity:.7"></p>
+  <p style="font-size:14px;opacity:.55">Music: &ldquo;Korobeiniki&rdquo;, an old Russian folk song</p>
+</div></div>
+<div id="pausecard" class="card hidden"><div class="box"><h2>Paused</h2><button id="resume" class="btn">Resume</button></div></div>
+<div id="overcard" class="card hidden"><div class="box"><h2>The pillows reached the top!</h2><p id="overtxt"></p><button id="again" class="btn">Try again</button></div></div>
+<div id="nogl">Oh no! This screen cannot show 3D.</div>
+
+<script src="lib/three.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const HASH = location.hash;
+const PHONE = matchMedia("(pointer: coarse)").matches || Math.min(screen.width, screen.height) < 600 || /lowq/.test(HASH);
+const TOUCH = PHONE || /touch/.test(HASH);
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const cv = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+// smooth value noise, used for wood grain, plaster and pillow wrinkles
+const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); return (hash2(xi, yi) * (1 - u) + hash2(xi + 1, yi) * u) * (1 - v) + (hash2(xi, yi + 1) * (1 - u) + hash2(xi + 1, yi + 1) * u) * v; }
+const fbm = (x, y, o = 4) => { let s = 0, a = 0.5, f = 1; for (let i = 0; i < o; i++) { s += a * vnoise(x * f, y * f); a *= 0.5; f *= 2; } return s; };
+
+let R;
+try { R = new THREE.WebGLRenderer({ canvas: $("gl"), antialias: true }); } catch (e) { $("nogl").style.display = "flex"; $("menu").classList.add("hidden"); throw e; }
+R.setPixelRatio(Math.min(devicePixelRatio || 1, PHONE ? 1.5 : 2));
+R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 0.95;
+R.shadowMap.enabled = !/noshadow/.test(HASH); R.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x3a2e24);
+const camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.1, 200);
+const TEX = PHONE ? 256 : 512;
+
+// ---------- texture helpers: colour + bump (turned into a normal map) ----------
+function normalMapOf(hc, strength) {
+  const S = hc.width, T = hc.height, d = hc.getContext("2d").getImageData(0, 0, S, T).data, N = cv(S, T), n = N.getContext("2d"), o = n.createImageData(S, T);
+  for (let y = 0; y < T; y++) for (let x = 0; x < S; x++) {
+    const l = d[(y * S + (x + S - 1) % S) * 4], r = d[(y * S + (x + 1) % S) * 4], u = d[(((y + T - 1) % T) * S + x) * 4], dn = d[(((y + 1) % T) * S + x) * 4];
+    let nx = (l - r) * strength / 255, ny = (dn - u) * strength / 255, nz = 1; const il = 1 / Math.hypot(nx, ny, nz), i = (y * S + x) * 4;
+    o.data[i] = (nx * il * 0.5 + 0.5) * 255; o.data[i + 1] = (ny * il * 0.5 + 0.5) * 255; o.data[i + 2] = (nz * il * 0.5 + 0.5) * 255; o.data[i + 3] = 255;
+  }
+  n.putImageData(o, 0, 0); return N;
+}
+function tex(c, srgb, rx, ry) { const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = PHONE ? 4 : 8; t.wrapS = t.wrapT = THREE.RepeatWrapping; if (rx) t.repeat.set(rx, ry); return t; }
+
+// woven cotton: you can see every thread, with a piped seam and stitches round the edge
+function fabricSet() {
+  const S = PHONE ? 256 : 512, P = S / 32, C = cv(S, S), H = cv(S, S), c = C.getContext("2d"), h = H.getContext("2d"), ci = c.createImageData(S, S), hi = h.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const tx = Math.floor(x / P), ty = Math.floor(y / P), fx = (x / P) - tx, fy = (y / P) - ty, over = ((tx + ty) & 1) === 0;
+    const prof = over ? Math.sin(Math.PI * fy) : Math.sin(Math.PI * fx), along = over ? 0.8 + 0.2 * Math.sin(Math.PI * fx) : 0.8 + 0.2 * Math.sin(Math.PI * fy);
+    const hv = 0.3 + 0.6 * prof * along, tone = 0.975 + 0.025 * hash2(tx * 3 + (over ? 1 : 0), ty * 5), g = (0.78 + 0.22 * hv) * tone * 255, i = (y * S + x) * 4;
+    ci.data[i] = ci.data[i + 1] = ci.data[i + 2] = g; ci.data[i + 3] = 255; hi.data[i] = hi.data[i + 1] = hi.data[i + 2] = hv * 255 * (0.9 + 0.1 * fbm(x * 0.05, y * 0.05, 2)); hi.data[i + 3] = 255;
+  }
+  c.putImageData(ci, 0, 0); h.putImageData(hi, 0, 0);
+  const b = S * 0.022;   // seam band along the rim: a raised piping, then a row of stitches
+  for (const [g, band, stitch, dash, hb, hs] of [[c, "rgba(70,55,40,.20)", "rgba(60,45,30,.55)", 0, 0, 0], [h, "#d8d8d8", "#202020", 1, 0, 0]]) {
+    g.fillStyle = band; g.fillRect(0, 0, S, b); g.fillRect(0, S - b, S, b); g.fillRect(0, 0, b, S); g.fillRect(S - b, 0, b, S);
+    g.strokeStyle = stitch; g.lineWidth = S * 0.006; g.setLineDash([S * 0.022, S * 0.014]); g.strokeRect(b * 2.1, b * 2.1, S - b * 4.2, S - b * 4.2); g.setLineDash([]);
+  }
+  return { map: tex(C, true), normalMap: tex(normalMapOf(H, PHONE ? 1.4 : 1.8), false) };
+}
+function woodSet(w, hgt, o) {   // planks with grain, knots, gaps and end joints
+  const C = cv(w, hgt), H = cv(w, hgt), c = C.getContext("2d"), h = H.getContext("2d"), ci = c.createImageData(w, hgt), hi = h.createImageData(w, hgt), rn = mulberry(o.seed || 3);
+  const np = o.planks, ph = hgt / np, joints = []; for (let p = 0; p < np; p++) joints.push(rn() * w);
+  for (let y = 0; y < hgt; y++) {
+    const p = Math.floor(y / ph), yy = y - p * ph, tone = 0.82 + 0.3 * hash2(p, 7), off = p * 37.7;
+    for (let x = 0; x < w; x++) {
+      const jx = (x + joints[p]) % (w * 0.6), side = x < w * 0.5 ? 0 : 1, to2 = tone * (0.94 + 0.12 * hash2(p * 2 + (((x + joints[p]) / (w * 0.6)) | 0), 11));
+      const warp = fbm(x * 0.004 + off, yy * 0.03, 3) * 6, ring = 0.5 + 0.5 * Math.sin(yy * 0.55 + warp * 0.9 + off), fine = fbm(x * 0.012, yy * 0.7 + off, 2);
+      let v = (0.55 + 0.22 * ring + 0.2 * fine) * to2, hv = 0.5 + 0.18 * ring + 0.1 * fine;
+      const gap = yy < 1.6 || yy > ph - 1.2 || jx < 1.6; if (gap) { v *= 0.35; hv = 0.1; }
+      const i = (y * w + x) * 4, [r, g, b] = o.col; ci.data[i] = r * v; ci.data[i + 1] = g * v; ci.data[i + 2] = b * v; ci.data[i + 3] = 255; hi.data[i] = hi.data[i + 1] = hi.data[i + 2] = hv * 255; hi.data[i + 3] = 255;
+    }
+  }
+  c.putImageData(ci, 0, 0); h.putImageData(hi, 0, 0);
+  return { map: tex(C, true, o.rx, o.ry), normalMap: tex(normalMapOf(H, 2.2), false, o.rx, o.ry) };
+}
+function wallSet() {   // painted plaster with faint wallpaper stripes
+  const S = 512, C = cv(S, S), H = cv(S, S), c = C.getContext("2d"), h = H.getContext("2d"), ci = c.createImageData(S, S), hi = h.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const stripe = (x % 64) < 4 ? 0.93 : 1, n = fbm(x * 0.02, y * 0.02, 4), fine = hash2(x, y), v = (0.86 + 0.1 * n + 0.04 * fine) * stripe, i = (y * S + x) * 4;
+    ci.data[i] = 238 * v; ci.data[i + 1] = 228 * v; ci.data[i + 2] = 212 * v; ci.data[i + 3] = 255; const hv = (0.5 + 0.25 * n + 0.1 * fine + ((x % 64) < 4 ? -0.1 : 0)) * 255; hi.data[i] = hi.data[i + 1] = hi.data[i + 2] = hv; hi.data[i + 3] = 255;
+  }
+  c.putImageData(ci, 0, 0); h.putImageData(hi, 0, 0);
+  return { map: tex(C, true, 6, 6), normalMap: tex(normalMapOf(H, 1.6), false, 6, 6) };
+}
+
+// ---------- the room: lights, reflections, floor, walls, window, curtains, shelf, lamp ----------
+{
+  const es = new THREE.Scene(), sky = cv(256, 128), g = sky.getContext("2d"), gr = g.createLinearGradient(0, 0, 0, 128);
+  gr.addColorStop(0, "#f4efe6"); gr.addColorStop(0.5, "#e0d3bf"); gr.addColorStop(1, "#8a6a4a"); g.fillStyle = gr; g.fillRect(0, 0, 256, 128);
+  const em = new THREE.Mesh(new THREE.SphereGeometry(50, 24, 16), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sky), side: THREE.BackSide })); es.add(em);
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(18, 26), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 6.6, 7.4) })); win.position.set(-40, 6, 14); win.lookAt(0, 6, 0); es.add(win);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(4, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 3.2, 1.6) })); lamp.position.set(40, 0, 20); es.add(lamp);
+  const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(es, 0.02).texture; scene.environmentIntensity = 0.9; pm.dispose(); if (/noenv/.test(HASH)) scene.environment = null;
+}
+const hemi = new THREE.HemisphereLight(0xfff3e0, 0x8a6a4a, 0.3); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.1); sun.position.set(-22, 24, 20); sun.target.position.set(0, 9, 0);
+sun.castShadow = true; sun.shadow.mapSize.set(PHONE ? 1024 : 2048, PHONE ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -17, right: 17, top: 17, bottom: -17, near: 5, far: 80 }); sun.shadow.bias = -0.0015; sun.shadow.normalBias = 0.14; sun.shadow.radius = 3;
+scene.add(sun, sun.target);
+const lampLight = new THREE.PointLight(0xffc27a, PHONE ? 120 : 220, 40, 2); lampLight.position.set(15.5, 7.2, 3.4); scene.add(lampLight);
+
+const wallT = wallSet(), floorT = woodSet(1024, 1024, { col: [196, 150, 98], planks: 8, seed: 3, rx: 3, ry: 4 }), oakT = woodSet(512, 256, { col: [176, 128, 78], planks: 3, seed: 9, rx: 1, ry: 1 }), darkT = woodSet(512, 256, { col: [120, 78, 48], planks: 2, seed: 12, rx: 1, ry: 1 });
+const wallM = new THREE.MeshStandardMaterial({ map: wallT.map, normalMap: wallT.normalMap, roughness: 0.92, normalScale: new THREE.Vector2(0.7, 0.7) });
+const floorM = new THREE.MeshPhysicalMaterial({ map: floorT.map, normalMap: floorT.normalMap, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+const oakM = new THREE.MeshStandardMaterial({ map: oakT.map, normalMap: oakT.normalMap, roughness: 0.55 }), darkM = new THREE.MeshStandardMaterial({ map: darkT.map, normalMap: darkT.normalMap, roughness: 0.5 });
+const whiteWoodM = new THREE.MeshStandardMaterial({ color: 0xf3efe6, roughness: 0.45 });
+function box(w, h, d, m, x, y, z, shadow = true) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = shadow; o.receiveShadow = true; scene.add(o); return o; }
+// back wall, floor, skirting board
+const WALL_Z = -0.75;
+{ const w = new THREE.Mesh(new THREE.PlaneGeometry(90, 60), wallM); w.position.set(0, 24, WALL_Z); w.receiveShadow = true; scene.add(w);
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(90, 70), floorM); f.rotation.x = -Math.PI / 2; f.position.set(0, -0.6, 30); f.receiveShadow = true; scene.add(f);
+  box(90, 1.4, 0.35, whiteWoodM, 0, 0.1, WALL_Z + 0.18, false); box(90, 0.25, 0.5, whiteWoodM, 0, 0.9, WALL_Z + 0.2, false); }
+// window on the left with sky, mullions and linen curtains
+{ const sc = cv(256, 384), g = sc.getContext("2d"), gr = g.createLinearGradient(0, 0, 0, 384); gr.addColorStop(0, "#6fb2f0"); gr.addColorStop(0.7, "#cfe6f8"); gr.addColorStop(1, "#f3f7ef"); g.fillStyle = gr; g.fillRect(0, 0, 256, 384);
+  const rn = mulberry(4); for (let i = 0; i < 26; i++) { const x = rn() * 256, y = 60 + rn() * 200, r = 18 + rn() * 34, q = g.createRadialGradient(x, y, 0, x, y, r); q.addColorStop(0, "rgba(255,255,255,.9)"); q.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = q; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  g.fillStyle = "#5c8a4a"; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(rn() * 256, 360 + rn() * 20, 22 + rn() * 22, 0, 7); g.fill(); }
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(7, 10.5), new THREE.MeshBasicMaterial({ map: (() => { const t = new THREE.CanvasTexture(sc); t.colorSpace = THREE.SRGBColorSpace; return t; })(), toneMapped: false })); glass.position.set(-17, 12.5, WALL_Z + 0.03); scene.add(glass);
+  const fx = -17, fy = 12.5; box(7.8, 0.4, 0.5, whiteWoodM, fx, fy + 5.45, WALL_Z + 0.25, false); box(7.8, 0.4, 0.5, whiteWoodM, fx, fy - 5.45, WALL_Z + 0.25, false); box(0.4, 11.3, 0.5, whiteWoodM, fx - 3.7, fy, WALL_Z + 0.25, false); box(0.4, 11.3, 0.5, whiteWoodM, fx + 3.7, fy, WALL_Z + 0.25, false);
+  box(0.25, 10.6, 0.3, whiteWoodM, fx, fy, WALL_Z + 0.2, false); box(7.2, 0.25, 0.3, whiteWoodM, fx, fy + 0.5, WALL_Z + 0.2, false); box(8.6, 0.5, 1.1, whiteWoodM, fx, fy - 5.9, WALL_Z + 0.5, false);
+  const ct = cv(256, 256), cg = ct.getContext("2d"); for (let y = 0; y < 256; y += 2) for (let x = 0; x < 256; x += 2) { const v = 232 + 14 * vnoise(x * 0.5, y * 0.08) - 10 * hash2(x, y); cg.fillStyle = `rgb(${v},${v - 6},${v - 18})`; cg.fillRect(x, y, 2, 2); }
+  const cm = new THREE.MeshStandardMaterial({ map: (() => { const t = new THREE.CanvasTexture(ct); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })(), roughness: 0.95, side: THREE.DoubleSide });
+  for (const sd of [-1, 1]) { const gm = new THREE.PlaneGeometry(2.6, 14, 48, 1), p = gm.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin((p.getX(i) + 1.3) * 7) * 0.28 + 0.1 * Math.sin(p.getX(i) * 17)); gm.computeVertexNormals();
+    const cur = new THREE.Mesh(gm, cm); cur.position.set(fx + sd * 4.6, 12, WALL_Z + 0.55); cur.castShadow = true; cur.receiveShadow = true; scene.add(cur); }
+  box(14, 0.18, 0.18, darkM, fx, 19.2, WALL_Z + 0.55, false); }
+// shelf on the right (the next pillow waits there) and a bedside lamp
+const SHELF_X = 13.2, SHELF_Y = 15.2;
+{ box(6.8, 0.45, 3.2, oakM, SHELF_X, SHELF_Y - 0.25, WALL_Z + 1.6); for (const sx of [-2.4, 2.4]) box(0.3, 1.4, 2.6, darkM, SHELF_X + sx, SHELF_Y - 1.1, WALL_Z + 1.4);
+  const sg = cv(256, 96), g = sg.getContext("2d"); g.fillStyle = "#f6efe2"; g.fillRect(0, 0, 256, 96); g.strokeStyle = "#b89c78"; g.lineWidth = 6; g.strokeRect(5, 5, 246, 86); g.fillStyle = "#6b5640"; g.font = "700 52px Fredoka, Arial Rounded MT Bold, Arial, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("NEXT", 128, 52);
+  const sgn = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.12), new THREE.MeshStandardMaterial({ map: (() => { const t = new THREE.CanvasTexture(sg); t.colorSpace = THREE.SRGBColorSpace; return t; })(), roughness: 0.7 })); sgn.position.set(SHELF_X, SHELF_Y + 4.6, WALL_Z + 0.05); scene.add(sgn);
+  box(4.2, 7, 3.2, darkM, 15.5, 3.2, 2.6); box(4.5, 0.3, 3.5, oakM, 15.5, 6.85, 2.6);
+  const lb = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 0.5, 20), new THREE.MeshStandardMaterial({ color: 0xcfb48a, metalness: 0.7, roughness: 0.3 })); lb.position.set(15.5, 7.2, 2.6); lb.castShadow = true; scene.add(lb);
+  const ls = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.6, 12), lb.material); ls.position.set(15.5, 8.6, 2.6); scene.add(ls);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.8, 1.9, 28, 1, true), new THREE.MeshStandardMaterial({ color: 0xf8e6c4, emissive: 0xffb866, emissiveIntensity: 0.7, side: THREE.DoubleSide, roughness: 0.9 })); sh.position.set(15.5, 10.3, 2.6); scene.add(sh); }
+
+// ---------- the well: an oak cabinet the pillows fall into ----------
+const COLS = 10, ROWS = 20, X0 = -COLS / 2;
+{ box(0.9, ROWS + 1.3, 2.4, oakM, X0 - 0.45, ROWS / 2 - 0.1, 0.45); box(0.9, ROWS + 1.3, 2.4, oakM, -X0 + 0.45, ROWS / 2 - 0.1, 0.45);   // side planks
+  box(COLS + 1.8, 0.9, 2.4, oakM, 0, -0.45, 0.45); box(COLS + 1.8, 0.7, 2.4, oakM, 0, ROWS + 0.35, 0.45);                                      // base and top beam
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(COLS, ROWS), new THREE.MeshStandardMaterial({ color: 0xece4d4, map: wallT.map, normalMap: wallT.normalMap, roughness: 0.9 })); back.position.set(0, ROWS / 2, -0.4); back.receiveShadow = true; scene.add(back);
+  for (const sx of [-1, 1]) box(0.14, ROWS, 0.4, darkM, sx * (COLS / 2 - 0.07), ROWS / 2, -0.28, false);
+  for (let r = 4; r < ROWS; r += 4) for (const sx of [-1, 1]) box(0.08, 0.3, 0.12, darkM, sx * (COLS / 2 - 0.04), r, 1.1, false); }   // little marks on the sides, like a height chart
+
+// ---------- pillows ----------
+const FAB = fabricSet();
+const PILLOW_COL = { I: 0xf0e8d6, O: 0xdfae45, T: 0xa89cd2, S: 0x93b58e, Z: 0xdb7b62, J: 0x7498bd, L: 0xe6a7ab };
+const pillowMats = {}, ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false });
+for (const k in PILLOW_COL) { const col = new THREE.Color(PILLOW_COL[k]); pillowMats[k] = new THREE.MeshPhysicalMaterial({ color: col, map: /nomap/.test(HASH) ? null : FAB.map, normalMap: /nonorm/.test(HASH) ? null : FAB.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.93, metalness: 0, sheen: /nosheen/.test(HASH) ? 0 : 1, sheenRoughness: 0.5, sheenColor: col.clone().lerp(new THREE.Color(1, 1, 1), 0.55) }); }
+function pillowGeo(seed) {   // two puffed faces meeting at a thin seam, with soft wrinkles and pinched corners
+  const rn = mulberry(seed), N = PHONE ? 14 : 22, E = 0.47, T = 0.5, grid = []; for (let i = 0; i < 36; i++) grid.push(rn() - 0.5);
+  const wr = (u, v) => { const x = (u + 1) * 2.5, y = (v + 1) * 2.5, xi = Math.min(4, Math.floor(x)), yi = Math.min(4, Math.floor(y)), fx = x - xi, fy = y - yi; return (grid[yi * 6 + xi] * (1 - fx) + grid[yi * 6 + xi + 1] * fx) * (1 - fy) + (grid[(yi + 1) * 6 + xi] * (1 - fx) + grid[(yi + 1) * 6 + xi + 1] * fx) * fy; };
+  const pos = [], uv = [], idx = [], tilt = (rn() - 0.5) * 0.12;
+  for (const side of [1, -1]) {
+    const base = pos.length / 3;
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+      const u = i / N * 2 - 1, v = j / N * 2 - 1, au = Math.abs(u), av = Math.abs(v);
+      let h = T * Math.pow(Math.max(0, 1 - Math.pow(au, 3.2)), 0.62) * Math.pow(Math.max(0, 1 - Math.pow(av, 3.2)), 0.62);
+      h *= 1 - 0.34 * Math.pow(au * av, 1.4); h += (0.045 * wr(u, v) + 0.025 * Math.sin((u + v) * 3.5 + seed)) * Math.min(1, h / 0.1) + tilt * u * 0.5 * Math.min(1, h / 0.1);
+      const bulge = 1 + 0.035 * (h / T); pos.push(u * E * bulge, v * E * bulge, side * Math.max(0, h)); uv.push((u + 1) / 2, (v + 1) / 2);
+    }
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = base + j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; if (side > 0) idx.push(a, b, c, b, d, c); else idx.push(a, c, b, b, c, d); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+const GEOS = [11, 23, 37, 41, 59].map(pillowGeo);
+function makePillow(type) { const m = new THREE.Mesh(GEOS[(Math.random() * GEOS.length) | 0], /plain/.test(HASH) ? new THREE.MeshStandardMaterial({ color: PILLOW_COL[type], roughness: 0.9 }) : pillowMats[type]); m.castShadow = true; m.receiveShadow = true; m.rotation.z = (Math.random() - 0.5) * 0.06; m.userData = { sq: 0, type, tz: 0, vz: 0, vx: 0, vy: 0, fly: 0 }; return m; }
+function makeGhost() { const m = new THREE.Mesh(GEOS[0], ghostMat); m.renderOrder = 4; m.scale.set(1, 1, 0.5); return m; }
+
+// feathers that puff out when a line of pillows pops
+const FEATHERS = 90, featherG = new THREE.PlaneGeometry(0.1, 0.42), featherM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, side: THREE.DoubleSide, transparent: true }), feathers = new THREE.InstancedMesh(featherG, featherM, FEATHERS), fd = [];
+feathers.frustumCulled = false; scene.add(feathers);
+for (let i = 0; i < FEATHERS; i++) fd.push({ life: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, rot: 0, spin: 0, ph: 0 });
+const dm = new THREE.Object3D(); let fcur = 0;
+function puff(x, y, z) { for (let i = 0; i < 7; i++) { const f = fd[fcur++ % FEATHERS]; f.life = 2.2 + Math.random(); f.x = x + (Math.random() - 0.5) * 0.6; f.y = y; f.z = z; f.vx = (Math.random() - 0.5) * 3.2; f.vy = 1 + Math.random() * 2.4; f.vz = 1 + Math.random() * 2.4; f.rot = Math.random() * 6; f.spin = (Math.random() - 0.5) * 6; f.ph = Math.random() * 6; } }
+function featherStep(dt) {
+  for (let i = 0; i < FEATHERS; i++) {
+    const f = fd[i]; if (f.life > 0) { f.life -= dt; f.vy -= 1.6 * dt; f.vx *= 1 - 1.5 * dt; f.vz *= 1 - 1.5 * dt; if (f.vy < -0.9) f.vy = -0.9; f.x += (f.vx + Math.sin(f.ph + f.life * 3) * 0.7) * dt; f.y += f.vy * dt; f.z += f.vz * dt; f.rot += f.spin * dt; }
+    if (f.life > 0) { dm.position.set(f.x, f.y, f.z); dm.rotation.set(f.rot, f.rot * 0.7, f.rot * 0.4); dm.scale.setScalar(Math.min(1, f.life * 1.5)); } else { dm.position.set(0, -50, 0); dm.scale.setScalar(0.0001); }
+    dm.updateMatrix(); feathers.setMatrixAt(i, dm.matrix);
+  }
+  feathers.instanceMatrix.needsUpdate = true;
+}
+
+// ---------- tetris rules ----------
+const SHAPES = {
+  I: { s: 4, c: [[0, 1], [1, 1], [2, 1], [3, 1]] }, O: { s: 4, c: [[1, 0], [2, 0], [1, 1], [2, 1]] }, T: { s: 3, c: [[1, 0], [0, 1], [1, 1], [2, 1]] },
+  S: { s: 3, c: [[1, 0], [2, 0], [0, 1], [1, 1]] }, Z: { s: 3, c: [[0, 0], [1, 0], [1, 1], [2, 1]] }, J: { s: 3, c: [[0, 0], [0, 1], [1, 1], [2, 1]] }, L: { s: 3, c: [[2, 0], [0, 1], [1, 1], [2, 1]] },
+};
+const TYPES = Object.keys(SHAPES);
+let board, cur, nextType, bag = [], score = 0, level = 1, lines = 0, best = 0, mode = "menu", fallT = 0, clearT = 0, clearing = null, lockDelay = 0, overRise = 0;
+try { best = +localStorage.getItem("pillow-tetris-best") || 0; } catch (e) {}
+const cellX = c => X0 + c + 0.5, cellY = r => r + 0.5;
+const rotCells = (cells, s, k) => { let o = cells; for (let i = 0; i < k; i++) o = o.map(([x, y]) => [s - 1 - y, x]); return o; };
+function nextFromBag() { if (!bag.length) { bag = TYPES.slice(); for (let i = bag.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; } } return bag.pop(); }
+const stack = new THREE.Group(); scene.add(stack);
+const nextG = new THREE.Group(); nextG.position.set(SHELF_X, SHELF_Y, WALL_Z + 1.5); nextG.scale.setScalar(0.95); scene.add(nextG);
+const activeG = new THREE.Group(); scene.add(activeG); let ghostG = new THREE.Group(); scene.add(ghostG);
+function emptyBoard() { return Array.from({ length: ROWS }, () => Array(COLS).fill(null)); }
+function setNext(t) {
+  while (nextG.children.length) nextG.remove(nextG.children[0]);
+  nextType = t; const sh = SHAPES[t], xs = sh.c.map(p => p[0]), ys = sh.c.map(p => p[1]), mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2, lift = (Math.max(...ys) - my) + 0.2;
+  for (const [x, y] of sh.c) { const p = makePillow(t); p.position.set(x - mx, -(y - my) + lift, 0); p.rotation.z = 0; nextG.add(p); }
+}
+function cellsOf(p) { return rotCells(SHAPES[p.type].c, SHAPES[p.type].s - 1 + 1, p.rot).map(([x, y]) => [p.x + x, p.y - y]); }
+function rotated(type, rot) { const sh = SHAPES[type]; let o = sh.c; for (let i = 0; i < rot; i++) o = o.map(([x, y]) => [sh.s - 1 - y, x]); return o; }
+function fits(type, rot, px, py) { for (const [x, y] of rotated(type, rot)) { const c = px + x, r = py - y; if (c < 0 || c >= COLS || r < 0) return false; if (r < ROWS && board[r][c]) return false; } return true; }
+function spawn() {
+  const type = nextType; setNext(nextFromBag());
+  const sh = SHAPES[type]; cur = { type, rot: 0, x: Math.floor((COLS - sh.s) / 2), y: ROWS - 1 + (type === "I" ? 0 : 0), vx: 0, vy: 0 };
+  if (type === "I") cur.y = ROWS - 2;
+  while (activeG.children.length) activeG.remove(activeG.children[0]);
+  cur.meshes = rotated(type, 0).map(() => { const m = makePillow(type); activeG.add(m); return m; });
+  cur.ghosts = []; while (ghostG.children.length) ghostG.remove(ghostG.children[0]); for (let i = 0; i < 4; i++) { const g = makeGhost(); ghostG.add(g); cur.ghosts.push(g); }
+  cur.vx = cur.x; cur.vy = cur.y + 1.6; fallT = 0; lockDelay = 0;
+  if (!fits(type, 0, cur.x, cur.y)) { gameOver(); return false; } return true;
+}
+function dropRow(p) { let y = p.y; while (fits(p.type, p.rot, p.x, y - 1)) y--; return y; }
+function tryMove(dx) { if (mode !== "play" || !cur || clearing) return false; if (fits(cur.type, cur.rot, cur.x + dx, cur.y)) { cur.x += dx; lockDelay = 0; sfx("move"); return true; } return false; }
+function tryRotate(dir) {
+  if (mode !== "play" || !cur || clearing || cur.type === "O") return;
+  const nr = (cur.rot + dir + 4) % 4;
+  for (const [kx, ky] of [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, 1], [-1, 1], [1, 1]]) if (fits(cur.type, nr, cur.x + kx, cur.y + ky)) { cur.rot = nr; cur.x += kx; cur.y += ky; lockDelay = 0; sfx("rot"); return; }
+}
+function stepDown(soft) { if (fits(cur.type, cur.rot, cur.x, cur.y - 1)) { cur.y--; fallT = 0; if (soft) { score += 1; drawHud(); } return true; } return false; }
+function hardDrop() { if (mode !== "play" || !cur || clearing) return; const y = dropRow(cur); score += 2 * (cur.y - y); cur.y = y; drawHud(); lockPiece(); }
+function lockPiece() {
+  const cells = rotated(cur.type, cur.rot).map(([x, y]) => [cur.x + x, cur.y - y]);
+  cur.meshes.forEach((m, i) => { const [c, r] = cells[i]; activeG.remove(m); stack.add(m); m.position.set(cur.vx + rotated(cur.type, cur.rot)[i][0] + 0.5 + X0, cur.vy - rotated(cur.type, cur.rot)[i][1] + 0.5 - 1.6 * 0, m.position.z); m.userData.sq = 1; if (r < ROWS) board[r][c] = m; });
+  cur.meshes.forEach((m, i) => { const [c, r] = cells[i]; m.position.set(cellX(c), cellY(r), 0); });
+  sfx("land"); cur = null; ghostG.children.forEach(g => (g.visible = false));
+  const full = []; for (let r = 0; r < ROWS; r++) if (board[r].every(Boolean)) full.push(r);
+  if (full.length) {
+    clearing = { rows: full, t: 0 }; sfx("clear", full.length);
+    for (const r of full) for (let c = 0; c < COLS; c++) { const m = board[r][c]; m.userData.fly = 1; m.userData.vx = (Math.random() - 0.5) * 5; m.userData.vy = 3 + Math.random() * 4; m.userData.vz = 7 + Math.random() * 5; m.userData.spin = (Math.random() - 0.5) * 6; puff(cellX(c), cellY(r), 0.4); }
+    const add = [0, 100, 300, 500, 800][full.length] * level; score += add; lines += full.length; level = 1 + Math.floor(lines / 10); drawHud(); musicRate();
+  } else if (mode === "play") spawn();
+}
+function finishClear() {
+  const rows = clearing.rows; for (const r of rows) for (let c = 0; c < COLS; c++) { stack.remove(board[r][c]); board[r][c] = null; }
+  const keep = board.filter((row, r) => !rows.includes(r)); board = keep.concat(Array.from({ length: rows.length }, () => Array(COLS).fill(null)));
+  clearing = null; if (mode === "play") spawn();
+}
+const gravity = () => Math.max(0.06, Math.pow(0.8 - (level - 1) * 0.007, level - 1));
+function drawHud() { $("score").textContent = score; $("level").textContent = level; $("lines").textContent = lines; $("best").textContent = Math.max(best, score); }
+function newGame() {
+  for (const g of [stack, activeG, ghostG]) while (g.children.length) g.remove(g.children[0]);
+  board = emptyBoard(); score = 0; level = 1; lines = 0; bag = []; clearing = null; cur = null; overRise = 0;
+  setNext(nextFromBag()); mode = "play"; spawn(); drawHud(); musicRate();
+  for (const id of ["menu", "pausecard", "overcard"]) $(id).classList.add("hidden"); $("hud").classList.remove("hidden"); $("tools").classList.remove("hidden"); if (TOUCH) $("touch").classList.remove("hidden");
+  startMusic();
+}
+function gameOver() {
+  mode = "over"; if (score > best) { best = score; try { localStorage.setItem("pillow-tetris-best", String(best)); } catch (e) {} }
+  sfx("over"); $("overtxt").textContent = "You scored " + score + " and cleared " + lines + " lines!"; $("overcard").classList.remove("hidden"); drawHud();
+}
+function pause(on) { if (mode === "play" && on) { mode = "pause"; $("pausecard").classList.remove("hidden"); } else if (mode === "pause" && !on) { mode = "play"; $("pausecard").classList.add("hidden"); } }
+
+// ---------- sounds: the old folk tune "Korobeiniki" (the Tetris song) played on a little synth, plus soft thumps ----------
+let AC = null, master = null, musicOn = true, musicTimer = null, nextNoteT = 0, noteIdx = 0, tempoK = 1, noiseBuf = null;
+const MEL = (() => {   // [midi note or 0 for a rest, beats]
+  const A = [[76, 1], [71, .5], [72, .5], [74, 1], [72, .5], [71, .5], [69, 1], [69, .5], [72, .5], [76, 1], [74, .5], [72, .5], [71, 1.5], [72, .5], [74, 1], [76, 1], [72, 1], [69, 1], [69, 1], [0, 1],
+    [74, 1.5], [77, .5], [81, 1], [79, .5], [77, .5], [76, 1.5], [72, .5], [76, 1], [74, .5], [72, .5], [71, 1], [71, .5], [72, .5], [74, 1], [76, 1], [72, 1], [69, 1], [69, 1], [0, 1]];
+  const B = [[76, 2], [72, 2], [74, 2], [71, 2], [72, 2], [69, 2], [68, 4], [76, 2], [72, 2], [74, 2], [71, 2], [72, 1], [76, 1], [81, 2], [80, 4]];
+  return A.concat(B);
+})();
+const BASS = [[45, 8], [40, 8], [45, 4], [45, 4], [38, 4], [36, 4], [40, 4], [45, 4], [45, 8], [40, 8], [45, 8], [40, 8], [45, 8], [40, 8], [45, 4], [40, 4]];   // root notes per bar of 4 beats (the 1st number is the note, the 2nd is how many beats)
+const BARS = [45, 45, 40, 45, 38, 36, 40, 45, 45, 40, 45, 40, 45, 40, 45, 40];
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function getAc() {
+  if (AC) { if (AC.state === "suspended") AC.resume(); return AC; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = 0.7; master.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.5, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } catch (e) { AC = null; }
+  return AC;
+}
+function note(f, t, dur, type, vol, lp) {
+  const o = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(); o.type = type; o.frequency.value = f; fl.type = "lowpass"; fl.frequency.value = lp || 2600;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.012); g.gain.setValueAtTime(vol * 0.8, t + Math.max(0.02, dur - 0.06)); g.gain.linearRampToValueAtTime(0, t + dur);
+  o.connect(fl); fl.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+}
+const SONG_BEATS = MEL.reduce((a, n) => a + n[1], 0);
+let melPos = 0, melBeat = 0, barBeat = 0;
+function scheduleMusic() {
+  if (!AC || !musicOn || mode === "pause") return;
+  const beat = 0.4 / tempoK;
+  while (nextNoteT < AC.currentTime + 0.35) {
+    const [m, b] = MEL[melPos], t = nextNoteT, dur = b * beat;
+    if (m) { note(mtof(m), t, dur * 0.92, "square", 0.05, 2400); note(mtof(m) * 2, t, dur * 0.8, "triangle", 0.018, 3000); }
+    // bass: root and fifth, a note every beat
+    const startB = melBeat; for (let k = 0; k < b; k += 1) { const bb = Math.floor((startB + k) % 4), bar = Math.floor(((startB + k) % SONG_BEATS) / 4), root = BARS[bar % BARS.length]; if (Math.abs(startB + k - Math.round(startB + k)) < 0.01) note(mtof(root + (bb % 2 ? 7 : 0)), t + k * beat, beat * 0.8, "triangle", 0.1, 600); }
+    nextNoteT += dur; melBeat += b; melPos++; if (melPos >= MEL.length) { melPos = 0; melBeat = 0; }
+  }
+}
+function startMusic() { if (!getAc()) return; if (musicTimer) return; nextNoteT = AC.currentTime + 0.1; melPos = 0; melBeat = 0; musicTimer = setInterval(scheduleMusic, 100); }
+function musicRate() { tempoK = 1 + Math.min(0.5, (level - 1) * 0.05); }
+function setMusic(on) { musicOn = on; $("musicbtn").style.opacity = on ? 1 : 0.45; if (on && AC) nextNoteT = AC.currentTime + 0.1; }
+function sfx(kind, n) {
+  if (!AC) return; const t = AC.currentTime;
+  if (kind === "land" || kind === "clear") { const s = AC.createBufferSource(), g = AC.createGain(), f = AC.createBiquadFilter(); s.buffer = noiseBuf; f.type = "lowpass"; f.frequency.value = 340; g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.25); note(80, t, 0.14, "sine", 0.25, 400); }   // a soft "fwump"
+  if (kind === "clear") { for (let i = 0; i < 3 + (n || 1); i++) note(mtof(72 + i * 4), t + 0.08 + i * 0.07, 0.25, "triangle", 0.09, 3000); }
+  if (kind === "move") note(520, t, 0.04, "sine", 0.04, 1500);
+  if (kind === "rot") { note(660, t, 0.05, "sine", 0.05, 1800); note(880, t + 0.04, 0.05, "sine", 0.04, 1800); }
+  if (kind === "over") { [64, 62, 60, 57].forEach((m, i) => note(mtof(m), t + i * 0.25, 0.4, "triangle", 0.12, 1200)); }
+}
+
+// ---------- keys, buttons and touch ----------
+const held = { left: 0, right: 0, down: 0 }, rep = { left: 0, right: 0, down: 0 };
+const KEYMAP = { ArrowLeft: "left", ArrowRight: "right", ArrowDown: "down", KeyA: "left", KeyD: "right", KeyS: "down" };
+addEventListener("keydown", e => {
+  if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault();
+  if (e.repeat) return;
+  if (mode === "menu" && (e.code === "Enter" || e.code === "Space")) { newGame(); return; }
+  if (mode === "over" && (e.code === "Enter" || e.code === "Space")) { newGame(); return; }
+  const k = KEYMAP[e.code];
+  if (k) { held[k] = 1; rep[k] = 0.17; if (k === "left") tryMove(-1); else if (k === "right") tryMove(1); else if (mode === "play" && cur && !clearing) stepDown(true); }
+  else if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "KeyX") tryRotate(1);
+  else if (e.code === "KeyZ") tryRotate(-1);
+  else if (e.code === "Space") hardDrop();
+  else if (e.code === "KeyP" || e.code === "Escape") pause(mode === "play");
+  else if (e.code === "KeyM") setMusic(!musicOn);
+});
+addEventListener("keyup", e => { const k = KEYMAP[e.code]; if (k) held[k] = 0; });
+addEventListener("blur", () => { held.left = held.right = held.down = 0; if (mode === "play") pause(true); });
+$("play").onclick = newGame; $("again").onclick = newGame; $("resume").onclick = () => pause(false); $("pausebtn").onclick = () => pause(mode === "play"); $("musicbtn").onclick = () => setMusic(!musicOn);
+document.querySelectorAll("#touch button").forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener("touchstart", e => { e.preventDefault(); getAc(); if (k === "left") { held.left = 1; rep.left = 0.2; tryMove(-1); } else if (k === "right") { held.right = 1; rep.right = 0.2; tryMove(1); } else if (k === "down") { held.down = 1; rep.down = 0.1; if (cur && mode === "play" && !clearing) stepDown(true); } else if (k === "rot") tryRotate(1); else if (k === "drop") hardDrop(); }, { passive: false });
+  const up = e => { e.preventDefault(); held.left = held.right = held.down = 0; }; b.addEventListener("touchend", up, { passive: false }); b.addEventListener("touchcancel", up, { passive: false });
+});
+
+// ---------- the loop ----------
+let clock = 0, last = performance.now();
+function size() { R.setSize(innerWidth, innerHeight, false); const a = innerWidth / innerHeight; camera.aspect = a; camera.fov = a < 1 ? 62 : a < 1.5 ? 50 : 38; camera.updateProjectionMatrix(); camStandoff = a < 1 ? 44 : a < 1.5 ? 38 : 34; }
+let camStandoff = 34; addEventListener("resize", size); size();
+function update(dt) {
+  clock += dt;
+  if (mode === "play" && cur && !clearing) {
+    for (const k of ["left", "right", "down"]) if (held[k]) { rep[k] -= dt; while (rep[k] <= 0) { rep[k] += k === "down" ? 0.045 : 0.055; if (k === "left") tryMove(-1); else if (k === "right") tryMove(1); else stepDown(true); } }
+    fallT += dt;
+    const onGround = !fits(cur.type, cur.rot, cur.x, cur.y - 1);
+    if (onGround) { lockDelay += dt; if (lockDelay > 0.5) lockPiece(); } else { lockDelay = 0; while (fallT >= gravity()) { fallT -= gravity(); if (!stepDown(false)) break; } }
+  }
+  if (clearing) { clearing.t += dt; if (clearing.t > 0.75) finishClear(); }
+  // pillows that burst away fly toward you; everything else settles smoothly where it should be
+  for (const row of board || []) for (let c = 0; c < COLS; c++) { const m = row[c]; if (!m) continue; const u = m.userData;
+    if (u.fly) { u.vy -= 9 * dt; m.position.x += u.vx * dt; m.position.y += u.vy * dt; m.position.z += u.vz * dt; m.rotation.x += u.spin * dt; m.rotation.y += u.spin * 0.6 * dt; const s = Math.max(0.01, 1 - clearing.t * 0.6); m.scale.set(s, s, s); }
+  }
+  if (board) for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const m = board[r][c]; if (!m || m.userData.fly) continue; const u = m.userData, tx = cellX(c), ty = cellY(r), k = Math.min(1, dt * 16); m.position.x += (tx - m.position.x) * k; m.position.y += (ty - m.position.y) * k; m.position.z += (0 - m.position.z) * k;
+    if (u.sq > 0) { u.sq = Math.max(0, u.sq - dt * 3.2); const w = Math.sin(u.sq * 14) * u.sq * 0.09; m.scale.set(1 + w, 1 - w, 1 + w * 0.5); } else m.scale.set(1, 1, 1); }
+  if (cur) {
+    cur.vx += (cur.x - cur.vx) * Math.min(1, dt * 22); cur.vy += (cur.y - cur.vy) * Math.min(1, dt * 24);
+    const cells = rotated(cur.type, cur.rot); cur.meshes.forEach((m, i) => { m.position.set(X0 + cur.vx + cells[i][0] + 0.5, cur.vy - cells[i][1] + 0.5, 0); const w = 0.012 * Math.sin(clock * 4 + i); m.scale.set(1 + w, 1 - w, 1); });
+    const gy = dropRow(cur); cur.ghosts.forEach((g, i) => { g.visible = gy < cur.y; g.position.set(X0 + cur.x + cells[i][0] + 0.5, gy - cells[i][1] + 0.5, 0); });
+  }
+  featherStep(dt);
+  // the camera drifts a tiny bit so the room feels alive (and you can see the pillows are really round)
+  camera.position.set(Math.sin(clock * 0.25) * 0.9, 13.2 + Math.sin(clock * 0.19) * 0.25, camStandoff + 0.0);
+  camera.lookAt(0, /zoom/.test(HASH) ? 3.5 : 9.2, 0); if (/zoom/.test(HASH)) camera.position.set(2, 6, 12);
+}
+function loop(now) { const dt = clamp((now - last) / 1000, 0, 0.05); last = now; if (mode !== "pause") update(dt); else featherStep(0); R.render(scene, camera); requestAnimationFrame(loop); }
+board = emptyBoard(); setNext(nextFromBag());
+$("bestline").textContent = best ? "Best score: " + best + " ⭐" : "";
+if (TOUCH) document.body.classList.add("touch");
+if (/dumptex/.test(HASH)) for (const t of [FAB.map, FAB.normalMap]) { const im = t.image; im.style.cssText = "position:fixed;z-index:99;width:400px;height:400px;top:10px;left:" + (t === FAB.map ? 10 : 420) + "px"; document.body.appendChild(im); }
+requestAnimationFrame(loop);
+// test hooks
+window.__pt = { newGame, sim: s => { for (let i = 0; i < s * 20; i++) update(0.05); }, state: () => ({ mode, score, lines, level, cur: cur && { t: cur.type, x: cur.x, y: cur.y, rot: cur.rot }, next: nextType, rows: board.map(r => r.map(c => (c ? 1 : 0)).join("")).reverse() }), hardDrop, tryMove, tryRotate,
+  fill: n => { for (let r = 0; r < n; r++) for (let c = 0; c < COLS - 1; c++) { if (board[r][c]) continue; const t = TYPES[(r + c) % 7], m = makePillow(t); m.position.set(cellX(c), cellY(r), 0); stack.add(m); board[r][c] = m; } } };
+if (/play/.test(HASH)) { newGame(); if (/fill=(\d+)/.test(HASH)) __pt.fill(+/fill=(\d+)/.exec(HASH)[1]); if (/sim=(\d+)/.test(HASH)) __pt.sim(+/sim=(\d+)/.exec(HASH)[1]); if (/clear/.test(HASH)) { cur.type = "I"; cur.rot = 1; cur.x = COLS - 3; __pt.sim(0.3); __pt.hardDrop(); __pt.sim(0.25); } }
+</script>
+</body>
+</html>
