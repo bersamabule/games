@@ -1920,6 +1920,7 @@ addEventListener("keyup", e => { const k = e.key; if (k === "ArrowLeft" || k ===
 addEventListener("blur", () => { for (const k in keys) keys[k] = 0; eDump = false; });
 addEventListener("pagehide", saveTrash);
 $("dump").textContent = TOUCH ? "Tap here to empty the trash" : "Press E to empty the trash";
+if (TOUCH) { $("dump").style.bottom = "calc(150px + 3%)"; $("dump").style.zIndex = 5; }   // above the touch buttons
 $("dump").addEventListener("pointerdown", e => { e.preventDefault(); audioInit(); dumpTrash(); });
 document.querySelectorAll("#touch button").forEach(btn => {
   const k = btn.dataset.k, on = e => { e.preventDefault(); audioInit(); keys[k] = 1; btn.setPointerCapture && btn.setPointerCapture(e.pointerId); }, off = e => { keys[k] = 0; };
