@@ -47,6 +47,7 @@
   .btn:hover { transform: translateY(-2px) scale(1.04); filter: brightness(1.08); }
   .btn:active { transform: translateY(5px); }
   #tools { position: fixed; right: 14px; top: 14px; display: flex; gap: 8px; }
+  #tools button.on { outline: 3px solid #3f9a34; }
   #tools button { width: 48px; height: 48px; border: 0; border-radius: 50%; font-size: 22px; background: rgba(255,243,214,.93); box-shadow: 0 4px 10px rgba(0,0,0,.3); cursor: pointer; }
   #help { position: fixed; right: 14px; top: 72px; background: rgba(255,243,214,.9); border-radius: 16px; padding: 8px 14px; font-size: clamp(14px, 1.9vw, 18px); box-shadow: 0 4px 10px rgba(0,0,0,.3); pointer-events: none; line-height: 1.5; }
   #help b { background: #fff; border-radius: 7px; padding: 0 7px; box-shadow: 0 2px 0 #cbbfa8; }
@@ -62,39 +63,44 @@
   #touch .grp div { display: flex; gap: 8px; }
   #touch small { display: block; color: #fff; font-size: 12px; font-weight: 600; padding-bottom: 2px; text-shadow: 0 1px 2px #000; }
   #touch button { width: 58px; height: 58px; border: 3px solid #fff; border-radius: 50%; font-size: 24px; color: #2b1f00; background: rgba(242,169,0,.92); box-shadow: 0 5px 0 rgba(0,0,0,.25); touch-action: none; }
-  #lootbox b { font-size: clamp(15px, 2.2vw, 20px); white-space: nowrap; }
+  #lootbox b { font-size: clamp(14px, 1.9vw, 18px); line-height: 1.25; display: block; }
   #lootbox span { display: inline-block; }
   @media (max-height: 460px) { #lnote { display: none !important; } }
   .lootpop { position: fixed; left: 0; right: 0; top: 41%; text-align: center; font-size: clamp(24px, 4.4vw, 42px); font-weight: 700; color: #ffe27a; text-shadow: 0 3px 0 rgba(0,0,0,.5), 0 0 16px rgba(0,0,0,.45); pointer-events: none; animation: lootup 2.2s ease-out forwards; }
   @keyframes lootup { 0% { transform: translateY(30px) scale(.5); opacity: 0; } 18% { transform: translateY(0) scale(1.15); opacity: 1; } 30% { transform: scale(1); } 75% { opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
   #winloot { font-weight: 700; }
-  #saved { position: fixed; right: 122px; top: 24px; background: rgba(255,243,214,.93); border-radius: 14px; padding: 4px 12px; font-size: 15px; font-weight: 600; box-shadow: 0 3px 8px rgba(0,0,0,.3); pointer-events: none; opacity: 0; transition: opacity .35s; }
+  #saved { position: fixed; right: 178px; top: 24px; background: rgba(255,243,214,.93); border-radius: 14px; padding: 4px 12px; font-size: 15px; font-weight: 600; box-shadow: 0 3px 8px rgba(0,0,0,.3); pointer-events: none; opacity: 0; transition: opacity .35s; }
   #saved.on { opacity: 1; }
   @media (max-width: 700px) { #saved { right: 14px; top: 70px; } }
   .inshop #hud, .inshop #tools, .inshop #help, .inshop #msg, .inshop #touch, .inshop #dump, .inshop .lootpop, .inshop #saved { visibility: hidden; }
   .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
   #shop { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: flex-start; padding: 12px; background: linear-gradient(90deg, rgba(40,28,10,.45), rgba(40,28,10,0) 75%); }
-  #shop .panel { width: min(700px, 100%); max-height: 100%; overflow-y: auto; touch-action: pan-y; background: var(--cream); border-radius: 26px; padding: 14px 18px; box-shadow: 0 8px 0 #d4bf8c, 0 16px 30px rgba(0,0,0,.4); animation: boxin .45s ease-out; }
+  #shop .panel { width: min(780px, 100%); max-height: 100%; overflow-y: auto; touch-action: pan-y; background: var(--cream); border-radius: 26px; padding: 14px 18px; box-shadow: 0 8px 0 #d4bf8c, 0 16px 30px rgba(0,0,0,.4); animation: boxin .45s ease-out; }
   #shop .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   #shop h2 { margin: 0; font-size: clamp(28px, 4.6vw, 42px); color: #d98b00; }
   #wallet { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
   #wallet span { background: #fff; border-radius: 12px; padding: 3px 10px; font-weight: 700; font-size: clamp(14px, 2vw, 18px); box-shadow: 0 2px 0 #cbbfa8; }
   #shopsay { min-height: 1.3em; margin: 2px 0 4px; font-weight: 700; color: #1f7a2e; font-size: clamp(15px, 2.1vw, 19px); }
   #shop h3 { margin: 6px 0 4px; font-size: clamp(16px, 2.3vw, 20px); }
-  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .tile { background: #fff; border-radius: 16px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; box-shadow: 0 3px 0 #cbbfa8; }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: #fff; border-radius: 14px; padding: 5px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; box-shadow: 0 3px 0 #cbbfa8; }
   .tile.on { outline: 4px solid #3f9a34; }
   .tile b { font-size: clamp(13px, 1.9vw, 17px); line-height: 1.1; }
-  .tile small { font-size: clamp(11px, 1.5vw, 14px); line-height: 1.15; opacity: .8; min-height: 2.3em; }
-  .tile .cost { font-size: clamp(12px, 1.7vw, 15px); font-weight: 600; line-height: 1.3; min-height: 3.9em; }
+  .tile small { font-size: clamp(11px, 1.4vw, 13px); line-height: 1.1; opacity: .8; }
+  .tile .cost { font-size: clamp(12px, 1.7vw, 15px); font-weight: 600; line-height: 1.25; display: flex; flex-wrap: wrap; gap: 0 8px; justify-content: center; }
   .tile .short { color: #c8321c; }
   .tile .btn { font-size: clamp(14px, 2vw, 18px); padding: 5px 10px; white-space: nowrap; margin-top: auto; box-shadow: 0 3px 0 var(--accent2); }
   .tile .btn.off { background: #e4dcc8; box-shadow: 0 3px 0 #c9bfa6; color: #7d735c; cursor: default; }
   .tile .btn.using { background: #7fd05a; box-shadow: 0 3px 0 #3f9a34; cursor: default; }
-  .look { width: 46px; height: 46px; display: block; }
+  .look { width: 34px; height: 34px; display: block; }
   .look.ball { border-radius: 50%; }
   .ball-steel { background: radial-gradient(circle at 35% 30%, #aab0b8 0, #4b4f55 40%, #1e2024 100%); }
   .ball-graphite { background: repeating-linear-gradient(8deg, rgba(255,255,255,.14) 0 3px, rgba(0,0,0,.12) 3px 7px), radial-gradient(circle at 35% 30%, #d6dbe6 0, #6d7382 42%, #2c2f38 100%); }
+  .ball-ananium { background: radial-gradient(circle at 35% 30%, #fffbe0 0, #ffc21a 34%, #8a5a06 90%); box-shadow: 0 0 14px 4px #ffd21f; }
+  .ball-tianium { background: radial-gradient(circle at 35% 30%, #ffffff 0, #a8d4ee 36%, #3e5a78 92%); box-shadow: 0 0 12px 3px #8fdcff; }
+  .ball-tianios { background: radial-gradient(circle at 35% 30%, #ffe08a 0, #ff5a14 30%, #2a0805 86%); box-shadow: 0 0 14px 4px #ff5a14; }
+  .ball-anomium { background: radial-gradient(circle at 35% 30%, #ffd0fa 0, #c026ff 30%, #3a0f6e 85%); box-shadow: 0 0 14px 4px #ff4de0; }
   .ball-graphene { background: radial-gradient(circle at 35% 30%, #8ff4ff 0, #27305e 26%, #0a0c18 80%); box-shadow: 0 0 10px 2px #58d8ff; }
   .where { margin: 8px 0 0; font-size: clamp(13px, 1.8vw, 16px); line-height: 1.3; }
   #nogl { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #fff3d6; font-size: 28px; padding: 20px; text-align: center; }
@@ -102,10 +108,10 @@
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#4fa9e6"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Demolition Simulator"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('sw',e)})})}</script></head>
 <body>
 <canvas id="gl"></canvas>
-<div id="hud" class="hidden"><div><small id="bname">Building 1</small><b>Knocked down: <span id="pct">0</span>%</b><div id="bar"><div id="barfill"></div></div></div><div id="trashbox"><small id="tnote">Small: 500 trash</small><b>&#128465;&#65039; <span id="trash">0</span> / 10,000,000</b><div id="tbar"><div id="tfill"></div></div></div><div id="lootbox"><small id="lnote"></small><b>&#128297; <span id="scrap">0</span> &nbsp; &#9999;&#65039; <span id="graphite">0</span> &nbsp; &#128160; <span id="graphene">0</span></b></div></div>
+<div id="hud" class="hidden"><div><small id="bname">Building 1</small><b>Knocked down: <span id="pct">0</span>%</b><div id="bar"><div id="barfill"></div></div></div><div id="trashbox"><small id="tnote">Small: 500 trash</small><b>&#128465;&#65039; <span id="trash">0</span> / 10,000,000</b><div id="tbar"><div id="tfill"></div></div></div><div id="lootbox"><small id="lnote"></small><b>&#128297; <span id="scrap">0</span> &nbsp; &#9999;&#65039; <span id="graphite">0</span> &nbsp; &#128160; <span id="graphene">0</span> &nbsp; &#128302; <span id="anomium">0</span> &nbsp; &#128142; <span id="ananium">0</span> &nbsp; &#10052;&#65039; <span id="tianium">0</span> &nbsp; &#128293; <span id="tianios">0</span></b></div></div>
 <button id="dump" class="btn hidden"></button>
-<div id="tools" class="hidden"><button id="pausebtn" aria-label="Pause">&#9208;</button><button id="soundbtn" aria-label="Sound">&#128266;</button></div>
-<div id="help" class="hidden"><b>W</b> <b>S</b> drive, ram the walls!<br><b>&larr;</b> <b>&rarr;</b> turn the crane<br><b>&uarr;</b> <b>&darr;</b> ball further / closer<br><b>Q</b> <b>E</b> ball up / down<br><b>E</b> at the compactor: empty trash<br><b>M</b> sound &nbsp; <b>P</b> pause</div>
+<div id="tools" class="hidden"><button id="birdbtn" aria-label="Bird's eye view">&#129413;</button><button id="pausebtn" aria-label="Pause">&#9208;</button><button id="soundbtn" aria-label="Sound">&#128266;</button></div>
+<div id="help" class="hidden"><b>W</b> <b>S</b> drive, ram the walls!<br><b>&larr;</b> <b>&rarr;</b> turn the crane<br><b>&uarr;</b> <b>&darr;</b> ball further / closer<br><b>Q</b> <b>E</b> ball up / down<br><b>E</b> at the compactor: empty trash<br><b>B</b> bird's eye view<br><b>M</b> sound &nbsp; <b>P</b> pause</div>
 <div id="msg" class="hidden"></div>
 <div id="saved">&#128190; Autosaved</div>
 <div id="touch" class="hidden">
@@ -116,7 +122,7 @@
 </div>
 <div id="menu" class="card"><div class="box">
   <h1>Demolition Simulator</h1>
-  <p>Knock down 10 old buildings with the big crane and the wrecking ball!</p>
+  <p>Knock down one extremely ginormous building with the big crane and the wrecking ball!</p>
   <button class="btn" id="play">Play</button>
   <button class="btn small hidden" id="restart">Start at level 1</button>
   <p id="menuinfo"></p>
@@ -130,7 +136,7 @@
   <p id="shopsay"></p>
   <h3>Wrecking balls</h3><div class="tiles" id="balls"></div>
   <h3>Cranes</h3><div class="tiles" id="cranes"></div>
-  <p class="where">&#128297; Scrap comes from small buildings.<br>&#9999;&#65039; Graphite comes from medium and ginormous buildings.<br>&#128160; Graphene comes from ginormous buildings.</p>
+  <p class="where">Knock down the giant building to get all of these!<br>&#129302; Every upgrade comes with 1,000 minions!</p>
 </div></div>
 <div id="nogl">Sorry! This game needs 3D (WebGL) to work.</div>
 <script src="lib/three.js"></script>
@@ -152,7 +158,8 @@ const store = {
   set(k, v) { try { localStorage.setItem("demolition-simulator-" + k, String(v)); } catch (e) {} }
 };
 
-const SITE_K = 2;   // the demolition site and every building are this many times bigger
+const SITE_K = 2;   // every building is this many times bigger
+const YARD_K = 20;   // and the yard is this many times wider again
 
 /* ---------------- renderer, scene, quality ---------------- */
 const QM = HASH.match(/quality=(\d)/);
@@ -167,7 +174,7 @@ renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = !/noshadow/.test(HASH); renderer.shadowMap.type = THREE.PCFShadowMap;
 const MAXANIS = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, 1, 1, 900 * SITE_K);
+const camera = new THREE.PerspectiveCamera(55, 1, 2, 24000);
 let camFov0 = 55;
 
 /* graphics tiers: 0 low, 1 medium, 2 high, 3 ultra */
@@ -195,7 +202,7 @@ const SUN_DIR = new THREE.Vector3(34, 24, 14).normalize();
 const SUN_COL = new THREE.Color(1.0, 0.80, 0.55), SUN_INT = 4.4;
 const sun = new THREE.DirectionalLight(SUN_COL, SUN_INT);
 sun.castShadow = renderer.shadowMap.enabled;
-Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 20, far: 600 });
+Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 20, far: 9000 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.06;
 scene.add(sun, sun.target);
 function applyShadowSize() {
@@ -212,7 +219,7 @@ function fitSun(fx, fz) {   // keep the shadow map tight around the action, snap
   _sf.set(fx, 0, fz);
   const cx = Math.round(_sf.dot(_sr) / tx) * tx, cy = Math.round(_sf.dot(_su) / tx) * tx, cz = _sf.dot(SUN_DIR);
   _sf.copy(_sr).multiplyScalar(cx).addScaledVector(_su, cy).addScaledVector(SUN_DIR, cz);
-  sun.target.position.copy(_sf); sun.position.copy(_sf).addScaledVector(SUN_DIR, 300);
+  sun.target.position.copy(_sf); sun.position.copy(_sf).addScaledVector(SUN_DIR, 4500);
   sun.target.updateMatrixWorld(); sun.updateMatrixWorld();
 }
 
@@ -295,7 +302,7 @@ const skyDome = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 20), skyMat); s
   envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 20), envMat));
   const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(envScene, 0.02, 0.1, 200).texture; scene.environmentIntensity = 1.0; pm.dispose();
 }
-scene.fog = new THREE.FogExp2(HORIZON, 0.0042 / SITE_K);
+scene.fog = new THREE.FogExp2(HORIZON, 0.0042 / (SITE_K * YARD_K));
 
 /* ---------------- render pipeline: HDR -> AO -> bloom -> dust -> grade -> FXAA ---------------- */
 const fsGeo = new THREE.BufferGeometry(); fsGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
@@ -809,6 +816,19 @@ BK.graphene = (N, seed, cols, rows, line) => {   // shiny black with a glowing h
   }, 1.5);
   tx.glow = dtex(N, glow, true); return tx;
 };
+BK.crystal = (N, seed, px, py, BASE, VEIN, G0, G1, metal, glowK) => {   // a deep-coloured crystal with bright glowing veins running through it
+  const A = makeField(256, px, py, 3, seed), C = makeField(256, px * 2, py * 2, 2, seed + 3), FC = makeField(128, px * 3, py * 3, 1, seed + 5), HUE = makeField(128, 2, 2, 2, seed + 7), glow = new Uint8Array(N * N * 4);
+  const tx = bake(N, (u, v, o) => {
+    const a = 1 - Math.abs(fs(A, 256, u, v) - 0.5) * 2, c = 1 - Math.abs(fs(C, 256, u, v) - 0.5) * 2, vein = Math.max(sstep(0.93, 0.99, a), 0.75 * sstep(0.95, 0.995, c)), facet = Math.floor(fs(FC, 128, u, v) * 7) / 7, k = 0.7 + facet * 0.9, h = sstep(0.3, 0.7, fs(HUE, 128, u, v)), q = (o.y * N + o.x) * 4;
+    o.r = lerp(BASE[0] * k, VEIN[0], vein); o.g = lerp(BASE[1] * k, VEIN[1], vein); o.b = lerp(BASE[2] * k, VEIN[2], vein); o.h = 0.5 + facet * 0.28 + vein * 0.1; o.rough = lerp(0.16 + facet * 0.12, 0.3, vein); o.metal = metal;
+    glow[q] = vein * lerp(G0[0], G1[0], h); glow[q + 1] = vein * lerp(G0[1], G1[1], h); glow[q + 2] = vein * lerp(G0[2], G1[2], h); glow[q + 3] = 255;
+  }, 1.6);
+  tx.glow = dtex(N, glow, true); tx.glowK = glowK; return tx;
+};
+BK.anomium = (N, seed, px, py) => BK.crystal(N, seed, px, py, [62, 20, 112], [255, 120, 245], [255, 50, 255], [130, 120, 255], 0.75, 2.6);
+BK.ananium = (N, seed, px, py) => BK.crystal(N, seed, px, py, [150, 105, 22], [255, 245, 190], [255, 190, 40], [120, 255, 210], 0.95, 2.2);
+BK.tianium = (N, seed, px, py) => BK.crystal(N, seed, px, py, [118, 140, 168], [225, 248, 255], [110, 215, 255], [190, 255, 255], 0.95, 1.8);   // cold blue-silver metal with icy veins
+BK.tianios = (N, seed, px, py) => BK.crystal(N, seed, px, py, [44, 12, 10], [255, 205, 110], [255, 70, 15], [255, 205, 45], 0.8, 3);   // nearly black, with veins of fire
 BK.dirt = (N, seed) => {
   const MF = makeField(128, 3, 3, 4, seed), TF = makeField(128, 6, 6, 4, seed + 2), cells = 96;
   return bake(N, (u, v, o) => {
@@ -859,7 +879,7 @@ const TDEF = {
   ivy: { snd: "crumble", bit: [90, 100, 50], tile: 2, ns: 1.3, w: [0.9, 0.5, 0.1, 0.9], brk: [0.25, 0.14, 0.08], bake: N => bakeOnce("ivy" + N, () => BK.ivy(N, 21)) }
 };
 const LOOSE_VS = `
-uniform vec4 uChim; uniform vec2 uSwayA[10]; attribute vec3 aOrig; attribute float aLoose; attribute vec3 aInfo;   // aInfo: metres per block, height in blocks, which building
+uniform vec4 uChim; uniform vec2 uSwayA[30]; attribute vec3 aOrig; attribute float aLoose; attribute vec3 aInfo;   // aInfo: metres per block, height in blocks, which building
 // a standing building rocks after a big hit: the higher up, the further it leans
 vec3 swayDisp(vec3 t, vec3 o, vec3 p, float L){ if (L > 0.002) return t; float k = (o.y + p.y) / aInfo.y; t.xz += uSwayA[int(aInfo.z + 0.5)] * k * k; return t; }
 float h13(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -883,7 +903,7 @@ vec3 chimNormal(vec3 n, vec3 o, vec3 p, float L){
   vec2 d = (o.xz + p.xz) - uChim.xy; float k = 1.0 - clamp(L * 3.0, 0.0, 1.0); return normalize(mix(n, normalize(vec3(d.x, 0.0, d.y)), k));
 }`;
 function patchBlock(sh, d, wUni) {
-  sh.uniforms.uGlass = { value: d.glass ? 1 : 0 }; sh.uniforms.uChim = CHIM; sh.uniforms.uSwayA = SWAY; sh.uniforms.uNoise = { value: NOISE_TEX }; sh.uniforms.uTile = { value: d.tile }; sh.uniforms.uW = { value: new THREE.Vector4(...d.w) };
+  sh.uniforms.uGlass = { value: d.glass ? 1 : 0 }; sh.uniforms.uChim = CHIM; sh.uniforms.uSwayA = SWAY; sh.uniforms.uNoise = { value: NOISE_TEX }; sh.uniforms.uTile = { value: d.tile * 6 }; sh.uniforms.uW = { value: new THREE.Vector4(...d.w) };
   sh.uniforms.uBrk = { value: new THREE.Vector3(...d.brk) }; sh.uniforms.uDust = { value: new THREE.Vector3(0.40, 0.34, 0.28) };
   sh.vertexShader = sh.vertexShader
     .replace("#include <common>", "#include <common>\nuniform float uTile; varying vec3 vW; varying vec3 vP; varying vec3 vLN; varying float vLoose;\n" + LOOSE_VS)
@@ -934,7 +954,7 @@ function patchBlock(sh, d, wUni) {
     .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
       if (vLoose > 0.02) { vec3 fn = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition))); normal = normalize(mix(normal, fn, clamp(vLoose * 2.0, 0.0, 1.0) * 0.85)); }`);
 }
-const CHIM = { value: new THREE.Vector4(0, 0, 0, 0) }, SWAY = { value: Array.from({ length: 10 }, () => new THREE.Vector2()) };
+const CHIM = { value: new THREE.Vector4(0, 0, 0, 0) }, SWAY = { value: Array.from({ length: 30 }, () => new THREE.Vector2()) };
 const MATS = {};
 function getMat(name) {
   if (MATS[name]) return MATS[name];
@@ -967,7 +987,7 @@ function Grid(nx, ny, nz, R) {
   };
 }
 const SPECS = [
-  { name: "Old Shed", size: "Small", trash: 500, loot: { scrap: 10 }, s: 0.9, nx: 9, ny: 8, nz: 7,
+  { name: "Old Shed", size: "Small", trash: 500, loot: { scrap: 10, anomium: 10, ananium: 5, tianium: 3, tianios: 1 }, s: 0.9, nx: 9, ny: 8, nz: 7,
     build(G) {
       G.walls(0, 0, 8, 6, 0, 5, "wood"); G.f(0, 6, 0, 8, 6, 6, "metal"); G.f(0, 7, 0, 8, 7, 2, "metal");
       G.f(0, 0, 0, 0, 5, 0, "beam"); G.f(8, 0, 0, 8, 5, 0, "beam"); G.f(0, 0, 6, 0, 5, 6, "beam"); G.f(8, 0, 6, 8, 5, 6, "beam");
@@ -975,7 +995,7 @@ const SPECS = [
       G.f(0, 0, 3, 0, 1, 5, "metal"); G.f(8, 1, 1, 8, 4, 3, "metal"); G.f(5, 0, 0, 7, 2, 0, "metal"); G.sprinkle("wood", "beam", 0.08);
       G.s(8, 6, 2, ""); G.s(0, 7, 1, "");
     } },
-  { name: "Old Brick House", size: "Medium", trash: 1000, loot: { graphite: 10 }, s: 1.4, nx: 10, ny: 17, nz: 8,
+  { name: "Old Brick House", size: "Medium", trash: 1000, loot: { graphite: 10, anomium: 10, ananium: 5, tianium: 3, tianios: 1 }, s: 1.4, nx: 10, ny: 17, nz: 8,
     build(G) {
       G.walls(0, 0, 9, 7, 0, 4, "brick"); G.walls(0, 0, 9, 7, 5, 9, "plaster"); G.f(0, 4, 0, 9, 4, 0, "brick2");
       G.f(1, 5, 1, 8, 5, 6, "beam"); G.walls(0, 0, 9, 7, 5, 5, "beam");
@@ -987,7 +1007,7 @@ const SPECS = [
       G.f(7, 14, 3, 8, 16, 4, "brick2");
       G.scatter("front", 0, 9, 0, 4, "brick", "ivy", 0.7); G.scatter("left", 0, 7, 0, 5, "brick", "ivy", 0.4); G.sprinkle("brick", "brick2", 0.25); G.sprinkle("plaster", "brick2", 0.05);
     } },
-  { name: "Old Factory", size: "Ginormous", trash: 50000, loot: { graphite: 25, graphene: 5 }, s: 1.5, nx: 27, ny: 29, nz: 12, chim: 24,
+  { name: "Old Factory", size: "Ginormous", trash: 50000, loot: { graphite: 25, graphene: 5, anomium: 10, ananium: 5, tianium: 3, tianios: 1 }, s: 1.5, nx: 27, ny: 29, nz: 12, chim: 24,
     build(G) {
       const W = 22, D = 11, H = 10;
       G.walls(0, 0, W, D, 0, 4, "brick"); G.walls(0, 0, W, D, 5, H, "concrete"); G.walls(0, 0, W, D, 4, 4, "beam");
@@ -1002,7 +1022,7 @@ const SPECS = [
       G.f(24, 0, 4, 26, 26, 6, "brick"); G.h(25, 1, 5, 25, 26, 5); G.f(24, 27, 4, 26, 28, 6, "concrete"); for (const y of [9, 18]) G.f(24, y, 4, 26, y, 6, "beam");
       G.sprinkle("brick", "brick2", 0.3); G.scatter("front", 0, W, 0, 4, "brick", "ivy", 0.15); G.scatter("front", 0, W, 0, 4, "brick2", "ivy", 0.15);
     } },
-  { name: "Old Apartment Tower", size: "Ginormous", trash: 50000, loot: { graphite: 25, graphene: 5 }, s: 1.5, nx: 12, ny: 31, nz: 9,
+  { name: "Old Apartment Tower", size: "Ginormous", trash: 50000, loot: { graphite: 25, graphene: 5, anomium: 10, ananium: 5, tianium: 3, tianios: 1 }, s: 1.5, nx: 12, ny: 31, nz: 9,
     build(G) {
       const W = 11, D = 8, TOP = 27;
       G.walls(0, 0, W, D, 0, TOP, "plaster"); G.walls(0, 0, W, D, 0, 4, "brick");
@@ -1017,22 +1037,30 @@ const SPECS = [
       G.sprinkle("plaster", "brick2", 0.04);
     } }
 ];
-const KINDS = { shed: SPECS[0], house: SPECS[1], factory: SPECS[2], tower: SPECS[3] };
-// every level is a big yard with 10 buildings round the edge: which building stands where, in metres
-const SLOTS = [[-56, -58], [-10, -60], [36, -58], [-66, -14], [-66, 22], [66, -14], [66, 22], [-50, 60], [-6, 62], [40, 60]];
-const STREETS = [
-  ["shed", "house", "shed", "shed", "shed", "house", "shed", "shed", "house", "shed"],
-  ["house", "factory", "house", "shed", "house", "shed", "house", "shed", "shed", "house"],
-  ["factory", "tower", "factory", "house", "house", "house", "shed", "house", "shed", "house"],
-  ["factory", "tower", "factory", "tower", "house", "tower", "house", "factory", "tower", "house"]
-];
+// one extremely ginormous building that fills the whole yard, solid all the way through, with an open courtyard in the middle for the crane and the compactor
+SPECS.push({ name: "Extremely Ginormous Building", size: "Extremely ginormous", mega: true, trash: 1000000, loot: { graphite: 750, graphene: 150, anomium: 300, ananium: 150, tianium: 90, tianios: 30 }, s: 80, nx: 43, ny: 14, nz: 43,
+  build(G) {
+    const W = 42, Y = 13, a = 19, b = 23, P = [["brick", "plaster", "concrete"], ["concrete", "brick", "concrete"], ["plaster", "brick2", "concrete"], ["brick2", "concrete", "metal"]][(level - 1) % 4], wall = P[0], top = P[1], roof = P[2];
+    G.f(0, 0, 0, W, Y, W, "concrete");   // filled in, all of it
+    G.walls(0, 0, W, W, 0, Y, wall); G.walls(0, 0, W, W, 7, Y, top); G.walls(a, a, b, b, 0, Y, wall); G.walls(a, a, b, b, 7, Y, top);
+    G.f(0, Y, 0, W, Y, W, roof);
+    G.h(a + 1, 0, a + 1, b - 1, Y, b - 1);   // the open courtyard
+    for (const y of [1, 4, 8, 11]) for (let k = 2; k < W - 2; k += 3) { const g = (k + y) % 6 ? "glass" : "glass2"; G.f(k, y, 0, k + 1, y + 1, 0, g); G.f(k, y, W, k + 1, y + 1, W, g); G.f(0, y, k, 0, y + 1, k + 1, g); G.f(W, y, k, W, y + 1, k + 1, g); if (k > a && k < b - 1) { G.f(k, y, a, k + 1, y + 1, a, g); G.f(k, y, b, k + 1, y + 1, b, g); G.f(a, y, k, a, y + 1, k + 1, g); G.f(b, y, k, b, y + 1, k + 1, g); } }
+    for (const y of [3, 7, 10]) { G.walls(0, 0, W, W, y, y, "beam"); G.walls(a, a, b, b, y, y, "beam"); }
+    G.sprinkle("brick", "brick2", 0.25); G.sprinkle("plaster", "brick2", 0.05); G.scatter("front", 0, W, 0, 5, "brick", "ivy", 0.25); G.scatter("left", 0, W, 0, 5, "brick", "ivy", 0.2);
+  } });
+const KINDS = { shed: SPECS[0], house: SPECS[1], factory: SPECS[2], tower: SPECS[3], mega: SPECS[4] };
+// every level is a huge yard with 30 buildings on a loose grid, in metres, with open ground in front of the crane's start
+const SLOTS = []; for (const z of [-300, -180, -60, 60, 180, 300]) for (const x of [-300, -180, -60, 60, 180, 300]) { if ((Math.abs(x) === 300 && Math.abs(z) === 300) || (z === 60 && Math.abs(x) === 60)) continue; SLOTS.push([x + ((x * 13 + z * 7) % 23) * 0.5, z + ((x * 5 - z * 11) % 19) * 0.5]); }
+// how many sheds, houses, factories and towers each level has, shuffled the same way every time
+const STREETS = [[21, 9, 0, 0], [12, 15, 3, 0], [6, 15, 6, 3], [0, 9, 9, 12]].map((c, i) => { const R = mulberry(77 + i), out = []; ["shed", "house", "factory", "tower"].forEach((k, j) => { for (let n = 0; n < c[j]; n++) out.push(k); }); for (let a = out.length - 1; a > 0; a--) { const b = Math.floor(R() * (a + 1)), t = out[a]; out[a] = out[b]; out[b] = t; } return out; });
 
 /* ---------------- level state ---------------- */
 let state = "menu";                 // menu, play, pause, win
 let level = 1, round = 1, BLD = null, LV = null;   // BLD is the standing building the crane is closest to
 const group = new THREE.Group(); scene.add(group);
 const dummy = { m: new THREE.Matrix4(), p: new THREE.Vector3(), q: new THREE.Quaternion(), sc: new THREE.Vector3(), c: new THREE.Color() };
-const HM_N = 400, HM_S = 0.5 * SITE_K, HM = new Float32Array(HM_N * HM_N);
+const HM_N = 800, HM_S = 10, HM = new Float32Array(HM_N * HM_N);
 function hmIdx(x, z) { const i = Math.floor(x / HM_S) + HM_N / 2, j = Math.floor(z / HM_S) + HM_N / 2; return i < 0 || j < 0 || i >= HM_N || j >= HM_N ? -1 : j * HM_N + i; }
 function hmGet(x, z) { const k = hmIdx(x, z); return k < 0 ? 0 : HM[k]; }
 function hmRaise(x, z, hh, top) { for (let dz = -hh; dz <= hh; dz += HM_S) for (let dx = -hh; dx <= hh; dx += HM_S) { const k = hmIdx(x + dx, z + dz); if (k >= 0 && HM[k] < top) HM[k] = top; } }
@@ -1048,15 +1076,18 @@ function clearBuilding() {
 }
 function buildLevel(n) {
   clearBuilding(); HM.fill(0);
-  const R = mulberry(900 + n * 31 + round), plan = STREETS[(n - 1) % STREETS.length];
+  const R = mulberry(900 + n * 31 + round), plan = ["mega"];
   const vis = (spec, t, gx, gy) => spec.chim && gx >= spec.chim ? (TYPES[t] === "beam" && gy > 0 ? "brick" : TYPES[t]) + "~" : TYPES[t];   // chimney blocks get their own smoother mesh ("~"), and its bands are drawn as brick (type, sound and physics stay beam)
-  const parts = plan.map((kind, i) => { const spec = KINDS[kind], G = Grid(spec.nx, spec.ny, spec.nz, R); spec.build(G); return { spec, G, x: SLOTS[i][0] * SITE_K, z: SLOTS[i][1] * SITE_K }; });
-  const counts = {}; for (const { spec, G } of parts) for (let i = 0; i < G.cells.length; i++) if (G.cells[i]) { const vn = vis(spec, G.cells[i], i % G.nx, ((i / G.nx) | 0) % G.ny); counts[vn] = (counts[vn] || 0) + 1; }
-  CHIM.value.set(25.5, 5.5, 1.5, 1); for (const v of SWAY.value) v.set(0, 0);
+  const parts = plan.map((kind, i) => { const spec = KINDS[kind], G = Grid(spec.nx, spec.ny, spec.nz, R); spec.build(G); return { spec, G, x: spec.mega ? 0 : SLOTS[i][0], z: spec.mega ? 0 : SLOTS[i][1] }; });
+  const counts = {}; parts.forEach(({ spec, G }, pi) => { for (let i = 0; i < G.cells.length; i++) if (G.cells[i]) { const key = pi + "|" + vis(spec, G.cells[i], i % G.nx, ((i / G.nx) | 0) % G.ny); counts[key] = (counts[key] || 0) + 1; } });
+  CHIM.value.set(25.5, 5.5, 1.5, plan[0] === "mega" ? 0 : 1); for (const v of SWAY.value) v.set(0, 0);
   const meshes = {}, used = {};
-  for (const name in counts) {
-    const geo = (name.endsWith("~") ? unitBoxChim : Q.tier >= 2 ? unitBoxSub : unitBox).clone(); geo.setAttribute("aOrig", new THREE.InstancedBufferAttribute(new Float32Array(counts[name] * 3), 3)); geo.setAttribute("aInfo", new THREE.InstancedBufferAttribute(new Float32Array(counts[name] * 3), 3)); const la = new THREE.InstancedBufferAttribute(new Float32Array(counts[name]), 1); la.setUsage(THREE.DynamicDrawUsage); geo.setAttribute("aLoose", la);
-    const m = new THREE.InstancedMesh(geo, getMat(name.replace("~", "")), counts[name]); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; m.customDepthMaterial = blockDepth; group.add(m); meshes[name] = m; used[name] = 0;
+  for (const key in counts) {
+    const cut = key.indexOf("|"), name = key.slice(cut + 1), P = parts[+key.slice(0, cut)], ps = P.spec.s * SITE_K, ph = P.spec.ny * ps;
+    const geo = (name.endsWith("~") ? unitBoxChim : Q.tier >= 2 ? unitBoxSub : unitBox).clone(); geo.setAttribute("aOrig", new THREE.InstancedBufferAttribute(new Float32Array(counts[key] * 3), 3)); geo.setAttribute("aInfo", new THREE.InstancedBufferAttribute(new Float32Array(counts[key] * 3), 3)); const la = new THREE.InstancedBufferAttribute(new Float32Array(counts[key]), 1); la.setUsage(THREE.DynamicDrawUsage); geo.setAttribute("aLoose", la);
+    const m = new THREE.InstancedMesh(geo, getMat(name.replace("~", "")), counts[key]); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.castShadow = !P.spec.mega; m.receiveShadow = true; m.customDepthMaterial = blockDepth; group.add(m); meshes[key] = m; used[key] = 0;
+    // out of sight, out of the drawing: the sphere is big enough to hold the building and its rubble
+    m.boundingSphere = new THREE.Sphere(new THREE.Vector3(P.x, ph / 2, P.z), Math.hypot(P.spec.nx * ps / 2, P.spec.nz * ps / 2, ph / 2) + 45);
   }
   LV = { meshes, list: [], par: null }; total = 0;
   parts.forEach(({ spec, G, x, z }, idx) => {
@@ -1064,8 +1095,10 @@ function buildLevel(n) {
     const B = { spec, s, nx, ny, nz, ox, oz, grid, blocks, cx: x, cz: z, idx, h: ny * s, rad: Math.hypot(nx, nz) * s / 2, camK: clamp((ny * s - 16) / 30, 0, 1), hang: new Int8Array(grid.length), fallen: 0, total: 0, finished: false, dirty: false, impact: { x, y: 2, z }, sign: null, signBlock: null, sw: { x: 0, z: 0, vx: 0, vz: 0 } };
     for (let gz = 0; gz < nz; gz++) for (let gy = 0; gy < ny; gy++) for (let gx = 0; gx < nx; gx++) {
       const gi = gx + nx * (gy + ny * gz), t = cells[gi]; if (!t) continue;
-      const name = TYPES[t], vn = vis(spec, t, gx, gy), b = { B, t: name, mesh: meshes[vn], id: used[vn]++, gx, gy, gz, gi, x: ox + (gx + 0.5) * s, y: (gy + 0.5) * s, z: oz + (gz + 0.5) * s, q: new THREE.Quaternion(), vx: 0, vy: 0, vz: 0, wx: 0, wy: 0, wz: 0, st: 0, delay: 0, rest: 0, onStatic: false, shade: 0.96 + R() * 0.08, loose: 0, looseT: 0 };
+      const name = TYPES[t], key = idx + "|" + vis(spec, t, gx, gy), b = { B, t: name, mesh: meshes[key], id: -1, gx, gy, gz, gi, x: ox + (gx + 0.5) * s, y: (gy + 0.5) * s, z: oz + (gz + 0.5) * s, q: new THREE.Quaternion(), vx: 0, vy: 0, vz: 0, wx: 0, wy: 0, wz: 0, st: 0, delay: 0, rest: 0, onStatic: false, shade: 0.96 + R() * 0.08, loose: 0, looseT: 0 };
       grid[gi] = blocks.length; blocks.push(b); if (gy > 0) B.total++;
+      if (spec.mega && gx > 0 && gz > 0 && gy < ny - 1 && gx < nx - 1 && gz < nz - 1 && (gy === 0 || cells[gi - nx]) && cells[gi + nx] && cells[gi - 1] && cells[gi + 1] && cells[gi - nx * ny] && cells[gi + nx * ny]) { b.buried = true; continue; }
+      b.id = used[key]++;
       b.mesh.geometry.attributes.aOrig.setXYZ(b.id, gx + 0.5, gy + 0.5, gz + 0.5); b.mesh.geometry.attributes.aInfo.setXYZ(b.id, s, ny, idx);
       dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m);
       dummy.c.setRGB(b.shade, b.shade * 0.99, b.shade * 0.97); b.mesh.setColorAt(b.id, dummy.c);
@@ -1077,15 +1110,15 @@ function buildLevel(n) {
     if (sb) { const w = Math.min(4.2 * s, 6 * SITE_K), sg = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.31), signMat); sg.castShadow = true; group.add(sg); B.sign = sg; B.signBlock = sb; B.signOff = new THREE.Vector3(0, 0, s / 2 + 0.04); sg.position.set(sb.x, sb.y, sb.z + s / 2 + 0.04); sg.rotation.z = 0.03; }
     LV.list.push(B);
   });
-  for (const m of Object.values(meshes)) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; }
+  for (const key in meshes) { const m = meshes[key]; m.count = used[key]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
   const nb = LV.list.reduce((a, B) => a + B.blocks.length, 0); LV.par = { t: 120 + nb / 12, h: 40 + nb / 30 };
-  BLD = LV.list[0]; fallen = 0; doneN = 0; finishing = false; setSunSize(150);
+  BLD = LV.list[0]; fallen = 0; doneN = 0; finishing = false; setSunSize(typeof birdView !== "undefined" && birdView ? 3900 : 280);
 }
 function updateFocus() { // the camera and the panel follow whichever standing building is closest
   let best = null, bd = 1e9; for (const B of LV.list) if (!B.finished) { const d = Math.hypot(B.cx - CR.x, B.cz - CR.z) - B.rad; if (d < bd) { bd = d; best = B; } }
   if (best && best !== BLD) BLD = best;
-  const note = BLD.spec.size + ": " + BLD.spec.trash.toLocaleString("en-US") + " trash"; if ($("tnote").textContent !== note) { $("tnote").textContent = note; $("lnote").textContent = "This one gives " + Object.keys(BLD.spec.loot).map(k => BLD.spec.loot[k] + " " + STUFF[k].icon).join(" "); }
-  $("bname").textContent = (round > 1 ? "Round " + round + " - " : "") + "Level " + (((level - 1) % 4) + 1) + " - Buildings down: " + doneN + " / 10";
+  const note = BLD.spec.size + ": " + BLD.spec.trash.toLocaleString("en-US") + " trash"; if ($("tnote").textContent !== note) { $("tnote").textContent = note; $("lnote").textContent = "Gives " + Object.keys(BLD.spec.loot).map(k => BLD.spec.loot[k] + " " + STUFF[k].icon).join(" "); }
+  $("bname").textContent = (round > 1 ? "Round " + round + " - " : "") + "Level " + (((level - 1) % 4) + 1) + "";
 }
 function flushMeshes() { for (const m of Object.values(LV.meshes)) { if (m.userData.dirty) { m.instanceMatrix.needsUpdate = true; m.userData.dirty = false; } if (m.userData.lz) { m.geometry.attributes.aLoose.needsUpdate = true; m.userData.lz = false; } } }
 function setLoose(b, v) { if (b.loose >= v) return; b.loose = v; b.mesh.geometry.attributes.aLoose.array[b.id] = v; b.mesh.userData.lz = true; }
@@ -1273,19 +1306,19 @@ const SQUASHY = [];   // small things in the yard that the crane flattens when i
 const COMP = { x: 22, z: -14, hx: 2.6, hz: 3.4, top: 7.8, r: 3.8, reach: 12.5 }; // the trash compactor: where it stands, its solid box, how close the crane must come
 {
   const NT = 512;
-  const dirtTx = bakeOnce("dirt" + NT, () => BK.dirt(NT, 7)); repeatTx(dirtTx, 184 * SITE_K / 9, 184 * SITE_K / 9);
+  const dirtTx = bakeOnce("dirt" + NT, () => BK.dirt(NT, 7)); repeatTx(dirtTx, 184 * SITE_K * YARD_K / 9, 184 * SITE_K * YARD_K / 9);
   const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTx.map, normalMap: dirtTx.nrm, roughnessMap: dirtTx.rm, roughness: 1, metalness: 0 }); dirtMat.normalScale.set(0.9, 0.9); patchGround(dirtMat, true);
-  const dirt = new THREE.Mesh(new THREE.PlaneGeometry(184 * SITE_K, 184 * SITE_K), dirtMat); dirt.rotation.x = -Math.PI / 2; dirt.receiveShadow = true; scene.add(dirt);
-  const grassTx = bakeOnce("grass512", () => BK.grass(512, 9)); repeatTx(grassTx, 70 * SITE_K, 70 * SITE_K);
+  const dirt = new THREE.Mesh(new THREE.PlaneGeometry(184 * SITE_K * YARD_K, 184 * SITE_K * YARD_K), dirtMat); dirt.rotation.x = -Math.PI / 2; dirt.receiveShadow = true; scene.add(dirt);
+  const grassTx = bakeOnce("grass512", () => BK.grass(512, 9)); repeatTx(grassTx, 70 * SITE_K * YARD_K, 70 * SITE_K * YARD_K);
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTx.map, normalMap: grassTx.nrm, roughnessMap: grassTx.rm, roughness: 1, metalness: 0 }); grassMat.normalScale.set(0.5, 0.5); patchGround(grassMat, false);
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(900 * SITE_K, 900 * SITE_K), grassMat); grass.rotation.x = -Math.PI / 2; grass.position.y = -0.03; grass.receiveShadow = true; scene.add(grass);
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(900 * SITE_K * YARD_K, 900 * SITE_K * YARD_K), grassMat); grass.rotation.x = -Math.PI / 2; grass.position.y = -4; grass.receiveShadow = true; scene.add(grass);
   // a chain-link fence with real posts and rails
-  const E = 90 * SITE_K, FH = 2.2, galv = new THREE.MeshStandardMaterial({ color: 0xa4abb0, roughness: 0.38, metalness: 0.9 });
+  const E = 90 * SITE_K * YARD_K, FH = 2.2, galv = new THREE.MeshStandardMaterial({ color: 0xa4abb0, roughness: 0.38, metalness: 0.9 });
   const fenceTex = new THREE.CanvasTexture(mk(128, 128, (g, w, h) => { g.strokeStyle = "#cfd5d8"; g.lineWidth = 3.2; g.lineCap = "round"; for (let k = -h; k < w + h; k += 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); g.beginPath(); g.moveTo(k, h); g.lineTo(k + h, 0); g.stroke(); } })); fenceTex.colorSpace = THREE.SRGBColorSpace; fenceTex.wrapS = fenceTex.wrapT = THREE.RepeatWrapping; fenceTex.anisotropy = MAXANIS; fenceTex.repeat.set(2 * E / 0.6, FH / 0.6);
   const fm = new THREE.MeshStandardMaterial({ map: fenceTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.85 });
   for (const [x, z, ry] of [[0, -E, 0], [0, E, 0], [-E, 0, Math.PI / 2], [E, 0, Math.PI / 2]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(E * 2, FH), fm); f.position.set(x, FH / 2 + 0.05, z); f.rotation.y = ry; scene.add(f); }
   const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.07, FH + 0.25, 16), galv, 84 * 4), caps = new THREE.InstancedMesh(new THREE.SphereGeometry(0.1, 16, 12), galv, 84 * 4);
-  let pi = 0; for (let k = -E; k <= E; k += 4 * SITE_K) for (const [x, z] of [[k, -E], [k, E], [-E, k], [E, k]]) { dummy.q.identity(); dummy.sc.set(1, 1, 1); dummy.m.compose(dummy.p.set(x, (FH + 0.25) / 2, z), dummy.q, dummy.sc); posts.setMatrixAt(pi, dummy.m); dummy.m.compose(dummy.p.set(x, FH + 0.28, z), dummy.q, dummy.sc); caps.setMatrixAt(pi, dummy.m); pi++; }
+  let pi = 0; for (let k = -E; k <= E; k += 4 * SITE_K * YARD_K) for (const [x, z] of [[k, -E], [k, E], [-E, k], [E, k]]) { dummy.q.identity(); dummy.sc.set(1, 1, 1); dummy.m.compose(dummy.p.set(x, (FH + 0.25) / 2, z), dummy.q, dummy.sc); posts.setMatrixAt(pi, dummy.m); dummy.m.compose(dummy.p.set(x, FH + 0.28, z), dummy.q, dummy.sc); caps.setMatrixAt(pi, dummy.m); pi++; }
   posts.count = caps.count = pi; posts.castShadow = true; caps.castShadow = true; scene.add(posts, caps);
   for (const [x, z, ry] of [[0, -E, 0], [0, E, 0], [-E, 0, Math.PI / 2], [E, 0, Math.PI / 2]]) for (const yy of [FH + 0.1, 0.12]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, E * 2, 12), galv); r.rotation.order = "YXZ"; r.rotation.z = Math.PI / 2; r.rotation.y = ry; r.position.set(x, yy, z); r.castShadow = yy > 1; scene.add(r); }
   // traffic cones
@@ -1313,11 +1346,11 @@ const COMP = { x: 22, z: -14, hx: 2.6, hz: 3.4, top: 7.8, r: 3.8, reach: 12.5 };
   const gg = new THREE.BufferGeometry(), gw = 0.55, gh = 0.62;
   gg.setAttribute("position", new THREE.BufferAttribute(new Float32Array([-gw, 0, 0, gw, 0, 0, gw, gh, 0, -gw, gh, 0, 0, 0, -gw, 0, 0, gw, 0, gh, gw, 0, gh, -gw]), 3)); gg.setAttribute("uv", new THREE.BufferAttribute(new Float32Array([0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1]), 2)); gg.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
   const gmat = new THREE.MeshStandardMaterial({ map: grassCard, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1 }); patchCards(gmat, false);
-  const NG = 5200, tufts = new THREE.InstancedMesh(gg, gmat, NG), RG = mulberry(123);
+  const NG = 8000, tufts = new THREE.InstancedMesh(gg, gmat, NG), RG = mulberry(123);
   for (let i = 0; i < NG; i++) { const side = i & 3, t = (RG() * 2 - 1) * (E + 18), off = E + 0.8 + Math.pow(RG(), 1.6) * 17; let x, z; if (side === 0) { x = t; z = -off; } else if (side === 1) { x = t; z = off; } else if (side === 2) { x = -off; z = t; } else { x = off; z = t; } const sc = 0.7 + RG() * 1.0; dummy.q.setFromEuler(_eu.set(0, RG() * 6.28, 0)); dummy.sc.set(sc, sc * (0.8 + RG() * 0.6), sc); dummy.m.compose(dummy.p.set(x, 0, z), dummy.q, dummy.sc); tufts.setMatrixAt(i, dummy.m); const k = 0.75 + RG() * 0.5; tufts.setColorAt(i, dummy.c.setRGB(k, k * (0.95 + RG() * 0.15), k * 0.85)); }
   tufts.receiveShadow = true; tufts.frustumCulled = false; scene.add(tufts);
   // real leafy trees: trunks plus a crown of leaf-cluster cards
-  const NTR = 50, CARDS = Q.tier >= 2 ? 140 : 90, trunkG = new THREE.CylinderGeometry(0.28, 0.5, 4, 20), trunks = new THREE.InstancedMesh(trunkG, new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }), NTR);
+  const NTR = 70, CARDS = Q.tier >= 2 ? 140 : 90, trunkG = new THREE.CylinderGeometry(0.28, 0.5, 4, 20), trunks = new THREE.InstancedMesh(trunkG, new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 1 }), NTR);
   const leafCard = new THREE.CanvasTexture(mk(128, 128, (g, w, h) => { const R = mulberry(11); g.fillStyle = "rgba(60,110,40,0.004)"; g.fillRect(0, 0, w, h); for (let i = 0; i < 14; i++) { const cx = 20 + R() * (w - 40), cy = 20 + R() * (h - 40), a = R() * 6.28, lw = 13 + R() * 9, lh = 7 + R() * 5; g.save(); g.translate(cx, cy); g.rotate(a); const gr = g.createLinearGradient(-lw, 0, lw, 0); const k = R(); gr.addColorStop(0, "rgb(" + (30 + k * 20) + "," + (74 + k * 24) + ",24)"); gr.addColorStop(1, "rgb(" + (88 + k * 50) + "," + (130 + k * 40) + ",40)"); g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, lw, lh, 0, 0, 6.3); g.fill(); g.strokeStyle = "rgba(20,50,10,.6)"; g.lineWidth = 1; g.beginPath(); g.moveTo(-lw, 0); g.lineTo(lw, 0); g.stroke(); g.restore(); } })); leafCard.colorSpace = THREE.SRGBColorSpace; leafCard.anisotropy = 4;
   const lm = new THREE.MeshStandardMaterial({ map: leafCard, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.8 }); patchCards(lm, true);
   const leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), lm, NTR * CARDS), aN = new Float32Array(NTR * CARDS * 3);
@@ -1335,7 +1368,7 @@ const COMP = { x: 22, z: -14, hx: 2.6, hz: 3.4, top: 7.8, r: 3.8, reach: 12.5 };
   leaves.geometry.setAttribute("aN", new THREE.InstancedBufferAttribute(aN, 3)); leaves.frustumCulled = false; leaves.receiveShadow = true; trunks.castShadow = true; scene.add(trunks, leaves);
   // a hazy city far away, with windows
   const cityTex = [0, 1, 2].map(kind => { const t = new THREE.CanvasTexture(mk(256, 512, (g, w, h) => { const R = mulberry(300 + kind), bases = ["#8c949c", "#6f8190", "#a2958a"][kind]; g.fillStyle = bases; g.fillRect(0, 0, w, h); const cols = 8, rows = 22, cw = w / cols, rh = h / rows; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const lit = R() < 0.14, a = R(); g.fillStyle = lit ? "rgb(255," + (200 + a * 40 | 0) + ",130)" : "rgb(" + (34 + a * 30 | 0) + "," + (48 + a * 34 | 0) + "," + (62 + a * 38 | 0) + ")"; g.fillRect(c * cw + 6, r * rh + 5, cw - 12, rh - 10); if (kind === 1) { g.fillStyle = "rgba(255,255,255,.12)"; g.fillRect(c * cw + 6, r * rh + 5, cw - 12, 4); } } })); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t; });
-  for (let i = 0; i < 24; i++) { const a = i / 24 * 6.2832 + RR() * 0.1, r = (185 + RR() * 35) * SITE_K, hh = (14 + RR() * 40) * SITE_K, bw = (10 + RR() * 12) * SITE_K, k = i % 3, g = new THREE.BoxGeometry(bw, hh, bw); uvScale(g, [[bw, hh], [bw, hh], [bw, bw], [bw, bw], [bw, hh], [bw, hh]], 24 * SITE_K); const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: cityTex[k], roughness: 0.45, metalness: k === 1 ? 0.5 : 0.1 })); m.position.set(Math.sin(a) * r, hh / 2, -Math.cos(a) * r); scene.add(m); }
+  for (let i = 0; i < 24; i++) { const a = i / 24 * 6.2832 + RR() * 0.1, r = (185 + RR() * 35) * SITE_K * YARD_K, hh = (14 + RR() * 40) * SITE_K * YARD_K, bw = (10 + RR() * 12) * SITE_K * YARD_K, k = i % 3, g = new THREE.BoxGeometry(bw, hh, bw); uvScale(g, [[bw, hh], [bw, hh], [bw, bw], [bw, bw], [bw, hh], [bw, hh]], 24 * SITE_K * YARD_K); const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: cityTex[k], roughness: 0.45, metalness: k === 1 ? 0.5 : 0.1 })); m.position.set(Math.sin(a) * r, hh / 2, -Math.cos(a) * r); scene.add(m); }
 }
 
 /* ---------------- the trash compactor ---------------- */
@@ -1540,14 +1573,14 @@ function sFanfare() { if (!AC || !soundOn) return; const t = AC.currentTime, n =
 function playTypeSound(name, v) { const s = TDEF[name].snd; if (s === "glass") sGlass(); else if (s === "wood") sWood(); else if (s === "clang") sClang(); else sCrumble(v); }
 
 /* ---------------- things that make it feel alive ---------------- */
-const markers = new THREE.InstancedMesh(new THREE.ConeGeometry(1.1, 1.9, 32), new THREE.MeshStandardMaterial({ color: 0xff3d2e, emissive: 0xff2010, emissiveIntensity: 1.1, roughness: 0.5 }), 10); markers.frustumCulled = false; scene.add(markers);
+const markers = new THREE.InstancedMesh(new THREE.ConeGeometry(1.1, 1.9, 32), new THREE.MeshStandardMaterial({ color: 0xff3d2e, emissive: 0xff2010, emissiveIntensity: 1.1, roughness: 0.5 }), 30); markers.frustumCulled = false; scene.add(markers);
 function updateMarkers() { // these show which buildings are still to do, so a little shed is never lost
   const t = performance.now() / 1000;
   LV.list.forEach((B, i) => { const g = B.finished ? 0 : 1, y = B.h + 7 + Math.sin(t * 3.4 + i) * 0.9; dummy.q.setFromEuler(_eu.set(Math.PI, t * 1.2, 0)); dummy.sc.set(g * 2.6, g * 2.6, g * 2.6); dummy.m.compose(dummy.p.set(B.cx, y, B.cz), dummy.q, dummy.sc); markers.setMatrixAt(i, dummy.m); });
   markers.instanceMatrix.needsUpdate = true; markers.visible = state === "play" || state === "pause";
 }
 const RIG = { p: 0, pv: 0, r: 0, rv: 0, w: 0, wv: 0, lastV: 0, smoke: 0, spin: 0, spinV: 0, cable: 0, lean: 0, rum: 0 };
-let camRise = 38, camSide = 0, camKN = 0, hitStop = 0, slowMo = 0, fovK = 0, introT = 0, collapseW = 0, collapseA = 0, camX = 0, camZ = 0, birdScare = 0, kickT = 0, ambT = 0;
+let camRise = 38, camPull = 1, camSide = 0, camKN = 0, hitStop = 0, slowMo = 0, fovK = 0, introT = 0, collapseW = 0, collapseA = 0, camX = 0, camZ = 0, birdScare = 0, kickT = 0, ambT = 0;
 const INTRO_T = 2.6;
 function timeScale(raw) { // a tiny freeze on a big hit, and slow motion while a building comes down
   hitStop = Math.max(0, hitStop - raw); slowMo = Math.max(0, slowMo - raw);
@@ -1568,10 +1601,10 @@ function smoke(x, y, z, size, a, shade) { puff(x, y, z, size, 1, 2.4, a); const 
 function ringDust(x, z, r, n, sp) { for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + Math.random() * 0.2; puff(x + Math.cos(a) * r, 0.3, z + Math.sin(a) * r, 5, 1, 0.8, 0.5); const p = DP[(dustI - 1) % dustLimit]; p.vx = Math.cos(a) * sp; p.vz = Math.sin(a) * sp; } }
 function rigStep(dt) { // the crane has springs in it: it nods when it starts and stops, leans into turns, and the long boom whips
   dt = Math.min(dt, 0.033);
-  const acc = clamp((CR.v - RIG.lastV) / (dt * GAME_SPEED), -30, 30); RIG.lastV = CR.v;
+  const acc = clamp((CR.v - RIG.lastV) / (dt * GAME_SPEED) * 0.13, -30, 30); RIG.lastV = CR.v;
   const fx = Math.sin(CR.yaw), fz = -Math.cos(CR.yaw), swing = (BP.p.x - CR.tip.x) * fx + (BP.p.z - CR.tip.z) * fz;
   RIG.pv += (acc * 0.25 - swing * 0.06 - RIG.lean - 90 * RIG.p - 11 * RIG.pv) * dt; RIG.p += RIG.pv * dt;
-  RIG.rv += (CR.yawV * (1 + Math.abs(CR.v)) * 0.6 - 90 * RIG.r - 11 * RIG.rv) * dt; RIG.r += RIG.rv * dt;
+  RIG.rv += (CR.yawV * (1 + Math.min(9, Math.abs(CR.v))) * 0.6 - 90 * RIG.r - 11 * RIG.rv) * dt; RIG.r += RIG.rv * dt;
   RIG.wv += (acc * 0.06 - 140 * RIG.w - 3.2 * RIG.wv) * dt; RIG.w += RIG.wv * dt;
   RIG.cable *= Math.max(0, 1 - dt * 3.2); RIG.spinV *= Math.max(0, 1 - dt * 0.7); RIG.spin += RIG.spinV * dt; RIG.lean *= Math.max(0, 1 - dt * 3);
   const want = Math.min(1, Math.abs(keys.fwd - keys.back) + Math.abs(keys.right - keys.left) * 0.6 + Math.abs(keys.out - keys.in) * 0.4 + Math.abs(keys.up - keys.down) * 0.4); RIG.rum += (want - RIG.rum) * Math.min(1, dt * 4);
@@ -1621,7 +1654,7 @@ function updateAmbient(dt) { ambT += dt; WINDT.value = ambT; skyUni.uCloudOff.va
 /* ---------------- ball + crane physics ---------------- */
 const G_ACC = 17, SMASH = 4.6;
 const CR = { x: 0, z: 0, v: 0, yaw: 0, yawV: 0, luff: 0.87, luffV: 0, cable: 12, cableV: 0, tip: new THREE.Vector3() };
-const DRIVE_SPEED = 7, CRANE_R = 3.6 * CRANE_K, SITE_MAX = 90 * SITE_K - 1.4 - CRANE_R, CABLE_MIN = 3 * CRANE_K, CABLE_MAX = 20 * CRANE_K, SOLID_PROPS = [[-27, 14, 3.4], [-22, 10, 0.6], [-21, 11.2, 0.6], [24, 12, 0.6], [25.3, 12.8, 0.6], [COMP.x, COMP.z, COMP.r], [COMP.x, COMP.z + 6, 2.2]], CRANE_STOPS = SOLID_PROPS.slice(-2);
+const DRIVE_SPEED = 70, CRANE_R = 3.6 * CRANE_K, SITE_MAX = 90 * SITE_K * YARD_K - 1.4 - CRANE_R, CABLE_MIN = 3 * CRANE_K, CABLE_MAX = 20 * CRANE_K, SOLID_PROPS = [[-27, 14, 3.4], [-22, 10, 0.6], [-21, 11.2, 0.6], [24, 12, 0.6], [25.3, 12.8, 0.6], [COMP.x, COMP.z, COMP.r], [COMP.x, COMP.z + 6, 2.2]], CRANE_STOPS = SOLID_PROPS.slice(-2);
 const RAM_MIN = 1.2, RAM_BIG = 3.5, RAM_TOP = 5.6 * CRANE_K, RAM_FRONT = 3.3 * CRANE_K, RAM_BACK = 4.3 * CRANE_K, RAM_SIDE = 2.9 * CRANE_K; // how hard a ram must be, and the size of the crane's body
 const BP = { p: new THREE.Vector3(), v: new THREE.Vector3() };
 const keys = { left: 0, right: 0, in: 0, out: 0, up: 0, down: 0, fwd: 0, back: 0 };
@@ -1645,10 +1678,18 @@ function ramHits(x, z, sg) { // standing blocks the crane's body runs into at x,
   for (const B of LV.list) {
     const pad = 7 * CRANE_K; if (x < B.ox - pad || x > B.ox + B.nx * B.s + pad || z < B.oz - pad || z > B.oz + B.nz * B.s + pad) continue;
     const hs = B.s / 2, reach = (sg > 0 ? RAM_FRONT : RAM_BACK) + hs;
+    if (B.spec.mega) {
+      const s = B.s, nx = B.nx, ny = B.ny, side = RAM_SIDE + craneG.wide * CRANE_K + hs + s, span = Math.max(reach, side) + s, x0 = Math.max(0, Math.floor((x - span - B.ox) / s)), x1 = Math.min(nx - 1, Math.floor((x + span - B.ox) / s)), z0 = Math.max(0, Math.floor((z - span - B.oz) / s)), z1 = Math.min(B.nz - 1, Math.floor((z + span - B.oz) / s)), y1 = Math.min(ny - 1, Math.floor((RAM_TOP + craneG.tall * CRANE_K + hs) / s));
+      for (let gz = z0; gz <= z1; gz++) for (let gy = 0; gy <= y1; gy++) for (let gx = x0; gx <= x1; gx++) {
+        const bi = B.grid[gx + nx * (gy + ny * gz)]; if (bi < 0) continue; const b = B.blocks[bi]; if (b.st > 1 || b.y - hs > RAM_TOP + craneG.tall * CRANE_K) continue;
+        const dx = b.x - x, dz = b.z - z, f = (dx * fx + dz * fz) * sg; if (f > 0 && f < reach && Math.abs(dx * fz - dz * fx) < side) list.push(b);
+      }
+      continue;
+    }
     for (const b of B.blocks) {
       if (b.st > 1 || b.y - hs > RAM_TOP + craneG.tall * CRANE_K) continue;
       const dx = b.x - x, dz = b.z - z, f = (dx * fx + dz * fz) * sg;
-      if (f > 0 && f < reach && Math.abs(dx * fz - dz * fx) < RAM_SIDE + craneG.wide * CRANE_K + hs) list.push(b);
+      if (f > 0 && f < reach && Math.abs(dx * fz - dz * fx) < RAM_SIDE + craneG.wide * CRANE_K + hs + (B.spec.mega ? B.s : 0)) list.push(b);
     }
   }
   return list;
@@ -1681,6 +1722,7 @@ function driveStep(h) {
   CR.x = nx; CR.z = nz;
 }
 function shoveRubble() { // nothing can sit inside the crane: loose rubble gets pushed out of its way
+  if (BLD && BLD.spec.mega) return;   // flat rubble: the crane just drives over it
   const fx = Math.sin(CR.yaw), fz = -Math.cos(CR.yaw), moving = Math.abs(CR.v) > 0.2;
   const shove = b => {
     if (b.st < 2 || b.y > RAM_TOP) return;
@@ -1711,12 +1753,12 @@ function ballStep(h) {
   collideBlocks(h);
 }
 let frameHits = 0, frameSpeed = 0, frameBroken = null, frameB = null;
-function collideBlocks(h) { const p = BP.p; for (const B of LV.list) { const pad = BALL_R + 2; if (p.x > B.ox - pad && p.x < B.ox + B.nx * B.s + pad && p.z > B.oz - pad && p.z < B.oz + B.nz * B.s + pad && p.y < B.h + pad) collideBuilding(B, h); } }
+function collideBlocks(h) { const p = BP.p; for (const B of LV.list) { const pad = BALL_R + 2 + ballG.reach; if (p.x > B.ox - pad && p.x < B.ox + B.nx * B.s + pad && p.z > B.oz - pad && p.z < B.oz + B.nz * B.s + pad && p.y < B.h + pad) collideBuilding(B, h); } }
 function collideBuilding(B, h) {
   const { s, nx, ny, nz, ox, oz, grid, blocks } = B, p = BP.p, v = BP.v, r = BALL_R;
-  const x0 = Math.max(0, Math.floor((p.x - r - 0.5 - ox) / s)), x1 = Math.min(nx - 1, Math.floor((p.x + r + 0.5 - ox) / s));
-  const y0 = Math.max(0, Math.floor((p.y - r - 0.5) / s)), y1 = Math.min(ny - 1, Math.floor((p.y + r + 0.5) / s));
-  const z0 = Math.max(0, Math.floor((p.z - r - 0.5 - oz) / s)), z1 = Math.min(nz - 1, Math.floor((p.z + r + 0.5 - oz) / s));
+  const wr = r + 0.5 + ballG.reach, x0 = Math.max(0, Math.floor((p.x - wr - ox) / s)), x1 = Math.min(nx - 1, Math.floor((p.x + wr - ox) / s));
+  const y0 = Math.max(0, Math.floor((p.y - wr) / s)), y1 = Math.min(ny - 1, Math.floor((p.y + wr) / s));
+  const z0 = Math.max(0, Math.floor((p.z - wr - oz) / s)), z1 = Math.min(nz - 1, Math.floor((p.z + wr - oz) / s));
   if (x0 > x1 || y0 > y1 || z0 > z1) return;
   for (let pass = 0; pass < 2; pass++) {
     const speed = v.length(), smash = speed >= ballG.smash, power = speed * ballG.pow; let broke = 0;
@@ -1744,17 +1786,17 @@ function collideBuilding(B, h) {
   }
 }
 function launch(b, vx, vy, vz, speed, depth = 0) {
-  const B = b.B; B.grid[b.gi] = -1;
+  const B = b.B; showBlock(b); B.grid[b.gi] = -1; if (B.spec.mega) uncover(b);
   if (b.st === 0 && b.gy > 0) { fallen++; B.fallen++; } b.st = 2; b.looseT = 1; curTint = TDEF[b.t].bit; b.vx = vx; b.vy = vy; b.vz = vz; b.rest = 0; b.onStatic = false;
   const w = clamp(speed * 0.5, 2, 9); b.wx = (Math.random() - 0.5) * w; b.wy = (Math.random() - 0.5) * w; b.wz = (Math.random() - 0.5) * w;
   dyn.push(b);
   if (depth < 3 && speed > 4.5) { const pc = clamp((speed - 4) * 0.08, 0, 0.55); for (let k = 0; k < 6; k++) { const X = b.gx + (k === 0) - (k === 1), Y = b.gy + (k === 2) - (k === 3), Z = b.gz + (k === 4) - (k === 5); if (X < 0 || Y < 1 || Z < 0 || X >= B.nx || Y >= B.ny || Z >= B.nz) continue; const bi = B.grid[X + B.nx * (Y + B.ny * Z)]; if (bi < 0) continue; const nb = B.blocks[bi]; if (nb.st <= 1 && Math.random() < pc) launch(nb, vx * 0.7 + (Math.random() - 0.5) * 2, vy * 0.5 + 1, vz * 0.7 + (Math.random() - 0.5) * 2, speed * 0.7, depth + 1); } }
-  if (Math.random() < 0.55) puff(b.x, b.y, b.z, 0.5 + B.s * 0.55 + speed * 0.05, 1, 1.3, 0.5);
+  if (Math.random() < 0.55) puff(b.x, b.y, b.z, Math.min(9, 0.5 + B.s * 0.55 + speed * 0.05), 1, 1.3, 0.5);
   if (Math.random() < 0.7) spawnBits(b.x, b.y, b.z, vx, vy, vz, TDEF[b.t].bit, 2, b.t);
   if (Math.random() < 0.35) playTypeSound(b.t, speed / 10);
 }
 function markPending(b, delay) {
-  b.st = 1; b.delay = delay; setLoose(b, 0.3); if (b.gy > 0) { fallen++; b.B.fallen++; } pend.push(b);
+  showBlock(b); b.st = 1; b.delay = delay; setLoose(b, 0.3); if (b.gy > 0) { fallen++; b.B.fallen++; } pend.push(b);
 }
 const LOOSE_CELLS = 2.6;
 function outward(b) { // which way is "off the building" for this block (none if it is deep inside)
@@ -1763,6 +1805,7 @@ function outward(b) { // which way is "off the building" for this block (none if
   return Math.abs(ax) > Math.abs(az) ? [Math.sign(ax), 0] : [0, Math.sign(az)];
 }
 function settle(B) {
+  if (B.spec.mega) { settleMega(B); return; }
   const { nx, ny, nz, grid, blocks, hang, impact } = B, LIM = 3, q = [];
   hang.fill(127);
   for (const b of blocks) if (b.st === 0 && b.gy === 0) { hang[b.gi] = 0; q.push(b.gi); }
@@ -1788,7 +1831,7 @@ function finishBuilding(B) { // it has had enough: everything left in this build
   B.finished = true; doneN++; const last = doneN === LV.list.length; getLoot(B);
   for (const b of B.blocks) if (b.st === 0) { const d = Math.hypot(b.x - B.impact.x, b.z - B.impact.z); markPending(b, 0.1 + d * 0.06 + Math.random() * 0.5); }
   sCrumble(1.2); sThud(14); slowMo = last ? 1.5 : 0.8; bigMoment(0, 1); ringDust(B.cx, B.cz, Math.max(B.nx, B.nz) * B.s * 0.55, B.spec.size === "Small" ? 8 : 18, 5);
-  if (last) { finishing = true; finishT = 0; collapseA = camHead + camOff; showMsg("Wow! You knocked down all 10!", 4); } else showMsg(doneN + " down, " + (LV.list.length - doneN) + " to go!", 3);
+  if (last) { finishing = true; finishT = 0; collapseA = camHead + camOff; showMsg("Wow! You knocked down the whole giant building!", 4); } else showMsg(doneN + " down, " + (LV.list.length - doneN) + " to go!", 3);
 }
 function startFinish() { for (const B of LV.list) if (!B.finished) finishBuilding(B); }
 
@@ -1822,28 +1865,50 @@ function rollOff(b) { // rubble must not stack up into a tower: a block landing 
 }
 function release(b) {
   b.looseT = 1; curTint = TDEF[b.t].bit;
-  b.B.grid[b.gi] = -1; b.st = 2; b.rest = 0; b.onStatic = false;
+  showBlock(b); b.B.grid[b.gi] = -1; b.st = 2; b.rest = 0; b.onStatic = false; if (b.B.spec.mega) uncover(b);
   let dx = b.x - b.B.impact.x, dz = b.z - b.B.impact.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
   b.vx = dx * (0.5 + Math.random() * 1.2) + (Math.random() - 0.5); b.vz = dz * (0.5 + Math.random() * 1.2) + (Math.random() - 0.5); b.vy = Math.random() * 0.6;
   const [offX, offZ] = outward(b), push = 1.2 + Math.random() * 2.2; b.vx += offX * push; b.vz += offZ * push;
   b.wx = (Math.random() - 0.5) * 2.4; b.wy = (Math.random() - 0.5) * 2.4; b.wz = (Math.random() - 0.5) * 2.4; dyn.push(b);
-  if (Math.random() < 0.3) puff(b.x, b.y, b.z, 0.5 + b.B.s * 0.6, 1, 1, 0.45);
+  if (Math.random() < 0.3) puff(b.x, b.y, b.z, Math.min(9, 0.5 + b.B.s * 0.6), 1, 1, 0.45);
   if (Math.random() < 0.06) playTypeSound(b.t, 0.6);
 }
-function cellAt(B, x, y, z) {
-  const { s, nx, ny, nz, ox, oz, grid } = B, gx = Math.floor((x - ox) / s), gy = Math.floor(y / s), gz = Math.floor((z - oz) / s);
+let cellGy = 0;
+function showBlock(b) { // a buried block joins the drawing
+  if (!b.buried) return; b.buried = false; const m = b.mesh, A = m.geometry.attributes, s = b.B.s; b.id = m.count++;
+  A.aOrig.setXYZ(b.id, b.gx + 0.5, b.gy + 0.5, b.gz + 0.5); A.aInfo.setXYZ(b.id, s, b.B.ny, b.B.idx); A.aOrig.needsUpdate = true; A.aInfo.needsUpdate = true;
+  dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); m.setMatrixAt(b.id, dummy.m); m.setColorAt(b.id, dummy.c.setRGB(b.shade, b.shade * 0.99, b.shade * 0.97)); m.instanceColor.needsUpdate = true; m.userData.dirty = true;
+}
+function uncover(b) { // a block has left: the ones it was hiding can now be seen, and whatever stood on it must come down
+  const B = b.B, nx = B.nx, ny = B.ny, nz = B.nz; (B.cols || (B.cols = new Set())).add(b.gx + nx * b.gz); B.dirty = true;
+  for (let k = 0; k < 6; k++) {
+    const X = b.gx + (k === 0) - (k === 1), Y = b.gy + (k === 2) - (k === 3), Z = b.gz + (k === 4) - (k === 5); if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
+    const bi = B.grid[X + nx * (Y + ny * Z)]; if (bi >= 0) showBlock(B.blocks[bi]);
+  }
+}
+function settleMega(B) { // a solid building: whatever has nothing under it comes down, a whole column at a time
+  if (!B.cols || !B.cols.size) return; const nx = B.nx, ny = B.ny; let n = 0;
+  for (const c of B.cols) {
+    const gx = c % nx, gz = (c / nx) | 0; let y0 = -1;
+    for (let gy = 0; gy < ny; gy++) { const bi = B.grid[gx + nx * (gy + ny * gz)], b = bi < 0 ? null : B.blocks[bi]; if (!b || b.st !== 0) { if (y0 < 0) y0 = gy; continue; } if (y0 >= 0) { markPending(b, 0.08 + (gy - y0) * 0.05 + Math.random() * 0.1); n++; } }
+  }
+  B.cols.clear();
+  if (n > 3 && throttle("megafall", 0.3)) { sCrumble(1); shake = Math.max(shake, 0.12); }
+}
+function cellAt(B, x, y, z) { // the standing block at this spot, if any; its row is left in cellGy
+  const s = B.s, nx = B.nx, ny = B.ny, nz = B.nz, gx = Math.floor((x - B.ox) / s), gy = Math.floor(y / s), gz = Math.floor((z - B.oz) / s);
   if (gx < 0 || gy < 0 || gz < 0 || gx >= nx || gy >= ny || gz >= nz) return null;
-  const bi = grid[gx + nx * (gy + ny * gz)]; return bi < 0 ? null : { b: B.blocks[bi], gy };
+  const bi = B.grid[gx + nx * (gy + ny * gz)]; if (bi < 0) return null; cellGy = gy; return B.blocks[bi];
 }
 function updateDebris(dt) {
   FDT = dt; const thud = { v: 0 };
-  for (let i = pend.length - 1; i >= 0; i--) { const b = pend[i]; if (b.st !== 1) { pend.splice(i, 1); continue; } b.delay -= dt; if (b.delay <= 0) { pend.splice(i, 1); release(b); } else { const s = b.B.s, amp = (0.015 + 0.05 * (1 - Math.min(1, b.delay / 0.5))) * s, R = Math.random; b.mesh.userData.dirty = true; dummy.sc.set(s, s, s); dummy.m.compose(dummy.p.set(b.x + (R() - 0.5) * amp, b.y + (R() - 0.5) * amp * 0.5, b.z + (R() - 0.5) * amp), b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); } }
+  for (let i = pend.length - 1; i >= 0; i--) { const b = pend[i]; if (b.st !== 1) { pend[i] = pend[pend.length - 1]; pend.pop(); continue; } b.delay -= dt; if (b.delay <= 0) { pend[i] = pend[pend.length - 1]; pend.pop(); release(b); } else { const s = b.B.s, amp = (0.015 + 0.05 * (1 - Math.min(1, b.delay / 0.5))) * s, R = Math.random; b.mesh.userData.dirty = true; dummy.sc.set(s, s, s); dummy.m.compose(dummy.p.set(b.x + (R() - 0.5) * amp, b.y + (R() - 0.5) * amp * 0.5, b.z + (R() - 0.5) * amp), b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); } }
   for (let i = dyn.length - 1; i >= 0; i--) {
     const b = dyn[i], s = b.B.s, hh = s / 2; b.vy -= G_ACC * dt;
     let nx = b.x + b.vx * dt, ny = b.y + b.vy * dt, nz = b.z + b.vz * dt;
-    const hc = b.ghost ? null : cellAt(b.B, nx, b.y, nz); if (hc && hc.b !== b) { nx = b.x; nz = b.z; b.vx *= -0.3; b.vz *= -0.3; }
+    const hc = b.ghost ? null : cellAt(b.B, nx, b.y, nz); if (hc && hc !== b) { nx = b.x; nz = b.z; b.vx *= -0.3; b.vz *= -0.3; }
     b.onStatic = false;
-    if (b.vy <= 0.5 && !b.ghost) { const lc = cellAt(b.B, nx, ny - hh * 0.9, nz); if (lc) { const top = (lc.gy + 1) * s + hh; if (ny < top) { ny = top; if (b.vy < -3) thud.v = Math.max(thud.v, -b.vy); b.vy = b.vy < -2 ? -b.vy * 0.2 : 0; b.vx *= 0.8; b.vz *= 0.8; b.wx *= 0.7; b.wy *= 0.7; b.wz *= 0.7; b.onStatic = true; } } }
+    if (b.vy <= 0.5 && !b.ghost) { const lc = cellAt(b.B, nx, ny - hh * 0.9, nz); if (lc) { const top = (cellGy + 1) * s + hh; if (ny < top) { ny = top; if (b.vy < -3) thud.v = Math.max(thud.v, -b.vy); b.vy = b.vy < -2 ? -b.vy * 0.2 : 0; b.vx *= 0.8; b.vz *= 0.8; b.wx *= 0.7; b.wy *= 0.7; b.wz *= 0.7; b.onStatic = true; } } }
     if (b.onStatic) { b.topT = (b.topT || 0) + dt; if (b.topT > 0.5) { b.topT = 0; if (openAbove(b)) { hopOff(b); ny = b.y; } } } else b.topT = 0;
     // spin
     const wl = Math.hypot(b.wx, b.wy, b.wz); if (wl > 1e-3) { _ax.set(b.wx / wl, b.wy / wl, b.wz / wl); _q.setFromAxisAngle(_ax, wl * dt); b.q.premultiply(_q).normalize(); }
@@ -1854,6 +1919,9 @@ function updateDebris(dt) {
     let grounded = b.onStatic;
     if (ny - ext < fl) { ny = fl + ext; grounded = true; if (b.vy < -3) { thud.v = Math.max(thud.v, -b.vy); if (Math.random() < 0.5) puff(nx, fl + 0.2, nz, 1.2 + hh, 1, 0.7, 0.4); } if (b.vy < -1.5) { b.vy = -b.vy * 0.22; b.wx = (Math.random() - 0.5) * 3; b.wz = (Math.random() - 0.5) * 3; if (fl > 0.4) { b.vx += (Math.random() - 0.5) * 1.4; b.vz += (Math.random() - 0.5) * 1.4; } } else b.vy = 0; b.vx *= 1 - Math.min(1, 5 * dt); b.vz *= 1 - Math.min(1, 5 * dt); const dmp = 1 - Math.min(1, 6 * dt); b.wx *= dmp; b.wy *= dmp; b.wz *= dmp; }
     b.x = nx; b.y = ny; b.z = nz;
+    if (grounded && b.B.spec.mega && !b.onStatic && (b.age = (b.age || 0) + dt) > 0.3) { // it lands and crumbles flat
+      b.q.setFromAxisAngle(_up, Math.random() * 6.2832); b.y = 3.5 + Math.random() * 2; b.st = 3; writeBlock(b); if (Math.random() < 0.2) puff(b.x, 2, b.z, 9, 1, 1, 0.5); dyn[i] = dyn[dyn.length - 1]; dyn.pop(); continue;
+    }
     if (grounded) {
       const sp = Math.hypot(b.vx, b.vy, b.vz);
       if (sp < 2.5 && !b.onStatic) alignFlat(b, Math.min(1, 9 * dt));
@@ -1863,14 +1931,14 @@ function updateDebris(dt) {
   }
   if (thud.v > 3 && state === "play") { if (throttle("dthud", 0.18)) { sCrumble(clamp(thud.v / 10, 0.3, 1)); if (thud.v > 8) { sThud(thud.v * 0.8); shake = Math.max(shake, 0.04 * Math.min(thud.v, 14) / 6); } } }
 }
-let debrisOff = false;
-function stepDebris(dt) { // with very many blocks in the air, they move every other step in bigger steps, so a huge collapse stays smooth
-  if (dyn.length < 1200) { updateDebris(dt); return; }
-  debrisOff = !debrisOff; if (!debrisOff) updateDebris(dt * 2);
+let debrisCount = 0, settleOff = false;
+function stepDebris(dt) { // the more blocks are in the air, the fewer and bigger steps they take, so a huge collapse stays smooth
+  const every = dyn.length < 1200 ? 1 : dyn.length < 4000 ? 2 : dyn.length < 12000 ? 4 : 6;
+  if (++debrisCount >= every) { debrisCount = 0; updateDebris(dt * every); }
 }
 function writeBlock(b) {
   if (b.looseT > b.loose) { b.loose = Math.min(b.looseT, b.loose + FDT * 5); b.mesh.geometry.attributes.aLoose.array[b.id] = b.loose; b.mesh.userData.lz = true; }
-  const s = b.B.s; dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); b.mesh.userData.dirty = true;
+  const s = b.B.s; dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, b.st === 3 && b.B.spec.mega ? 7 : s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); b.mesh.userData.dirty = true;
 }
 
 /* ---------------- trash: the rubble goes into the crane, then into the compactor ---------------- */
@@ -1941,21 +2009,29 @@ function updateCompactor(dt) {
 }
 
 /* ---------------- scrap, graphite, graphene and the shop ---------------- */
-const STUFF = { coins: { icon: "\u{1F4B0}", name: "coins" }, scrap: { icon: "\u{1F529}", name: "scrap" }, graphite: { icon: "\u270F\uFE0F", name: "graphite" }, graphene: { icon: "\u{1F4A0}", name: "graphene" } };
-const LOOT = ["scrap", "graphite", "graphene"], MINION_ICON = "\u{1F916}";
+const STUFF = { coins: { icon: "\u{1F4B0}", name: "coins" }, scrap: { icon: "\u{1F529}", name: "scrap" }, graphite: { icon: "\u270F\uFE0F", name: "graphite" }, graphene: { icon: "\u{1F4A0}", name: "graphene" }, anomium: { icon: "\u{1F52E}", name: "anomium" }, ananium: { icon: "\u{1F48E}", name: "ananium" }, tianium: { icon: "\u2744\uFE0F", name: "tianium" }, tianios: { icon: "\u{1F525}", name: "tianios" } };
+const LOOT = ["scrap", "graphite", "graphene", "anomium", "ananium", "tianium", "tianios"], MINION_ICON = "\u{1F916}";
 // smash: how fast the ball must go to break a block; reach: extra reach when it does; keep: how much speed it loses; pow: how hard the blocks fly
 // speed and turn: how quick the crane is; ram: how hard it rams; slow: how much a ram slows it down; wide and tall: how much more it hits when it rams
-const TEAM = 100, TEAM_WORDS = " Comes with " + TEAM + " minions!";   // every upgrade you own has this many minions
+const TEAM = 1000;   // every upgrade you own has this many minions
 const GEAR = {
   ball: {
     steel: { name: "Steel ball", does: "Your first ball", smash: SMASH, reach: 0, keep: 1, pow: 1 },
-    graphite: { name: "Graphite ball", does: "Smashes more easily." + TEAM_WORDS, minions: TEAM, cost: { coins: 300, scrap: 10, graphite: 30 }, smash: 3.4, reach: 0.3, keep: 0.7, pow: 1.3 },
-    graphene: { name: "Graphene ball", does: "Smashes through nearly anything." + TEAM_WORDS, minions: TEAM, cost: { coins: 1500, scrap: 30, graphene: 30 }, smash: 2.2, reach: 0.7, keep: 0.35, pow: 1.7 }
+    graphite: { name: "Graphite ball", does: "Smashes more easily.", minions: TEAM, cost: { coins: 300, graphite: 30 }, smash: 3.4, reach: 0.3, keep: 0.7, pow: 1.3 },
+    graphene: { name: "Graphene ball", does: "Smashes through nearly anything.", minions: TEAM, cost: { coins: 1500, graphene: 30 }, smash: 2.2, reach: 0.7, keep: 0.35, pow: 1.7 },
+    anomium: { name: "Anomium ball", does: "Extremely strong! One touch smashes.", minions: TEAM, cost: { anomium: 30 }, smash: 0.8, reach: 3, keep: 0.05, pow: 3 },
+    ananium: { name: "Ananium ball", does: "Stronger than Anomium!", minions: TEAM, cost: { ananium: 30 }, smash: 0.4, reach: 5, keep: 0.02, pow: 4 },
+    tianium: { name: "Tianium ball", does: "Even stronger!", minions: TEAM, cost: { tianium: 30 }, smash: 0.3, reach: 6.5, keep: 0.015, pow: 5 },
+    tianios: { name: "Tianio ball", does: "The strongest ball of all!", minions: TEAM, cost: { tianios: 30 }, smash: 0.2, reach: 8, keep: 0.01, pow: 6 }
   },
   crane: {
     yellow: { name: "Yellow crane", does: "Your first crane", speed: 1, turn: 1, ram: 1, slow: 1, wide: 0, tall: 0 },
-    graphite: { name: "Graphite crane", does: "Faster, rams harder." + TEAM_WORDS, minions: TEAM, cost: { coins: 500, scrap: 20, graphite: 60 }, speed: 1.3, turn: 1.2, ram: 1.3, slow: 0.6, wide: 1, tall: 2 },
-    graphene: { name: "Graphene crane", does: "Super fast, rams hardest." + TEAM_WORDS, minions: TEAM, cost: { coins: 2500, scrap: 50, graphene: 50 }, speed: 1.7, turn: 1.4, ram: 1.6, slow: 0.25, wide: 3, tall: 6 }
+    graphite: { name: "Graphite crane", does: "Faster, rams harder.", minions: TEAM, cost: { coins: 500, graphite: 60 }, speed: 1.3, turn: 1.2, ram: 1.3, slow: 0.6, wide: 1, tall: 2 },
+    graphene: { name: "Graphene crane", does: "Super fast, rams hardest.", minions: TEAM, cost: { coins: 2500, graphene: 50 }, speed: 1.7, turn: 1.4, ram: 1.6, slow: 0.25, wide: 3, tall: 6 },
+    anomium: { name: "Anomium crane", does: "Extremely fast! Rams through whole buildings.", minions: TEAM, cost: { anomium: 60 }, speed: 2.6, turn: 2, ram: 3, slow: 0.05, wide: 8, tall: 20 },
+    ananium: { name: "Ananium crane", does: "Faster and stronger than Anomium!", minions: TEAM, cost: { ananium: 60 }, speed: 3.2, turn: 2.4, ram: 4, slow: 0.02, wide: 12, tall: 30 },
+    tianium: { name: "Tianium crane", does: "Even faster and stronger!", minions: TEAM, cost: { tianium: 60 }, speed: 3.6, turn: 2.6, ram: 5, slow: 0.015, wide: 16, tall: 40 },
+    tianios: { name: "Tianio crane", does: "The fastest, strongest crane of all!", minions: TEAM, cost: { tianios: 60 }, speed: 4, turn: 2.8, ram: 6, slow: 0.01, wide: 22, tall: 60 }
   }
 };
 const FIRST = { ball: "steel", crane: "yellow" };
@@ -1966,21 +2042,21 @@ const pick = kind => { const id = store.get(kind, FIRST[kind]); return GEAR[kind
 const using = { ball: pick("ball"), crane: pick("crane") };
 let ballG = GEAR.ball[using.ball], craneG = GEAR.crane[using.crane], levelLoot = {}, shopOpen = false, shopFrom = null, shopA = 0;
 function gearLook(kind, id) { // the textures are only made when they are first needed
-  if (kind === "ball") return id === "graphite" ? bakeOnce("graphiteball", () => BK.graphite(CTEX, 111, 12)) : id === "graphene" ? bakeOnce("grapheneball", () => BK.graphene(CTEX, 121, 10, 8, 0.2)) : bakeOnce("steelball" + CTEX, () => BK.steel(CTEX, 51));
-  return id === "graphite" ? bakeOnce("graphitecrane", () => BK.graphite(CTEX, 131, 8)) : id === "graphene" ? bakeOnce("graphenecrane", () => BK.graphene(CTEX, 141, 5, 9, 0.2)) : bakeOnce("paint" + CTEX, () => BK.paint(CTEX, 31));
+  if (kind === "ball") return id === "graphite" ? bakeOnce("graphiteball", () => BK.graphite(CTEX, 111, 12)) : id === "graphene" ? bakeOnce("grapheneball", () => BK.graphene(CTEX, 121, 10, 8, 0.2)) : id === "anomium" ? bakeOnce("anomiumball", () => BK.anomium(CTEX, 151, 8, 4)) : id === "ananium" ? bakeOnce("ananiumball", () => BK.ananium(CTEX, 171, 8, 4)) : id === "tianium" ? bakeOnce("tianiumball", () => BK.tianium(CTEX, 191, 8, 4)) : id === "tianios" ? bakeOnce("tianiosball", () => BK.tianios(CTEX, 201, 8, 4)) : bakeOnce("steelball" + CTEX, () => BK.steel(CTEX, 51));
+  return id === "graphite" ? bakeOnce("graphitecrane", () => BK.graphite(CTEX, 131, 8)) : id === "graphene" ? bakeOnce("graphenecrane", () => BK.graphene(CTEX, 141, 5, 9, 0.2)) : id === "anomium" ? bakeOnce("anomiumcrane", () => BK.anomium(CTEX, 161, 3, 3)) : id === "ananium" ? bakeOnce("ananiumcrane", () => BK.ananium(CTEX, 181, 3, 3)) : id === "tianium" ? bakeOnce("tianiumcrane", () => BK.tianium(CTEX, 211, 3, 3)) : id === "tianios" ? bakeOnce("tianioscrane", () => BK.tianios(CTEX, 221, 3, 3)) : bakeOnce("paint" + CTEX, () => BK.paint(CTEX, 31));
 }
-function wearLook(m, tx) { m.map = tx.map; m.normalMap = tx.nrm; m.roughnessMap = tx.rm; m.metalnessMap = tx.rm; m.emissiveMap = tx.glow || null; m.emissive.setHex(tx.glow ? 0xffffff : 0); m.emissiveIntensity = tx.glow ? 1.6 : 1; m.needsUpdate = true; }
+function wearLook(m, tx) { m.map = tx.map; m.normalMap = tx.nrm; m.roughnessMap = tx.rm; m.metalnessMap = tx.rm; m.emissiveMap = tx.glow || null; m.emissive.setHex(tx.glow ? 0xffffff : 0); m.emissiveIntensity = tx.glow ? (tx.glowK || 1.6) : 1; m.needsUpdate = true; }
 function applyGear() { ballG = GEAR.ball[using.ball]; craneG = GEAR.crane[using.crane]; wearLook(ballMat, gearLook("ball", using.ball)); wearLook(paintMat, gearLook("crane", using.crane)); syncMinions(); }
 function lootWords(got, sep) { return LOOT.filter(k => got[k]).map(k => "+" + got[k] + " " + STUFF[k].icon + " " + STUFF[k].name).join(sep); }
 function showLootCounts() { for (const k of LOOT) { const el = $(k), n = String(have(k)); if (el.textContent !== n) { el.textContent = n; bump(el); } } }
 function getLoot(B) { // a building pays out once, when it comes down
   const got = B.spec.loot; for (const k in got) { store.set(k, have(k) + got[k]); levelLoot[k] = (levelLoot[k] || 0) + got[k]; }
-  showLootCounts(); const pop = document.createElement("div"); pop.className = "lootpop"; pop.textContent = lootWords(got, "   "); document.body.appendChild(pop); setTimeout(() => pop.remove(), 2300);
+  showLootCounts(); const pop = document.createElement("div"); pop.className = "lootpop"; pop.textContent = LOOT.filter(k => got[k]).map(k => "+" + got[k] + " " + STUFF[k].icon).join("  "); document.body.appendChild(pop); setTimeout(() => pop.remove(), 2300);
   if (AC && soundOn) { const t = AC.currentTime; tone(t + 0.1, 1175, 0.14, 0.13, "triangle"); tone(t + 0.22, 1568, 0.3, 0.13, "triangle"); }
 }
 function confetti(el, n) { el.querySelectorAll(":scope > .conf").forEach(c => c.remove()); for (let i = 0; i < n; i++) { const c = document.createElement("div"); c.className = "conf"; c.style.cssText = "left:" + Math.random() * 100 + "%;background:" + ["#ffd24a", "#f2553c", "#4ab7f2", "#6fd04a", "#f27ac0"][i % 5] + ";animation-duration:" + (2 + Math.random() * 1.8) + "s;animation-delay:" + Math.random() * 0.9 + "s"; el.appendChild(c); } }
 const CRANE_PIC = '<svg class="look" viewBox="0 0 46 46"><rect x="4" y="37" width="24" height="6" rx="3" fill="#2b2c30"/><rect x="7" y="25" width="17" height="12" rx="2" fill="FILL"/><path d="M15 27 L37 6" stroke="FILL" stroke-width="4" stroke-linecap="round"/><path d="M37 6 V24" stroke="#555" stroke-width="1.5"/><circle cx="37" cy="28" r="4.5" fill="#333"/></svg>';
-const CRANE_FILL = { yellow: "#f2a900", graphite: "#7c828f", graphene: "#12162a" };
+const CRANE_FILL = { yellow: "#f2a900", graphite: "#7c828f", graphene: "#12162a", anomium: "#b026ff", ananium: "#ffc21a", tianium: "#a8c8e0", tianios: "#ff4a10" };
 function tileHTML(kind, id) {
   const g = GEAR[kind][id], mine = owns(kind, id), on = using[kind] === id, pic = kind === "ball" ? '<span class="look ball ball-' + id + '"></span>' : CRANE_PIC.replace(/FILL/g, CRANE_FILL[id]);
   let cost = "", btn;
@@ -1992,7 +2068,7 @@ function tileHTML(kind, id) {
   return '<div class="tile' + (on ? " on" : "") + '">' + pic + "<b>" + g.name + "</b><small>" + g.does + '</small><div class="cost">' + cost + "</div>" + btn + "</div>";
 }
 function renderShop() {
-  $("wallet").innerHTML = ["coins", ...LOOT].map(k => "<span>" + STUFF[k].icon + " " + have(k).toLocaleString("en-US") + " " + STUFF[k].name + "</span>").join("") + (MN.length ? "<span>" + MINION_ICON + " " + MN.length + " minions</span>" : "");
+  $("wallet").innerHTML = ["coins", ...LOOT].map(k => "<span>" + STUFF[k].icon + " " + have(k).toLocaleString("en-US") + " " + STUFF[k].name + "</span>").join("") + (MN.length ? "<span>" + MINION_ICON + " " + MN.length.toLocaleString("en-US") + " minions</span>" : "");
   $("balls").innerHTML = Object.keys(GEAR.ball).map(id => tileHTML("ball", id)).join("");
   $("cranes").innerHTML = Object.keys(GEAR.crane).map(id => tileHTML("crane", id)).join("");
 }
@@ -2001,14 +2077,14 @@ function buyGear(kind, id) {
   const g = GEAR[kind][id]; if (owns(kind, id) || Object.keys(g.cost).some(k => have(k) < g.cost[k])) return;
   for (const k in g.cost) store.set(k, have(k) - g.cost[k]);
   owned.add(kind + "-" + id); store.set("owned", [...owned].join(",")); useGear(kind, id); showLootCounts(); updateMenuInfo();
-  $("shopsay").textContent = "Wow! You got the " + g.name + (g.minions ? " and " + g.minions + " minions!" : "!"); confetti($("shop"), 36);
+  $("shopsay").textContent = "Wow! You got the " + g.name + (g.minions ? " and " + g.minions.toLocaleString("en-US") + " minions!" : "!"); confetti($("shop"), 36);
   if (AC && soundOn) { const t = AC.currentTime; [[784, 0], [988, 0.12], [1175, 0.24], [1568, 0.38]].forEach(([f, d]) => tone(t + d, f, 0.3, 0.16, "triangle")); }
 }
 function openShop(from) { shopFrom = from; shopOpen = true; shopA = shopAngle(); document.body.classList.add("inshop"); $(from).classList.add("hidden"); $("shopsay").textContent = ""; renderShop(); $("shop").classList.remove("hidden"); }
 function closeShop() { shopOpen = false; document.body.classList.remove("inshop"); $("shop").classList.add("hidden"); $(shopFrom).classList.remove("hidden"); updateMenuInfo(); }
 const SHOP_D = 88;
 function shopAngle() { // look at the crane from the side, or from another side if a building is in the way
-  const open = a => { for (const k of [0.3, 0.55, 0.8, 1]) { const x = CR.x + Math.sin(a) * SHOP_D * k, z = CR.z + Math.cos(a) * SHOP_D * k; for (const B of LV.list) if (!B.finished && Math.hypot(B.cx - x, B.cz - z) < B.rad + 2) return false; } return true; };
+  const open = a => { for (const k of [0.3, 0.55, 0.8, 1]) { const x = CR.x + Math.sin(a) * SHOP_D * k, z = CR.z + Math.cos(a) * SHOP_D * k; for (const B of LV.list) if (!B.finished && !B.spec.mega && Math.hypot(B.cx - x, B.cz - z) < B.rad + 2) return false; } return true; };
   const side = -CR.yaw + 1.1; for (const d of [0, 0.5, -0.5, 1, -1, -2.2, 2.2]) if (open(side + d)) return side + d;
   return side;
 }
@@ -2019,7 +2095,7 @@ function shopCamera(t) { // stand back and show off the crane, beside the shop p
 }
 
 /* ---------------- minions: every upgrade you own comes with its own team of little helpers ---------------- */
-const MN = [], MINION_SPEED = 6, MINION_HIT_T = 4, MINION_REACH = 2.4, MINION_SIZE = 0.55, MINION_GAP = 0.95;
+const MN = [], MINION_SPEED = 50, MINION_HIT_T = 4, MINION_REACH = 2.4, MINION_SIZE = 0.55, MINION_GAP = 0.95;
 // drawn as instances, so a big crowd costs about the same to draw as a few
 const MINION_GEO = { body: new THREE.SphereGeometry(0.62, 16, 12), dot: new THREE.SphereGeometry(1, 8, 6), handle: new THREE.CylinderGeometry(0.05, 0.05, 0.95, 5), head: new THREE.BoxGeometry(0.26, 0.5, 0.26), hat: new THREE.LatheGeometry([[0, -0.02], [0.68, -0.02], [0.68, 0.02], [0.48, 0.03], [0.46, 0.12], [0.37, 0.3], [0.2, 0.42], [0, 0.44]].map(p => new THREE.Vector2(p[0], p[1])), 14) };
 MINION_GEO.handle.rotateX(Math.PI / 2); MINION_GEO.handle.translate(0, 0, 0.47);
@@ -2029,17 +2105,25 @@ function minionFace(base, smile) { // a happy face painted on the front of the r
   g.strokeStyle = smile; g.lineWidth = 4; g.lineCap = "round"; g.beginPath(); g.arc(64, 72, 14, 0.35, Math.PI - 0.35); g.stroke();
   return T(c);
 }
+MINION_GEO.bodyFar = new THREE.SphereGeometry(0.62, 8, 6); MINION_GEO.hatFar = new THREE.LatheGeometry([[0, -0.02], [0.68, -0.02], [0.68, 0.02], [0.46, 0.12], [0.2, 0.42], [0, 0.44]].map(p => new THREE.Vector2(p[0], p[1])), 6);
+const MINION_FAR2 = 75 * 75, MINION_NEAR_MAX = 500;   // only the closest ones get faces, feet and hammers
 const MINION_MESHES = [];
 function minionMesh(geo, mat, n, shadow) { const m = new THREE.InstancedMesh(geo, mat, n); m.count = 0; m.visible = false; m.frustumCulled = false; m.castShadow = shadow; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.userData.n = 0; scene.add(m); MINION_MESHES.push(m); return m; }
 const MINION_FAMILY = {
   graphite: { pow: 3, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#a3a9b5", "#16181f"), roughness: 0.42, metalness: 0.35 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x3a3d45, roughness: 0.6, metalness: 0.3 }), TEAM * 8, false) },
+  anomium: { pow: 9, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#3a1060", "#ff9af0"), roughness: 0.3, metalness: 0.5 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x1c0836, roughness: 0.5, metalness: 0.4 }), TEAM * 8, false) },
+  ananium: { pow: 12, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#d9a520", "#5a3600"), roughness: 0.25, metalness: 0.8 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x6b4a10, roughness: 0.4, metalness: 0.7 }), TEAM * 8, false) },
+  tianium: { pow: 14, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#a8c0d8", "#203048"), roughness: 0.25, metalness: 0.8 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x40566e, roughness: 0.4, metalness: 0.8 }), TEAM * 8, false) },
+  tianios: { pow: 16, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#3a0f0a", "#ffb060"), roughness: 0.35, metalness: 0.5 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x1c0806, roughness: 0.5, metalness: 0.4 }), TEAM * 8, false) },
   graphene: { pow: 6, body: minionMesh(MINION_GEO.body, new THREE.MeshStandardMaterial({ map: minionFace("#1b1f30", "#7fe9ff"), roughness: 0.42, metalness: 0.5 }), TEAM * 2, true), dark: minionMesh(MINION_GEO.dot, new THREE.MeshStandardMaterial({ color: 0x0d0f18, roughness: 0.6, metalness: 0.3 }), TEAM * 8, false) }
 };
 const hatMat = (color, glow) => new THREE.MeshStandardMaterial(glow ? { color, emissive: glow, emissiveIntensity: 1.1, roughness: 0.35, metalness: 0.2 } : { color, roughness: 0.45, metalness: 0.1 });
-const MINION_HATS = { "crane-graphite": minionMesh(MINION_GEO.hat, hatMat(0xf2b90f), TEAM, false), "ball-graphite": minionMesh(MINION_GEO.hat, hatMat(0xf0662a), TEAM, false), "crane-graphene": minionMesh(MINION_GEO.hat, hatMat(0x1fb6e8, 0x0aa8e0), TEAM, false), "ball-graphene": minionMesh(MINION_GEO.hat, hatMat(0xb05cf0, 0x8a2be2), TEAM, false) };
-const minionHandles = minionMesh(MINION_GEO.handle, new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.7 }), TEAM * 4, false), minionHeads = minionMesh(MINION_GEO.head, new THREE.MeshStandardMaterial({ color: 0xc23a22, roughness: 0.5, metalness: 0.2 }), TEAM * 4, false);
+const MINION_HATS = { "crane-graphite": minionMesh(MINION_GEO.hat, hatMat(0xf2b90f), TEAM, false), "ball-graphite": minionMesh(MINION_GEO.hat, hatMat(0xf0662a), TEAM, false), "crane-graphene": minionMesh(MINION_GEO.hat, hatMat(0x1fb6e8, 0x0aa8e0), TEAM, false), "ball-graphene": minionMesh(MINION_GEO.hat, hatMat(0xb05cf0, 0x8a2be2), TEAM, false), "ball-anomium": minionMesh(MINION_GEO.hat, hatMat(0xff4de0, 0xff20c8), TEAM, false), "crane-anomium": minionMesh(MINION_GEO.hat, hatMat(0xffe0ff, 0xd070ff), TEAM, false), "ball-ananium": minionMesh(MINION_GEO.hat, hatMat(0xffd21f, 0xffa800), TEAM, false), "crane-ananium": minionMesh(MINION_GEO.hat, hatMat(0x7ff0c0, 0x30e0a0), TEAM, false), "ball-tianium": minionMesh(MINION_GEO.hat, hatMat(0x9fe0ff, 0x40c0ff), TEAM, false), "crane-tianium": minionMesh(MINION_GEO.hat, hatMat(0xe8f4ff, 0x90b8e0), TEAM, false), "ball-tianios": minionMesh(MINION_GEO.hat, hatMat(0xff6020, 0xff3000), TEAM, false), "crane-tianios": minionMesh(MINION_GEO.hat, hatMat(0xffc040, 0xff8000), TEAM, false) };
+for (const id in MINION_FAMILY) MINION_FAMILY[id].far = minionMesh(MINION_GEO.bodyFar, MINION_FAMILY[id].body.material, TEAM * 2, false);
+const MINION_HATS_FAR = {}; for (const t in MINION_HATS) MINION_HATS_FAR[t] = minionMesh(MINION_GEO.hatFar, MINION_HATS[t].material, TEAM, false);
+const minionHandles = minionMesh(MINION_GEO.handle, new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.7 }), TEAM * 12, false), minionHeads = minionMesh(MINION_GEO.head, new THREE.MeshStandardMaterial({ color: 0xc23a22, roughness: 0.5, metalness: 0.2 }), TEAM * 12, false);
 const MX = { base: new THREE.Matrix4(), arm: new THREE.Matrix4(), hand: new THREE.Matrix4(), part: new THREE.Matrix4(), out: new THREE.Matrix4(), e: new THREE.Euler(), q: new THREE.Quaternion(), v: new THREE.Vector3(), s: new THREE.Vector3(MINION_SIZE, MINION_SIZE, MINION_SIZE) };
-const teamJob = []; let minionTeams = 0, minionSettle = 0, minionTick = 0;
+const teamJob = []; let minionTeams = 0, minionSettle = 0, minionTick = 0, minionSlice = 0, minionOff = false, shoveOff = false;
 function syncMinions() { // the minions you have bought stay with you, whichever ball and crane you use
   for (const team of owned) {
     const [kind, id] = team.split("-"), g = GEAR[kind] && GEAR[kind][id]; if (!g || !g.minions || MN.some(m => m.team === team)) continue;
@@ -2057,8 +2141,11 @@ function teamBuilding(k) { // the first team goes where the crane goes; each oth
 }
 function minionTarget(m, job) { // the closest block of its building, low down if it can reach one
   let best = null, bd = 1e12, any = null, ad = 1e12;
-  for (const b of job.blocks) { if (b.st !== 0) continue; const dx = b.x - m.x, dz = b.z - m.z, d = dx * dx + dz * dz; if (d < ad) { ad = d; any = b; } if (b.y < MINION_REACH && d < bd) { bd = d; best = b; } }
-  return best || any;
+  const low = job.low || (job.low = job.blocks.filter(b => b.y < MINION_REACH || b.gy === 0));
+  for (const b of low) { if (b.st !== 0) continue; const dx = b.x - m.x, dz = b.z - m.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = b; } }
+  if (best) return best;
+  for (const b of job.blocks) { if (b.st !== 0) continue; const dx = b.x - m.x, dz = b.z - m.z, d = dx * dx + dz * dz; if (d < ad) { ad = d; any = b; } }
+  return any;
 }
 function whack(m, b) {
   const B = b.B, dx = b.x - m.x, dz = b.z - m.z, d = Math.hypot(dx, dz) || 1, R = Math.random, go = 1.5 + R() * 2.5;
@@ -2068,31 +2155,63 @@ function whack(m, b) {
 function updateMinions(dt) {
   const n = MN.length; if (!n) return;
   const jobs = []; for (let k = 0; k < minionTeams; k++) jobs.push(teamBuilding(k));
-  let looks = 12;   // only so many may search for a new block at once, so a crowd cannot slow the game down
-  for (const m of MN) {
-    m.cool -= dt; m.walking = false; m.cheer = finishing; let gx = 0, gz = 0, go = false;
+  let looks = clamp(Math.round(n / 20), 12, 120);   // only so many may search for a new block at once, so a crowd cannot slow the game down
+  const slices = Math.max(1, Math.ceil(n / 3000)), sdt = dt * slices; minionSlice = (minionSlice + 1) % slices;   // in a huge crowd each minion moves in turn, taking a bigger step
+  for (let q = minionSlice; q < n; q += slices) {
+    const m = MN[q]; m.cool -= sdt; m.walking = false; m.cheer = finishing; let gx = 0, gz = 0, go = false;
     if (finishing) { const r = CRANE_R + 3 + Math.sqrt(m.i) * 0.9, a = m.i * 2.4; gx = CR.x + Math.sin(a) * r; gz = CR.z + Math.cos(a) * r; go = Math.hypot(gx - m.x, gz - m.z) > 1; } // come back to the crane and celebrate
     else {
       const job = jobs[m.squad]; if (m.tgt && (m.tgt.st !== 0 || m.tgt.B !== job)) m.tgt = null;
       if (!m.tgt && job && looks > 0) { looks--; m.tgt = minionTarget(m, job); }
       const t = m.tgt; if (t) { gx = t.x; gz = t.z; if (Math.hypot(gx - m.x, gz - m.z) > t.B.s / 2 + 0.75) go = true; else { m.yaw = Math.atan2(gx - m.x, gz - m.z); if (m.cool <= 0) { m.cool = MINION_HIT_T * (0.85 + Math.random() * 0.3); whack(m, t); m.tgt = null; } } }
     }
-    if (go) { const dx = gx - m.x, dz = gz - m.z, d = Math.hypot(dx, dz) || 1, step = MINION_SPEED * dt; m.x += dx / d * step; m.z += dz / d * step; m.yaw = Math.atan2(dx, dz); m.walking = true; }
+    if (go) { const dx = gx - m.x, dz = gz - m.z, d = Math.hypot(dx, dz) || 1, step = MINION_SPEED * sdt; m.x += dx / d * step; m.z += dz / d * step; m.yaw = Math.atan2(dx, dz); m.walking = true; }
   }
   // keep out of each other's way, the crane's way, and solid things
-  minionTick = (minionTick + 1) & 3; if (minionTick === 0) for (let i = 0; i < n; i++) { const a = MN[i]; for (let j = i + 1; j < n; j++) { const b = MN[j], dx = a.x - b.x, dz = a.z - b.z, d2 = dx * dx + dz * dz; if (d2 > MINION_GAP * MINION_GAP || d2 < 1e-6) continue; const d = Math.sqrt(d2), k = (MINION_GAP - d) * 0.5 / d; a.x += dx * k; a.z += dz * k; b.x -= dx * k; b.z -= dz * k; } }
+  minionTick = (minionTick + 1) & (n > 6000 ? 7 : 3); if (minionTick !== 0) { settleMinions(dt); return; }
+  minionsApart();
   for (const m of MN) {
     const cx = m.x - CR.x, cz = m.z - CR.z, cd = Math.hypot(cx, cz) || 1; const off = CRANE_R + 1; if (cd < off) { m.x = CR.x + cx / cd * off; m.z = CR.z + cz / cd * off; }
-    for (const [px, pz, r] of SOLID_PROPS) { const ox = m.x - px, oz = m.z - pz, od = Math.hypot(ox, oz) || 1, need = r + 0.9; if (od < need) { m.x = px + ox / od * need; m.z = pz + oz / od * need; } }
-    m.x = clamp(m.x, -88 * SITE_K, 88 * SITE_K); m.z = clamp(m.z, -88 * SITE_K, 88 * SITE_K);
+    if (Math.abs(m.x) < 60 && Math.abs(m.z) < 60) for (const [px, pz, r] of SOLID_PROPS) { const ox = m.x - px, oz = m.z - pz, od = Math.hypot(ox, oz) || 1, need = r + 0.9; if (od < need) { m.x = px + ox / od * need; m.z = pz + oz / od * need; } }
+    m.x = clamp(m.x, -88 * SITE_K * YARD_K, 88 * SITE_K * YARD_K); m.z = clamp(m.z, -88 * SITE_K * YARD_K, 88 * SITE_K * YARD_K);
   }
-  minionSettle -= dt; if (minionSettle <= 0) { minionSettle = 0.2; for (const B of LV.list) if (B.mdirty) { B.mdirty = false; B.dirty = true; } } // a crowd only makes a building check what has lost its support a few times a second
+  settleMinions(dt);
+}
+function settleMinions(dt) { // a crowd only makes a building check what has lost its support a few times a second
+  minionSettle -= dt; if (minionSettle <= 0) { minionSettle = 0.2; for (const B of LV.list) if (B.mdirty) { B.mdirty = false; B.dirty = true; } }
+}
+const SEP_CELL = 1.9, SEP_SIZE = 1 << 17, SEP_HEAD = new Int32Array(SEP_SIZE), SEP_NEXT = new Int32Array(TEAM * 12), SEP_OFF = 92 * SITE_K * YARD_K;
+const sepHash = (x, z) => (Math.imul(x, 73856093) ^ Math.imul(z, 19349663)) & (SEP_SIZE - 1);
+function minionsApart() { // only minions in neighbouring squares of a grid can bump into each other
+  SEP_HEAD.fill(-1); const G2 = MINION_GAP * MINION_GAP;
+  for (let i = 0; i < MN.length; i++) {
+    const a = MN[i], cx = ((a.x + SEP_OFF) / SEP_CELL) | 0, cz = ((a.z + SEP_OFF) / SEP_CELL) | 0;
+    for (let z = cz - 1; z <= cz + 1; z++) for (let x = cx - 1; x <= cx + 1; x++) {
+      for (let j = SEP_HEAD[sepHash(x, z)]; j >= 0; j = SEP_NEXT[j]) {
+        const b = MN[j], dx = a.x - b.x, dz = a.z - b.z, d2 = dx * dx + dz * dz; if (d2 > G2 || d2 < 1e-6) continue;
+        const d = Math.sqrt(d2), k = (MINION_GAP - d) * 0.5 / d; a.x += dx * k; a.z += dz * k; b.x -= dx * k; b.z -= dz * k;
+      }
+    }
+    const h = sepHash(cx, cz); SEP_NEXT[i] = SEP_HEAD[h]; SEP_HEAD[h] = i;
+  }
 }
 function minionPart(mesh, parent, x, y, z, sx = 1, sy = sx, sz = sx) { MX.part.makeScale(sx, sy, sz); MX.part.setPosition(x, y, z); MX.out.multiplyMatrices(parent, MX.part); mesh.setMatrixAt(mesh.userData.n++, MX.out); }
+function minionFar(mesh, x, y, z, sy) { const a = mesh.instanceMatrix.array, i = mesh.userData.n++ * 16; a[i] = MINION_SIZE; a[i + 1] = 0; a[i + 2] = 0; a[i + 3] = 0; a[i + 4] = 0; a[i + 5] = sy; a[i + 6] = 0; a[i + 7] = 0; a[i + 8] = 0; a[i + 9] = 0; a[i + 10] = MINION_SIZE; a[i + 11] = 0; a[i + 12] = x; a[i + 13] = y; a[i + 14] = z; a[i + 15] = 1; }
 function minionAnim(dt, nowS) { // walking, hammering and jumping for joy
   if (!MN.length) return;
   for (const M of MINION_MESHES) M.userData.n = 0;
+  const cx = camera.position.x, cz = camera.position.z, farEvery = Math.ceil(MN.length / 4000) || 1; let nearLeft = MINION_NEAR_MAX;
   for (const m of MN) {
+    const fx = m.x - cx, fz = m.z - cz, isFar = fx * fx + fz * fz > MINION_FAR2 || nearLeft <= 0;
+    if (isFar) {
+      if (m.i % farEvery || (PHONE && (m.i & 3))) continue;   // no more than about 4,000 far ones are drawn, and phones draw one in four of those
+      m.y += (hmGet(m.x, m.z) - m.y) * Math.min(1, dt * 8);
+      let hop = 0; if (m.cheer || state === "win" || shopOpen) hop = Math.abs(Math.sin(nowS * 7 + m.i * 0.9)) * 0.9 * MINION_SIZE; else if (m.walking) { m.phase += dt * 11; hop = Math.abs(Math.sin(m.phase)) * 0.3 * MINION_SIZE; }
+      const py = m.y + hop;
+      minionFar(m.fam.far, m.x, py + 0.92 * MINION_SIZE, m.z, MINION_SIZE * 1.08); minionFar(MINION_HATS_FAR[m.team], m.x, py + 1.36 * MINION_SIZE, m.z, MINION_SIZE);
+      continue;
+    }
+    nearLeft--;
     m.y += (hmGet(m.x, m.z) - m.y) * Math.min(1, dt * 8);
     const happy = m.cheer || state === "win" || shopOpen, F = m.fam; let hop = 0, th = 0.2;
     if (happy) { const j = nowS * 7 + m.i * 0.9; hop = Math.abs(Math.sin(j)) * 0.9 * MINION_SIZE; th = -2 + Math.sin(j * 2) * 0.4; }
@@ -2105,18 +2224,18 @@ function minionAnim(dt, nowS) { // walking, hammering and jumping for joy
     MX.arm.makeRotationX(th); MX.arm.setPosition(-0.66, 1.0, 0.08); MX.hand.multiplyMatrices(MX.base, MX.arm);
     minionPart(F.dark, MX.hand, 0, 0, 0, 0.17); minionPart(minionHandles, MX.hand, 0, 0, 0); minionPart(minionHeads, MX.hand, 0, 0, 0.94);
   }
-  for (const M of MINION_MESHES) { M.count = M.userData.n; M.visible = M.count > 0; M.instanceMatrix.needsUpdate = true; }
+  for (const M of MINION_MESHES) { M.count = M.userData.n; M.visible = M.count > 0; if (!M.count) continue; const A = M.instanceMatrix; A.clearUpdateRanges(); A.addUpdateRange(0, M.count * 16); A.needsUpdate = true; }
 }
 
 /* ---------------- autosave: the level in progress goes into the browser's storage every few seconds ---------------- */
-const AUTOSAVE_MS = 10000, SAVE_VER = 2, posInt = v => clamp(Math.round(v * 50), -32767, 32767); let lastAutosave = 0;
+const AUTOSAVE_MS = 10000, SAVE_VER = 6, posInt = v => clamp(Math.round(v * 8), -32767, 32767); let lastAutosave = 0;
 function clearSave() { try { localStorage.removeItem("demolition-simulator-autosave"); } catch (e) {} }
 function saveGame() { // every block that has moved: 8 small numbers each (which block, where it is, how it is turned)
   if (!LV || (state !== "play" && state !== "pause")) return false;
-  const list = []; let n = 0;
-  for (const B of LV.list) for (const b of B.blocks) { n++; if (b.st === 0) continue; list.push(b.st === 3 ? n : -n, posInt(b.x), posInt(b.y), posInt(b.z), Math.round(b.q.x * 32000), Math.round(b.q.y * 32000), Math.round(b.q.z * 32000), Math.round(b.q.w * 32000)); }
-  const bytes = new Uint8Array(new Int16Array(list).buffer); let txt = ""; for (let i = 0; i < bytes.length; i += 8192) txt += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
-  const S = { v: SAVE_VER, level, round, n, time: playTime, hits: bigHits, got: levelTrash, loot: levelLoot, done: LV.list.map(B => B.finished ? 1 : 0), crane: [CR.x, CR.z, CR.yaw, CR.luff, CR.cable], ball: [BP.p.x, BP.p.y, BP.p.z], data: btoa(txt) };
+  const ids = [], list = []; let n = 0;
+  for (const B of LV.list) for (const b of B.blocks) { n++; if (b.st === 0) continue; ids.push(b.st === 3 ? n : -n); list.push(posInt(b.x), posInt(b.y), posInt(b.z), Math.round(b.q.x * 32000), Math.round(b.q.y * 32000), Math.round(b.q.z * 32000), Math.round(b.q.w * 32000)); }
+  const b64 = arr => { const bytes = new Uint8Array(arr.buffer); let txt = ""; for (let i = 0; i < bytes.length; i += 8192) txt += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(txt); };
+  const S = { v: SAVE_VER, level, round, n, time: playTime, hits: bigHits, got: levelTrash, loot: levelLoot, done: LV.list.map(B => B.finished ? 1 : 0), crane: [CR.x, CR.z, CR.yaw, CR.luff, CR.cable], ball: [BP.p.x, BP.p.y, BP.p.z], ids: b64(new Int32Array(ids)), data: b64(new Int16Array(list)) };
   saveTrash(); store.set("autosave", JSON.stringify(S)); return true;
 }
 function autosaveTick(t) {
@@ -2129,12 +2248,12 @@ function loadGame(S) { // put the level back the way it was; if anything does no
   try {
     const all = []; for (const B of LV.list) for (const b of B.blocks) all.push(b);
     if (all.length !== S.n) throw new Error("the level has changed");
-    const txt = atob(S.data), bytes = new Uint8Array(txt.length); for (let i = 0; i < txt.length; i++) bytes[i] = txt.charCodeAt(i);
-    const d = new Int16Array(bytes.buffer);
-    for (let i = 0; i + 7 < d.length; i += 8) {
-      const idx = Math.abs(d[i]) - 1, b = all[idx]; b.x = d[i + 1] / 50; b.y = d[i + 2] / 50; b.z = d[i + 3] / 50; b.q.set(d[i + 4] / 32000, d[i + 5] / 32000, d[i + 6] / 32000, d[i + 7] / 32000).normalize();
-      if (b.gy > 0) { fallen++; b.B.fallen++; } setLoose(b, 1); b.looseT = 1;
-      if (d[i] > 0) { b.B.grid[b.gi] = -1; b.st = 3; hmRaise(b.x, b.z, b.B.s * 0.4, Math.min(b.y + b.B.s / 2, HEAP_MAX)); writeBlock(b); }
+    const un64 = t => { const txt = atob(t), bytes = new Uint8Array(txt.length); for (let i = 0; i < txt.length; i++) bytes[i] = txt.charCodeAt(i); return bytes.buffer; };
+    const I = new Int32Array(un64(S.ids)), d = new Int16Array(un64(S.data));
+    for (let k = 0; k < I.length; k++) {
+      const i = k * 7, b = all[Math.abs(I[k]) - 1]; b.x = d[i] / 8; b.y = d[i + 1] / 8; b.z = d[i + 2] / 8; b.q.set(d[i + 3] / 32000, d[i + 4] / 32000, d[i + 5] / 32000, d[i + 6] / 32000).normalize();
+      showBlock(b); if (b.gy > 0) { fallen++; b.B.fallen++; } setLoose(b, 1); b.looseT = 1;
+      if (I[k] > 0) { b.B.grid[b.gi] = -1; b.st = 3; if (b.B.spec.mega) uncover(b); else hmRaise(b.x, b.z, b.B.s * 0.4, Math.min(b.y + b.B.s / 2, HEAP_MAX)); writeBlock(b); }
       else { b.st = 1; release(b); writeBlock(b); } // it was still falling, so it carries on falling
     }
     LV.list.forEach((B, i) => { if (S.done[i]) { B.finished = true; doneN++; } else if (B.fallen > 0) B.dirty = true; });
@@ -2142,7 +2261,7 @@ function loadGame(S) { // put the level back the way it was; if anything does no
     playTime = S.time || 0; bigHits = S.hits || 0; levelTrash = S.got || 0; levelLoot = S.loot || {};
     CR.x = S.crane[0]; CR.z = S.crane[1]; CR.yaw = S.crane[2]; CR.luff = S.crane[3]; CR.cable = S.crane[4]; tipPos(CR.tip); BP.p.set(S.ball[0], S.ball[1], S.ball[2]); BP.v.set(0, 0, 0); camX = CR.x; camZ = CR.z;
     if (doneN === LV.list.length) { finishing = true; finishT = 3.4 * GAME_SPEED; collapseA = 0; }
-    updateFocus(); resetMinions(); showMsg("Welcome back! " + doneN + " of 10 are already down!", 5); saveGame();
+    updateFocus(); resetMinions(); showMsg("Welcome back! Keep smashing the giant building!", 5); saveGame();
     return true;
   } catch (e) { if (LOG) console.log("DBG save did not load: " + e.message); clearSave(); round = S.round || 1; startLevel(S.level); return false; }
 }
@@ -2158,7 +2277,7 @@ function startLevel(n) {
   for (const id of ["hud", "tools", "help"]) $(id).classList.remove("hidden"); if (TOUCH) $("touch").classList.remove("hidden"); if (TOUCH) $("help").classList.add("hidden");
   updateFocus();
   camHead = 0; camSide = 0; camKN = 0; camOff = 0; camPitch = 0;
-  showMsg("Knock down all 10 buildings!" + (MN.length ? " Your " + MN.length + " minions will help!" : ""), 5);
+  showMsg("Knock down the giant building!" + (MN.length ? " Your " + MN.length.toLocaleString("en-US") + " minions will help!" : ""), 5);
   setTimeout(() => $("help").style.opacity = 0.0, 22000); $("help").style.opacity = 1;
   puff(0, 0, 0, 0.1, 0);
 }
@@ -2170,7 +2289,7 @@ function showWin() {
   if (coins > parseInt(store.get("best", "0"))) store.set("best", coins);
   const nextLv = ((level - 1) % 4) + 2; if (round === 1 && nextLv <= 4 && nextLv > parseInt(store.get("level", "1"))) store.set("level", nextLv); if (level % 4 === 0) store.set("level", 4);
   const last = level % 4 === 0;
-  $("wintitle").textContent = last ? "You knocked them all down!" : "Hooray! 10 buildings down!";
+  $("wintitle").textContent = last ? "You knocked them all down!" : "Hooray! The giant building is down!";
   $("winstars").innerHTML = [0, 1, 2].map(i => '<span style="animation-delay:' + (0.3 + i * 0.28) + 's">' + (i < st ? "⭐" : "☆") + "</span>").join("");
   if (AC && soundOn) for (let i = 0; i < st; i++) tone(AC.currentTime + 0.42 + i * 0.28, 880 * Math.pow(1.26, i), 0.3, 0.16, "triangle");
   const winWords = n => "You got " + n + " coins! " + (st === 3 ? "Super smashing!" : st === 2 ? "Great job!" : "Nice swinging!") + " Total: " + tc + " coins." + (last ? " Want to play it all again?" : "");
@@ -2185,12 +2304,13 @@ function updateMenuInfo() {
   $("menuinfo").textContent = "Best score: " + best + " coins  |  Coins: " + coins + "  |  Furthest level: " + lv + "  |  " + LOOT.map(k => STUFF[k].icon + " " + have(k)).join("  ");
   const S = readSave(); $("restart").classList.toggle("hidden", lv <= 1 && !S); $("play").textContent = S ? "Keep going: level " + (((S.level - 1) % 4) + 1) : lv > 1 ? "Play level " + lv : "Play";
 }
-function toMenu() { saveGame(); state = "menu"; saveTrash(); for (const id of ["hud", "tools", "help", "touch", "pause", "win", "msg", "dump"]) $(id).classList.add("hidden"); $("menu").classList.remove("hidden"); updateMenuInfo(); }
+function toMenu() { if (birdView) toggleBird(); saveGame(); state = "menu"; saveTrash(); for (const id of ["hud", "tools", "help", "touch", "pause", "win", "msg", "dump"]) $(id).classList.add("hidden"); $("menu").classList.remove("hidden"); updateMenuInfo(); }
 function setPause(p) { if (state !== "play" && state !== "pause") return; state = p ? "pause" : "play"; if (p) saveGame(); $("pause").classList.toggle("hidden", !p); }
 $("play").onclick = () => { audioInit(); const S = readSave(); if (S) { loadGame(S); return; } round = 1; startLevel(parseInt(store.get("level", "1"))); };
 $("restart").onclick = () => { audioInit(); round = 1; startLevel(1); };
 $("resume").onclick = () => setPause(false);
 $("tomenu").onclick = toMenu;
+$("birdbtn").onclick = () => { audioInit(); toggleBird(); $("birdbtn").blur(); };
 $("pausebtn").onclick = () => setPause(state === "play");
 $("soundbtn").onclick = () => { audioInit(); setSound(!soundOn); };
 $("menusound").onclick = () => { audioInit(); setSound(!soundOn); };
@@ -2206,7 +2326,7 @@ addEventListener("keydown", e => {
   if (k === "ArrowLeft" || k === "a" || k === "A") keys.left = 1; else if (k === "ArrowRight" || k === "d" || k === "D") keys.right = 1;
   else if (k === "ArrowUp") keys.out = 1; else if (k === "ArrowDown") keys.in = 1; else if (k === "w" || k === "W") keys.fwd = 1; else if (k === "s" || k === "S") keys.back = 1; else if (k === "e" || k === "E") { if (!e.repeat && dumpTrash()) eDump = true; else if (!eDump) keys.down = 1; } else if (k === "q" || k === "Q") keys.up = 1;
   else if (k === "m" || k === "M") { audioInit(); setSound(!soundOn); } else if (k === "p" || k === "P" || k === "Escape") setPause(state === "play");
-  else if (k === "g" || k === "G") cycleQuality(); else used = false;
+  else if (k === "g" || k === "G") cycleQuality(); else if (k === "b" || k === "B") { if (!e.repeat && (state === "play" || state === "pause")) toggleBird(); } else used = false;
   if (used) { audioInit(); e.preventDefault(); }
 });
 addEventListener("keyup", e => { const k = e.key; if (k === "ArrowLeft" || k === "a" || k === "A") keys.left = 0; else if (k === "ArrowRight" || k === "d" || k === "D") keys.right = 0; else if (k === "ArrowUp") keys.out = 0; else if (k === "ArrowDown") keys.in = 0; else if (k === "w" || k === "W") keys.fwd = 0; else if (k === "s" || k === "S") keys.back = 0; else if (k === "e" || k === "E") { keys.down = 0; eDump = false; } else if (k === "q" || k === "Q") keys.up = 0; });
@@ -2222,8 +2342,16 @@ document.querySelectorAll("#touch button").forEach(btn => {
 });
 // drag to look around
 let camHead = 0, camOff = 0, camPitch = 0, drag = null, lastDrag = -9;
+// bird's eye view: B flies the camera high above the crane; hold left click and move to look around
+const BIRD_H = 5600, FOG_D = scene.fog.density; let birdView = false, birdYaw = 0, birdPitch = -1.22, birdX = 0, birdZ = 0;
+function toggleBird() {
+  birdView = !birdView; birdX = CR.x; birdZ = CR.z; birdYaw = 0; birdPitch = -1.22;
+  scene.fog.density = FOG_D * (birdView ? 0.3 : 1); setSunSize(birdView ? 3900 : 280);
+  showMsg(birdView ? "Bird's eye view! Hold left click and move to look around." : "Back down to the crane!", 3);
+  $("birdbtn").classList.toggle("on", birdView);
+}
 $("gl").addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY }; audioInit(); });
-addEventListener("pointermove", e => { if (!drag) return; camOff = clamp(camOff - (e.clientX - drag.x) * 0.006, -2.4, 2.4); camPitch = clamp(camPitch + (e.clientY - drag.y) * 0.004, -0.5, 0.7); drag.x = e.clientX; drag.y = e.clientY; lastDrag = performance.now(); });
+addEventListener("pointermove", e => { if (!drag) return; if (birdView) { birdYaw -= (e.clientX - drag.x) * 0.004; birdPitch = clamp(birdPitch + (e.clientY - drag.y) * 0.004, -1.5, 0.25); drag.x = e.clientX; drag.y = e.clientY; return; } camOff = clamp(camOff - (e.clientX - drag.x) * 0.006, -2.4, 2.4); camPitch = clamp(camPitch + (e.clientY - drag.y) * 0.004, -0.5, 0.7); drag.x = e.clientX; drag.y = e.clientY; lastDrag = performance.now(); });
 addEventListener("pointerup", () => drag = null);
 
 /* ---------------- main loop ---------------- */
@@ -2263,13 +2391,15 @@ function update(dt) {
     if (frameSpeed >= 3) { sThud(frameSpeed); shake = Math.max(shake, clamp(frameSpeed / 40, 0.05, 0.4)); puff(BP.p.x, BP.p.y, BP.p.z, 1.6, frameSpeed > 6 ? 2 : 1, 1, 0.55); }
     else if (frameSpeed > 1.2) puff(BP.p.x, BP.p.y, BP.p.z, 0.8, 1, 0.6, 0.35);
   }
-  for (const B of LV.list) if (B.dirty) { B.dirty = false; settle(B); }
-  shoveRubble(); squashProps(); updateCones(dt); updateSway(dt); updateMinions(dt);
+  settleOff = !settleOff; for (const B of LV.list) if (B.dirty && (!B.spec.mega || settleOff)) { B.dirty = false; settle(B); }
+  if (dyn.length < 1200 || (shoveOff = !shoveOff)) shoveRubble();
+  squashProps(); updateCones(dt); updateSway(dt);
+  if (MN.length <= 1000) updateMinions(dt); else if ((minionOff = !minionOff)) updateMinions(dt * 2);
   stepDebris(dt);
   flushMeshes();
   for (const B of LV.list) if (B.sign) { const sb = B.signBlock, sg = B.sign; if (sb.st === 0) { const k = sb.y / B.h, ks = k * k * B.s; sg.position.set(sb.x + B.sw.x * ks, sb.y, sb.z + B.signOff.z + B.sw.z * ks); sg.quaternion.identity(); sg.rotateZ(0.03); } else { sg.position.copy(B.signOff).applyQuaternion(sb.q).add(_a.set(sb.x, sb.y, sb.z)); sg.quaternion.copy(sb.q); } }
   const pct = Math.min(100, Math.floor(fallen / total * 100)); if ($("pct").textContent !== String(pct)) bump($("pct")); $("pct").textContent = pct; $("barfill").style.width = pct + "%";
-  for (const B of LV.list) if (!B.finished && B.fallen / B.total >= 0.9) finishBuilding(B);
+  for (const B of LV.list) if (!B.finished && B.fallen / B.total >= (B.spec.mega ? 0.6 : 0.9)) finishBuilding(B);
   updateFocus();
   updateTrash(dt); updateCompactor(dt); updateMarkers();
   if (finishing) { finishT += dt; if (finishT > 3.4 * GAME_SPEED && state === "play" && compT < 0 && trashWaiting() <= 0) showWin(); } // the building only counts once all its rubble is in the crane
@@ -2293,12 +2423,17 @@ function updateVisuals(dt) {
   // camera: behind and above the crane, gently following the ball
   if (performance.now() - lastDrag > 4500 && !drag) { camOff *= 1 - Math.min(1, dt * 0.5); camPitch *= 1 - Math.min(1, dt * 0.5); }
   const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
-  const bAz = Math.atan2(BP.p.x - CR.x, -(BP.p.z - CR.z)), tAz = Math.atan2(BLD.cx - CR.x, -(BLD.cz - CR.z)), fd = Math.hypot(BLD.cx - CR.x, BLD.cz - CR.z), nk = clamp(1 - (fd - BLD.rad - 28) / 26, 0, 1), near = nk * nk * (3 - 2 * nk);
+  const bAz = Math.atan2(BP.p.x - CR.x, -(BP.p.z - CR.z)), tAz = Math.atan2(BLD.cx - CR.x, -(BLD.cz - CR.z)), fd = Math.hypot(BLD.cx - CR.x, BLD.cz - CR.z), nk = BLD.spec.mega ? 0 : clamp(1 - (fd - BLD.rad - 28) / 26, 0, 1), near = nk * nk * (3 - 2 * nk);
   camSide += (Math.sign(wrapA(tAz - CR.yaw)) - camSide) * Math.min(1, dt * 0.8); camKN += (near * BLD.camK - camKN) * Math.min(1, dt * 1.3);
   const atB = bAz + wrapA(tAz - bAz) * 0.8 - 0.55 * camSide, aim = CR.yaw + 0.3 * (1 - near) + wrapA(atB - CR.yaw) * near;
   let df = aim - camHead; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI; camHead += df * Math.min(1, dt * 3.2);
   camX += (CR.x - camX) * Math.min(1, dt * 10); camZ += (CR.z - camZ) * Math.min(1, dt * 10);   // the camera trails the crane a little
-  const hd = camHead + camOff, D = 60 + camKN * 22; let H = 38 + camKN * 15 + camPitch * 14;
+  const hd = camHead + camOff; let D = 60 + camKN * 22, H = 38 + camKN * 15 + camPitch * 14;
+  if (BLD.spec.mega) { // a wall between the crane and the camera: the camera comes in front of it
+    const B = BLD, ex = -Math.sin(hd) * D, ez = Math.cos(hd) * D; let want = 1;
+    for (let k = 0.2; k <= 1.001; k += 0.05) { const gx = Math.floor((camX + ex * k - B.ox) / B.s), gy = Math.floor((6 + (H - 6) * k) / B.s), gz = Math.floor((camZ + ez * k - B.oz) / B.s); if (gx < 0 || gy < 0 || gz < 0 || gx >= B.nx || gy >= B.ny || gz >= B.nz) continue; const bi = B.grid[gx + B.nx * (gy + B.ny * gz)]; if (bi >= 0 && B.blocks[bi].st === 0) { want = Math.max(0.28, k - 0.1); break; } }
+    camPull += (want - camPull) * Math.min(1, dt * (want < camPull ? 9 : 2)); if (introT > 0) camPull = want; D *= camPull; H = 12 + (H - 12) * camPull;
+  } else
   { // a building behind the crane must not get in the way: the camera rises up over it
     const ex = -Math.sin(hd) * D, ez = Math.cos(hd) * D; let want = H;
     for (const B of LV.list) { if (B.finished) continue; const pad = 4, x0 = B.ox - pad, x1 = B.ox + B.nx * B.s + pad, z0 = B.oz - pad, z1 = B.oz + B.nz * B.s + pad; for (let k = 0.15; k <= 1.001; k += 0.05) { const px = camX + ex * k, pz = camZ + ez * k; if (px > x0 && px < x1 && pz > z0 && pz < z1) { want = Math.max(want, 8 + (B.h + 4 - 8) / k); break; } } }
@@ -2317,8 +2452,13 @@ function updateVisuals(dt) {
   let roll = 0;
   if (shake > 0.001) { const ts = nowS * 16; shake = Math.min(shake, 0.3); camera.position.x += (vnoise(ts, 3.1) - 0.5) * shake * 3; camera.position.y += (vnoise(ts, 9.7) - 0.5) * shake * 3; camera.position.z += (vnoise(ts, 17.3) - 0.5) * shake * 3; roll = (vnoise(ts * 0.8, 23.9) - 0.5) * shake * 0.16; shake *= Math.max(0, 1 - dt * 6); }
   fovK *= Math.max(0, 1 - dt * 7); const fv = camFov0 - fovK * 3.2; if (Math.abs(fv - camera.fov) > 0.01) { camera.fov = fv; camera.updateProjectionMatrix(); }
+  if (birdView) { // high above the crane, looking wherever the player points it
+    const f = Math.min(1, dt * 3), c = Math.cos(birdPitch); birdX += (CR.x - birdX) * f; birdZ += (CR.z - birdZ) * f; camera.position.set(birdX, BIRD_H, birdZ);
+    look.set(birdX + Math.sin(birdYaw) * c * 100, BIRD_H + Math.sin(birdPitch) * 100, birdZ - Math.cos(birdYaw) * c * 100); roll = 0;
+  }
   if (window.__cam) { camera.position.set(...window.__cam.p); look.set(...window.__cam.l); } camera.lookAt(look); if (roll) camera.rotateZ(roll);
 }
+let shadowOn = false;
 const GAME_SPEED = 4;   // time in the game goes this many times faster
 let last = 0;
 function frame(t) {
@@ -2327,11 +2467,12 @@ function frame(t) {
   if (state === "play") for (let i = 0; i < GAME_SPEED && state === "play"; i++) update(dt);
   else if (state === "win" && BLD) { for (let i = 0; i < GAME_SPEED; i++) stepDebris(dt); flushMeshes(); }
   if (BLD && (state === "play" || state === "win" || state === "pause")) updateVisuals(state === "pause" ? 0 : dt);
-  if (state === "menu") { const a = t / 14000; camera.position.set(Math.sin(a) * 225, 95, Math.cos(a) * 225); camera.lookAt(0, 20, 0); }
+  if (state === "menu") { const a = t / 14000; camera.position.set(Math.sin(a) * 5600, 4000, Math.cos(a) * 5600); camera.lookAt(0, 600, 0); }
   updateEffects(state === "pause" ? 0 : dt * GAME_SPEED);
   minionAnim(state === "pause" ? 0 : dt * GAME_SPEED, t / 1000); autosaveTick(t);
   if (shopOpen) shopCamera(t);
-  fitSun(BLD ? (CR.x + BLD.cx) * 0.5 : 0, BLD ? (CR.z + BLD.cz) * 0.5 : -8); renderFrame(t);
+  const busyShadows = dyn.length > 1500 || MN.length > 1000; sun.shadow.autoUpdate = !busyShadows; if (busyShadows) sun.shadow.needsUpdate = (shadowOn = !shadowOn);
+  const sunMega = BLD && BLD.spec.mega; fitSun(birdView ? 0 : sunMega ? CR.x : BLD ? (CR.x + BLD.cx) * 0.5 : 0, birdView ? 0 : sunMega ? CR.z : BLD ? (CR.z + BLD.cz) * 0.5 : -8); renderFrame(t);
   requestAnimationFrame(frame);
 }
 // a building to look at behind the menu
