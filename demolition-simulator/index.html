@@ -159,7 +159,7 @@ const store = {
 };
 
 const SITE_K = 2;   // every building is this many times bigger
-const YARD_K = 20;   // and the yard is this many times wider again
+const YARD_K = 2000;   // and the yard is this many times wider again
 
 /* ---------------- renderer, scene, quality ---------------- */
 const QM = HASH.match(/quality=(\d)/);
@@ -174,7 +174,7 @@ renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = !/noshadow/.test(HASH); renderer.shadowMap.type = THREE.PCFShadowMap;
 const MAXANIS = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, 1, 2, 24000);
+const camera = new THREE.PerspectiveCamera(55, 1, 10, 2400000);
 let camFov0 = 55;
 
 /* graphics tiers: 0 low, 1 medium, 2 high, 3 ultra */
@@ -903,7 +903,7 @@ vec3 chimNormal(vec3 n, vec3 o, vec3 p, float L){
   vec2 d = (o.xz + p.xz) - uChim.xy; float k = 1.0 - clamp(L * 3.0, 0.0, 1.0); return normalize(mix(n, normalize(vec3(d.x, 0.0, d.y)), k));
 }`;
 function patchBlock(sh, d, wUni) {
-  sh.uniforms.uGlass = { value: d.glass ? 1 : 0 }; sh.uniforms.uChim = CHIM; sh.uniforms.uSwayA = SWAY; sh.uniforms.uNoise = { value: NOISE_TEX }; sh.uniforms.uTile = { value: d.tile * 6 }; sh.uniforms.uW = { value: new THREE.Vector4(...d.w) };
+  sh.uniforms.uGlass = { value: d.glass ? 1 : 0 }; sh.uniforms.uChim = CHIM; sh.uniforms.uSwayA = SWAY; sh.uniforms.uNoise = { value: NOISE_TEX }; sh.uniforms.uTile = { value: d.tile * 60 }; sh.uniforms.uW = { value: new THREE.Vector4(...d.w) };
   sh.uniforms.uBrk = { value: new THREE.Vector3(...d.brk) }; sh.uniforms.uDust = { value: new THREE.Vector3(0.40, 0.34, 0.28) };
   sh.vertexShader = sh.vertexShader
     .replace("#include <common>", "#include <common>\nuniform float uTile; varying vec3 vW; varying vec3 vP; varying vec3 vLN; varying float vLoose;\n" + LOOSE_VS)
@@ -1038,7 +1038,7 @@ const SPECS = [
     } }
 ];
 // one extremely ginormous building that fills the whole yard, solid all the way through, with an open courtyard in the middle for the crane and the compactor
-SPECS.push({ name: "Extremely Ginormous Building", size: "Extremely ginormous", mega: true, trash: 1000000, loot: { graphite: 750, graphene: 150, anomium: 300, ananium: 150, tianium: 90, tianios: 30 }, s: 80, nx: 43, ny: 14, nz: 43,
+SPECS.push({ name: "Extremely Ginormous Building", size: "Extremely ginormous", mega: true, trash: 1000000, loot: { graphite: 750, graphene: 150, anomium: 300, ananium: 150, tianium: 90, tianios: 30 }, s: 8000, nx: 43, ny: 14, nz: 43,
   build(G) {
     const W = 42, Y = 13, a = 19, b = 23, P = [["brick", "plaster", "concrete"], ["concrete", "brick", "concrete"], ["plaster", "brick2", "concrete"], ["brick2", "concrete", "metal"]][(level - 1) % 4], wall = P[0], top = P[1], roof = P[2];
     G.f(0, 0, 0, W, Y, W, "concrete");   // filled in, all of it
@@ -1060,7 +1060,7 @@ let state = "menu";                 // menu, play, pause, win
 let level = 1, round = 1, BLD = null, LV = null;   // BLD is the standing building the crane is closest to
 const group = new THREE.Group(); scene.add(group);
 const dummy = { m: new THREE.Matrix4(), p: new THREE.Vector3(), q: new THREE.Quaternion(), sc: new THREE.Vector3(), c: new THREE.Color() };
-const HM_N = 800, HM_S = 10, HM = new Float32Array(HM_N * HM_N);
+const HM_N = 800, HM_S = 1000, HM = new Float32Array(HM_N * HM_N);
 function hmIdx(x, z) { const i = Math.floor(x / HM_S) + HM_N / 2, j = Math.floor(z / HM_S) + HM_N / 2; return i < 0 || j < 0 || i >= HM_N || j >= HM_N ? -1 : j * HM_N + i; }
 function hmGet(x, z) { const k = hmIdx(x, z); return k < 0 ? 0 : HM[k]; }
 function hmRaise(x, z, hh, top) { for (let dz = -hh; dz <= hh; dz += HM_S) for (let dx = -hh; dx <= hh; dx += HM_S) { const k = hmIdx(x + dx, z + dz); if (k >= 0 && HM[k] < top) HM[k] = top; } }
@@ -1112,7 +1112,7 @@ function buildLevel(n) {
   });
   for (const key in meshes) { const m = meshes[key]; m.count = used[key]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
   const nb = LV.list.reduce((a, B) => a + B.blocks.length, 0); LV.par = { t: 120 + nb / 12, h: 40 + nb / 30 };
-  BLD = LV.list[0]; fallen = 0; doneN = 0; finishing = false; setSunSize(typeof birdView !== "undefined" && birdView ? 3900 : 280);
+  BLD = LV.list[0]; fallen = 0; doneN = 0; finishing = false; setSunSize(280);
 }
 function updateFocus() { // the camera and the panel follow whichever standing building is closest
   let best = null, bd = 1e9; for (const B of LV.list) if (!B.finished) { const d = Math.hypot(B.cx - CR.x, B.cz - CR.z) - B.rad; if (d < bd) { bd = d; best = B; } }
@@ -1311,7 +1311,7 @@ const COMP = { x: 22, z: -14, hx: 2.6, hz: 3.4, top: 7.8, r: 3.8, reach: 12.5 };
   const dirt = new THREE.Mesh(new THREE.PlaneGeometry(184 * SITE_K * YARD_K, 184 * SITE_K * YARD_K), dirtMat); dirt.rotation.x = -Math.PI / 2; dirt.receiveShadow = true; scene.add(dirt);
   const grassTx = bakeOnce("grass512", () => BK.grass(512, 9)); repeatTx(grassTx, 70 * SITE_K * YARD_K, 70 * SITE_K * YARD_K);
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTx.map, normalMap: grassTx.nrm, roughnessMap: grassTx.rm, roughness: 1, metalness: 0 }); grassMat.normalScale.set(0.5, 0.5); patchGround(grassMat, false);
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(900 * SITE_K * YARD_K, 900 * SITE_K * YARD_K), grassMat); grass.rotation.x = -Math.PI / 2; grass.position.y = -4; grass.receiveShadow = true; scene.add(grass);
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(900 * SITE_K * YARD_K, 900 * SITE_K * YARD_K), grassMat); grass.rotation.x = -Math.PI / 2; grass.position.y = -40; grass.receiveShadow = true; scene.add(grass);
   // a chain-link fence with real posts and rails
   const E = 90 * SITE_K * YARD_K, FH = 2.2, galv = new THREE.MeshStandardMaterial({ color: 0xa4abb0, roughness: 0.38, metalness: 0.9 });
   const fenceTex = new THREE.CanvasTexture(mk(128, 128, (g, w, h) => { g.strokeStyle = "#cfd5d8"; g.lineWidth = 3.2; g.lineCap = "round"; for (let k = -h; k < w + h; k += 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + h, h); g.stroke(); g.beginPath(); g.moveTo(k, h); g.lineTo(k + h, 0); g.stroke(); } })); fenceTex.colorSpace = THREE.SRGBColorSpace; fenceTex.wrapS = fenceTex.wrapT = THREE.RepeatWrapping; fenceTex.anisotropy = MAXANIS; fenceTex.repeat.set(2 * E / 0.6, FH / 0.6);
@@ -1598,10 +1598,10 @@ function updateSway(dt) { // each building is a stiff spring: it rocks, then set
   for (const B of LV.list) { const S = B.sw; if (S.x === 0 && S.z === 0 && S.vx === 0 && S.vz === 0) continue; S.vx += (-190 * S.x - 3 * S.vx) * dt; S.vz += (-190 * S.z - 3 * S.vz) * dt; S.x = clamp(S.x + S.vx * dt, -0.5, 0.5); S.z = clamp(S.z + S.vz * dt, -0.5, 0.5); if (Math.abs(S.x) + Math.abs(S.z) + Math.abs(S.vx) + Math.abs(S.vz) < 1e-3) S.x = S.z = S.vx = S.vz = 0; SWAY.value[B.idx].set(S.x, S.z); }
 }
 function smoke(x, y, z, size, a, shade) { puff(x, y, z, size, 1, 2.4, a); const p = DP[(dustI - 1) % dustLimit]; p.r = p.g = p.b = shade; p.life = p.max = 1.4 + Math.random() * 1.2; p.s1 = p.s0 * 3.2; }
-function ringDust(x, z, r, n, sp) { for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + Math.random() * 0.2; puff(x + Math.cos(a) * r, 0.3, z + Math.sin(a) * r, 5, 1, 0.8, 0.5); const p = DP[(dustI - 1) % dustLimit]; p.vx = Math.cos(a) * sp; p.vz = Math.sin(a) * sp; } }
+function ringDust(x, z, r, n, sp) { for (let i = 0; i < n; i++) { const a = i / n * 6.2832 + Math.random() * 0.2; puff(x + Math.cos(a) * r, 0.3, z + Math.sin(a) * r, 300, 1, 0.8, 0.5); const p = DP[(dustI - 1) % dustLimit]; p.vx = Math.cos(a) * sp; p.vz = Math.sin(a) * sp; } }
 function rigStep(dt) { // the crane has springs in it: it nods when it starts and stops, leans into turns, and the long boom whips
   dt = Math.min(dt, 0.033);
-  const acc = clamp((CR.v - RIG.lastV) / (dt * GAME_SPEED) * 0.13, -30, 30); RIG.lastV = CR.v;
+  const acc = clamp((CR.v - RIG.lastV) / (dt * GAME_SPEED) * 0.0013, -30, 30); RIG.lastV = CR.v;
   const fx = Math.sin(CR.yaw), fz = -Math.cos(CR.yaw), swing = (BP.p.x - CR.tip.x) * fx + (BP.p.z - CR.tip.z) * fz;
   RIG.pv += (acc * 0.25 - swing * 0.06 - RIG.lean - 90 * RIG.p - 11 * RIG.pv) * dt; RIG.p += RIG.pv * dt;
   RIG.rv += (CR.yawV * (1 + Math.min(9, Math.abs(CR.v))) * 0.6 - 90 * RIG.r - 11 * RIG.rv) * dt; RIG.r += RIG.rv * dt;
@@ -1654,7 +1654,7 @@ function updateAmbient(dt) { ambT += dt; WINDT.value = ambT; skyUni.uCloudOff.va
 /* ---------------- ball + crane physics ---------------- */
 const G_ACC = 17, SMASH = 4.6;
 const CR = { x: 0, z: 0, v: 0, yaw: 0, yawV: 0, luff: 0.87, luffV: 0, cable: 12, cableV: 0, tip: new THREE.Vector3() };
-const DRIVE_SPEED = 70, CRANE_R = 3.6 * CRANE_K, SITE_MAX = 90 * SITE_K * YARD_K - 1.4 - CRANE_R, CABLE_MIN = 3 * CRANE_K, CABLE_MAX = 20 * CRANE_K, SOLID_PROPS = [[-27, 14, 3.4], [-22, 10, 0.6], [-21, 11.2, 0.6], [24, 12, 0.6], [25.3, 12.8, 0.6], [COMP.x, COMP.z, COMP.r], [COMP.x, COMP.z + 6, 2.2]], CRANE_STOPS = SOLID_PROPS.slice(-2);
+const DRIVE_SPEED = 7000, CRANE_R = 3.6 * CRANE_K, SITE_MAX = 90 * SITE_K * YARD_K - 1.4 - CRANE_R, CABLE_MIN = 3 * CRANE_K, CABLE_MAX = 20 * CRANE_K, SOLID_PROPS = [[-27, 14, 3.4], [-22, 10, 0.6], [-21, 11.2, 0.6], [24, 12, 0.6], [25.3, 12.8, 0.6], [COMP.x, COMP.z, COMP.r], [COMP.x, COMP.z + 6, 2.2]], CRANE_STOPS = SOLID_PROPS.slice(-2);
 const RAM_MIN = 1.2, RAM_BIG = 3.5, RAM_TOP = 5.6 * CRANE_K, RAM_FRONT = 3.3 * CRANE_K, RAM_BACK = 4.3 * CRANE_K, RAM_SIDE = 2.9 * CRANE_K; // how hard a ram must be, and the size of the crane's body
 const BP = { p: new THREE.Vector3(), v: new THREE.Vector3() };
 const keys = { left: 0, right: 0, in: 0, out: 0, up: 0, down: 0, fwd: 0, back: 0 };
@@ -1791,7 +1791,7 @@ function launch(b, vx, vy, vz, speed, depth = 0) {
   const w = clamp(speed * 0.5, 2, 9); b.wx = (Math.random() - 0.5) * w; b.wy = (Math.random() - 0.5) * w; b.wz = (Math.random() - 0.5) * w;
   dyn.push(b);
   if (depth < 3 && speed > 4.5) { const pc = clamp((speed - 4) * 0.08, 0, 0.55); for (let k = 0; k < 6; k++) { const X = b.gx + (k === 0) - (k === 1), Y = b.gy + (k === 2) - (k === 3), Z = b.gz + (k === 4) - (k === 5); if (X < 0 || Y < 1 || Z < 0 || X >= B.nx || Y >= B.ny || Z >= B.nz) continue; const bi = B.grid[X + B.nx * (Y + B.ny * Z)]; if (bi < 0) continue; const nb = B.blocks[bi]; if (nb.st <= 1 && Math.random() < pc) launch(nb, vx * 0.7 + (Math.random() - 0.5) * 2, vy * 0.5 + 1, vz * 0.7 + (Math.random() - 0.5) * 2, speed * 0.7, depth + 1); } }
-  if (Math.random() < 0.55) puff(b.x, b.y, b.z, Math.min(9, 0.5 + B.s * 0.55 + speed * 0.05), 1, 1.3, 0.5);
+  if (Math.random() < 0.55) puff(b.x, b.y, b.z, Math.min(300, 0.5 + B.s * 0.55 + speed * 0.05), 1, 1.3, 0.5);
   if (Math.random() < 0.7) spawnBits(b.x, b.y, b.z, vx, vy, vz, TDEF[b.t].bit, 2, b.t);
   if (Math.random() < 0.35) playTypeSound(b.t, speed / 10);
 }
@@ -1870,7 +1870,7 @@ function release(b) {
   b.vx = dx * (0.5 + Math.random() * 1.2) + (Math.random() - 0.5); b.vz = dz * (0.5 + Math.random() * 1.2) + (Math.random() - 0.5); b.vy = Math.random() * 0.6;
   const [offX, offZ] = outward(b), push = 1.2 + Math.random() * 2.2; b.vx += offX * push; b.vz += offZ * push;
   b.wx = (Math.random() - 0.5) * 2.4; b.wy = (Math.random() - 0.5) * 2.4; b.wz = (Math.random() - 0.5) * 2.4; dyn.push(b);
-  if (Math.random() < 0.3) puff(b.x, b.y, b.z, Math.min(9, 0.5 + b.B.s * 0.6), 1, 1, 0.45);
+  if (Math.random() < 0.3) puff(b.x, b.y, b.z, Math.min(300, 0.5 + b.B.s * 0.6), 1, 1, 0.45);
   if (Math.random() < 0.06) playTypeSound(b.t, 0.6);
 }
 let cellGy = 0;
@@ -1904,7 +1904,7 @@ function updateDebris(dt) {
   FDT = dt; const thud = { v: 0 };
   for (let i = pend.length - 1; i >= 0; i--) { const b = pend[i]; if (b.st !== 1) { pend[i] = pend[pend.length - 1]; pend.pop(); continue; } b.delay -= dt; if (b.delay <= 0) { pend[i] = pend[pend.length - 1]; pend.pop(); release(b); } else { const s = b.B.s, amp = (0.015 + 0.05 * (1 - Math.min(1, b.delay / 0.5))) * s, R = Math.random; b.mesh.userData.dirty = true; dummy.sc.set(s, s, s); dummy.m.compose(dummy.p.set(b.x + (R() - 0.5) * amp, b.y + (R() - 0.5) * amp * 0.5, b.z + (R() - 0.5) * amp), b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); } }
   for (let i = dyn.length - 1; i >= 0; i--) {
-    const b = dyn[i], s = b.B.s, hh = s / 2; b.vy -= G_ACC * dt;
+    const b = dyn[i], s = b.B.s, hh = s / 2; b.vy -= (b.B.spec.mega ? G_ACC * 100 : G_ACC) * dt;
     let nx = b.x + b.vx * dt, ny = b.y + b.vy * dt, nz = b.z + b.vz * dt;
     const hc = b.ghost ? null : cellAt(b.B, nx, b.y, nz); if (hc && hc !== b) { nx = b.x; nz = b.z; b.vx *= -0.3; b.vz *= -0.3; }
     b.onStatic = false;
@@ -1920,7 +1920,7 @@ function updateDebris(dt) {
     if (ny - ext < fl) { ny = fl + ext; grounded = true; if (b.vy < -3) { thud.v = Math.max(thud.v, -b.vy); if (Math.random() < 0.5) puff(nx, fl + 0.2, nz, 1.2 + hh, 1, 0.7, 0.4); } if (b.vy < -1.5) { b.vy = -b.vy * 0.22; b.wx = (Math.random() - 0.5) * 3; b.wz = (Math.random() - 0.5) * 3; if (fl > 0.4) { b.vx += (Math.random() - 0.5) * 1.4; b.vz += (Math.random() - 0.5) * 1.4; } } else b.vy = 0; b.vx *= 1 - Math.min(1, 5 * dt); b.vz *= 1 - Math.min(1, 5 * dt); const dmp = 1 - Math.min(1, 6 * dt); b.wx *= dmp; b.wy *= dmp; b.wz *= dmp; }
     b.x = nx; b.y = ny; b.z = nz;
     if (grounded && b.B.spec.mega && !b.onStatic && (b.age = (b.age || 0) + dt) > 0.3) { // it lands and crumbles flat
-      b.q.setFromAxisAngle(_up, Math.random() * 6.2832); b.y = 3.5 + Math.random() * 2; b.st = 3; writeBlock(b); if (Math.random() < 0.2) puff(b.x, 2, b.z, 9, 1, 1, 0.5); dyn[i] = dyn[dyn.length - 1]; dyn.pop(); continue;
+      b.q.setFromAxisAngle(_up, Math.random() * 6.2832); b.y = 0.3 + Math.random() * 0.5; b.st = 3; writeBlock(b); if (Math.random() < 0.2) puff(b.x, 2, b.z, 300, 1, 1, 0.5); dyn[i] = dyn[dyn.length - 1]; dyn.pop(); continue;
     }
     if (grounded) {
       const sp = Math.hypot(b.vx, b.vy, b.vz);
@@ -1938,7 +1938,7 @@ function stepDebris(dt) { // the more blocks are in the air, the fewer and bigge
 }
 function writeBlock(b) {
   if (b.looseT > b.loose) { b.loose = Math.min(b.looseT, b.loose + FDT * 5); b.mesh.geometry.attributes.aLoose.array[b.id] = b.loose; b.mesh.userData.lz = true; }
-  const s = b.B.s; dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, b.st === 3 && b.B.spec.mega ? 7 : s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); b.mesh.userData.dirty = true;
+  const s = b.B.s; dummy.p.set(b.x, b.y, b.z); dummy.sc.set(s, b.st === 3 && b.B.spec.mega ? 1 : s, s); dummy.m.compose(dummy.p, b.q, dummy.sc); b.mesh.setMatrixAt(b.id, dummy.m); b.mesh.userData.dirty = true;
 }
 
 /* ---------------- trash: the rubble goes into the crane, then into the compactor ---------------- */
@@ -1951,7 +1951,7 @@ let compQ = 0, compQV = 0;
 let trash = clamp(parseFloat(store.get("trash", "0")) || 0, 0, TRASH_MAX), levelTrash = 0, fullNag = 0, compT = -1, compRate = 0, compAmt = 0, compFly = 0, cubeN = 0, cubeNow = null, eDump = false;
 function saveTrash() { store.set("trash", Math.round(trash)); }
 function trashWaiting() { let n = 0; for (const B of LV.list) n += Math.floor(B.spec.trash * Math.min(1, B.fallen / B.total)); return n - levelTrash; } // rubble from this building that is not in the crane yet
-function nearCompactor() { return Math.hypot(CR.x - COMP.x, CR.z - COMP.z) < COMP.reach + CRANE_R - 2; }
+function nearCompactor() { return Math.hypot(CR.x - COMP.x, CR.z - COMP.z) < (BLD && BLD.spec.mega ? 3000 : COMP.reach + CRANE_R - 2); }
 function updateTrash(dt) {
   const wait = trashWaiting();
   if (compT < 0 && wait > 0 && trash < TRASH_MAX) { const take = Math.min(wait, TRASH_MAX - trash); trash += take; levelTrash += take; }
@@ -2095,7 +2095,7 @@ function shopCamera(t) { // stand back and show off the crane, beside the shop p
 }
 
 /* ---------------- minions: every upgrade you own comes with its own team of little helpers ---------------- */
-const MN = [], MINION_SPEED = 50, MINION_HIT_T = 4, MINION_REACH = 2.4, MINION_SIZE = 0.55, MINION_GAP = 0.95;
+const MN = [], MINION_SPEED = 5000, MINION_HIT_T = 4, MINION_REACH = 2.4, MINION_SIZE = 0.55, MINION_GAP = 0.95;
 // drawn as instances, so a big crowd costs about the same to draw as a few
 const MINION_GEO = { body: new THREE.SphereGeometry(0.62, 16, 12), dot: new THREE.SphereGeometry(1, 8, 6), handle: new THREE.CylinderGeometry(0.05, 0.05, 0.95, 5), head: new THREE.BoxGeometry(0.26, 0.5, 0.26), hat: new THREE.LatheGeometry([[0, -0.02], [0.68, -0.02], [0.68, 0.02], [0.48, 0.03], [0.46, 0.12], [0.37, 0.3], [0.2, 0.42], [0, 0.44]].map(p => new THREE.Vector2(p[0], p[1])), 14) };
 MINION_GEO.handle.rotateX(Math.PI / 2); MINION_GEO.handle.translate(0, 0, 0.47);
@@ -2228,14 +2228,14 @@ function minionAnim(dt, nowS) { // walking, hammering and jumping for joy
 }
 
 /* ---------------- autosave: the level in progress goes into the browser's storage every few seconds ---------------- */
-const AUTOSAVE_MS = 10000, SAVE_VER = 6, posInt = v => clamp(Math.round(v * 8), -32767, 32767); let lastAutosave = 0;
+const AUTOSAVE_MS = 10000, SAVE_VER = 7, posInt = v => Math.round(v * 8); let lastAutosave = 0;
 function clearSave() { try { localStorage.removeItem("demolition-simulator-autosave"); } catch (e) {} }
 function saveGame() { // every block that has moved: 8 small numbers each (which block, where it is, how it is turned)
   if (!LV || (state !== "play" && state !== "pause")) return false;
-  const ids = [], list = []; let n = 0;
-  for (const B of LV.list) for (const b of B.blocks) { n++; if (b.st === 0) continue; ids.push(b.st === 3 ? n : -n); list.push(posInt(b.x), posInt(b.y), posInt(b.z), Math.round(b.q.x * 32000), Math.round(b.q.y * 32000), Math.round(b.q.z * 32000), Math.round(b.q.w * 32000)); }
+  const ids = [], pos = [], list = []; let n = 0;
+  for (const B of LV.list) for (const b of B.blocks) { n++; if (b.st === 0) continue; ids.push(b.st === 3 ? n : -n); pos.push(posInt(b.x), posInt(b.y), posInt(b.z)); list.push(Math.round(b.q.x * 32000), Math.round(b.q.y * 32000), Math.round(b.q.z * 32000), Math.round(b.q.w * 32000)); }
   const b64 = arr => { const bytes = new Uint8Array(arr.buffer); let txt = ""; for (let i = 0; i < bytes.length; i += 8192) txt += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(txt); };
-  const S = { v: SAVE_VER, level, round, n, time: playTime, hits: bigHits, got: levelTrash, loot: levelLoot, done: LV.list.map(B => B.finished ? 1 : 0), crane: [CR.x, CR.z, CR.yaw, CR.luff, CR.cable], ball: [BP.p.x, BP.p.y, BP.p.z], ids: b64(new Int32Array(ids)), data: b64(new Int16Array(list)) };
+  const S = { v: SAVE_VER, level, round, n, time: playTime, hits: bigHits, got: levelTrash, loot: levelLoot, done: LV.list.map(B => B.finished ? 1 : 0), crane: [CR.x, CR.z, CR.yaw, CR.luff, CR.cable], ball: [BP.p.x, BP.p.y, BP.p.z], ids: b64(new Int32Array(ids)), pos: b64(new Int32Array(pos)), data: b64(new Int16Array(list)) };
   saveTrash(); store.set("autosave", JSON.stringify(S)); return true;
 }
 function autosaveTick(t) {
@@ -2249,9 +2249,9 @@ function loadGame(S) { // put the level back the way it was; if anything does no
     const all = []; for (const B of LV.list) for (const b of B.blocks) all.push(b);
     if (all.length !== S.n) throw new Error("the level has changed");
     const un64 = t => { const txt = atob(t), bytes = new Uint8Array(txt.length); for (let i = 0; i < txt.length; i++) bytes[i] = txt.charCodeAt(i); return bytes.buffer; };
-    const I = new Int32Array(un64(S.ids)), d = new Int16Array(un64(S.data));
+    const I = new Int32Array(un64(S.ids)), P = new Int32Array(un64(S.pos)), d = new Int16Array(un64(S.data));
     for (let k = 0; k < I.length; k++) {
-      const i = k * 7, b = all[Math.abs(I[k]) - 1]; b.x = d[i] / 8; b.y = d[i + 1] / 8; b.z = d[i + 2] / 8; b.q.set(d[i + 3] / 32000, d[i + 4] / 32000, d[i + 5] / 32000, d[i + 6] / 32000).normalize();
+      const i = k * 4, j = k * 3, b = all[Math.abs(I[k]) - 1]; b.x = P[j] / 8; b.y = P[j + 1] / 8; b.z = P[j + 2] / 8; b.q.set(d[i] / 32000, d[i + 1] / 32000, d[i + 2] / 32000, d[i + 3] / 32000).normalize();
       showBlock(b); if (b.gy > 0) { fallen++; b.B.fallen++; } setLoose(b, 1); b.looseT = 1;
       if (I[k] > 0) { b.B.grid[b.gi] = -1; b.st = 3; if (b.B.spec.mega) uncover(b); else hmRaise(b.x, b.z, b.B.s * 0.4, Math.min(b.y + b.B.s / 2, HEAP_MAX)); writeBlock(b); }
       else { b.st = 1; release(b); writeBlock(b); } // it was still falling, so it carries on falling
@@ -2343,10 +2343,11 @@ document.querySelectorAll("#touch button").forEach(btn => {
 // drag to look around
 let camHead = 0, camOff = 0, camPitch = 0, drag = null, lastDrag = -9;
 // bird's eye view: B flies the camera high above the crane; hold left click and move to look around
-const BIRD_H = 5600, FOG_D = scene.fog.density; let birdView = false, birdYaw = 0, birdPitch = -1.22, birdX = 0, birdZ = 0;
+const BIRD_H = 560000, FOG_D = scene.fog.density; let birdView = false, birdYaw = 0, birdPitch = -1.22, birdX = 0, birdZ = 0;
+const birdPin = new THREE.Mesh(new THREE.ConeGeometry(1, 2.4, 24), new THREE.MeshStandardMaterial({ color: 0xffd21f, emissive: 0xffa000, emissiveIntensity: 1.6, roughness: 0.5 })); birdPin.rotation.x = Math.PI; birdPin.visible = false; birdPin.frustumCulled = false; scene.add(birdPin);   // from up here the crane is far too small to see
 function toggleBird() {
   birdView = !birdView; birdX = CR.x; birdZ = CR.z; birdYaw = 0; birdPitch = -1.22;
-  scene.fog.density = FOG_D * (birdView ? 0.3 : 1); setSunSize(birdView ? 3900 : 280);
+  scene.fog.density = FOG_D * (birdView ? 0.3 : 1); birdPin.visible = birdView;
   showMsg(birdView ? "Bird's eye view! Hold left click and move to look around." : "Back down to the crane!", 3);
   $("birdbtn").classList.toggle("on", birdView);
 }
@@ -2379,7 +2380,7 @@ function update(dt) {
   CR.cableV += ((keys.down - keys.up) * 4.2 * CRANE_K - CR.cableV) * Math.min(1, dt * 7); CR.cable = clamp(CR.cable + CR.cableV * dt, CABLE_MIN, CABLE_MAX);
   // driving: the crane has weight here too
   const inDrive = keys.fwd - keys.back; CR.v += (inDrive * DRIVE_SPEED * craneG.speed - CR.v) * Math.min(1, (inDrive ? 1.6 : 3.5) * dt); if (!inDrive && Math.abs(CR.v) < 0.03) CR.v = 0;
-  trackOdo[0] += (CR.v / CRANE_K + CR.yawV * 2.2) * dt; trackOdo[1] += (CR.v / CRANE_K - CR.yawV * 2.2) * dt;
+  const trackV = clamp(CR.v, -9, 9) / CRANE_K; trackOdo[0] += (trackV + CR.yawV * 2.2) * dt; trackOdo[1] += (trackV - CR.yawV * 2.2) * dt;
   driveDust -= dt; if (Math.abs(CR.v) > 1 && driveDust <= 0) { driveDust = 0.22; const sg = Math.sign(CR.v), s2 = (Math.random() < 0.5 ? 2.2 : -2.2) * CRANE_K; puff(CR.x - Math.sin(CR.yaw) * 3.2 * CRANE_K * sg + Math.cos(CR.yaw) * s2, 0.3, CR.z + Math.cos(CR.yaw) * 3.2 * CRANE_K * sg + Math.sin(CR.yaw) * s2, 2, 1, 0.5, 0.3); }
   const sub = 4, h = dt / sub; frameHits = 0; frameSpeed = 0; frameBroken = null;
   for (let i = 0; i < sub; i++) { CR.yaw += CR.yawV * h; driveStep(h); tipPos(CR.tip); CR.cable = Math.min(CR.cable, CABLE_MAX); ballStep(h); }
@@ -2406,6 +2407,7 @@ function update(dt) {
   if (hintT < 1e8) hintT += dt;
   if (LOG && Math.floor(playTime / 3) !== update.lt) { update.lt = Math.floor(playTime / 3); console.log("DBG t=" + playTime.toFixed(1) + " pct=" + pct + " fallen=" + fallen + "/" + total + " down=" + doneN + " dyn=" + dyn.length + " pend=" + pend.length + " hits=" + bigHits + " trash=" + Math.round(trash) + " waiting=" + trashWaiting() + " crane=" + CR.x.toFixed(1) + "," + CR.z.toFixed(1) + " finishing=" + finishing + " state=" + state); }
 }
+const B_PIN_Y = pin => Math.max(BLD ? BLD.h : 0, 0) + pin * 1.3 + 1000;
 function updateVisuals(dt) {
   if (dt > 0) rigStep(dt);
   const nowS = performance.now() / 1000, lf = CR.luff + RIG.w;
@@ -2427,7 +2429,7 @@ function updateVisuals(dt) {
   camSide += (Math.sign(wrapA(tAz - CR.yaw)) - camSide) * Math.min(1, dt * 0.8); camKN += (near * BLD.camK - camKN) * Math.min(1, dt * 1.3);
   const atB = bAz + wrapA(tAz - bAz) * 0.8 - 0.55 * camSide, aim = CR.yaw + 0.3 * (1 - near) + wrapA(atB - CR.yaw) * near;
   let df = aim - camHead; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI; camHead += df * Math.min(1, dt * 3.2);
-  camX += (CR.x - camX) * Math.min(1, dt * 10); camZ += (CR.z - camZ) * Math.min(1, dt * 10);   // the camera trails the crane a little
+  const camF = BLD.spec.mega ? 1 : Math.min(1, dt * 10); camX += (CR.x - camX) * camF; camZ += (CR.z - camZ) * camF;   // the camera trails the crane a little
   const hd = camHead + camOff; let D = 60 + camKN * 22, H = 38 + camKN * 15 + camPitch * 14;
   if (BLD.spec.mega) { // a wall between the crane and the camera: the camera comes in front of it
     const B = BLD, ex = -Math.sin(hd) * D, ez = Math.cos(hd) * D; let want = 1;
@@ -2453,6 +2455,7 @@ function updateVisuals(dt) {
   if (shake > 0.001) { const ts = nowS * 16; shake = Math.min(shake, 0.3); camera.position.x += (vnoise(ts, 3.1) - 0.5) * shake * 3; camera.position.y += (vnoise(ts, 9.7) - 0.5) * shake * 3; camera.position.z += (vnoise(ts, 17.3) - 0.5) * shake * 3; roll = (vnoise(ts * 0.8, 23.9) - 0.5) * shake * 0.16; shake *= Math.max(0, 1 - dt * 6); }
   fovK *= Math.max(0, 1 - dt * 7); const fv = camFov0 - fovK * 3.2; if (Math.abs(fv - camera.fov) > 0.01) { camera.fov = fv; camera.updateProjectionMatrix(); }
   if (birdView) { // high above the crane, looking wherever the player points it
+    const pin = BIRD_H * 0.012; birdPin.scale.setScalar(pin); birdPin.position.set(CR.x, B_PIN_Y(pin), CR.z);
     const f = Math.min(1, dt * 3), c = Math.cos(birdPitch); birdX += (CR.x - birdX) * f; birdZ += (CR.z - birdZ) * f; camera.position.set(birdX, BIRD_H, birdZ);
     look.set(birdX + Math.sin(birdYaw) * c * 100, BIRD_H + Math.sin(birdPitch) * 100, birdZ - Math.cos(birdYaw) * c * 100); roll = 0;
   }
@@ -2467,12 +2470,13 @@ function frame(t) {
   if (state === "play") for (let i = 0; i < GAME_SPEED && state === "play"; i++) update(dt);
   else if (state === "win" && BLD) { for (let i = 0; i < GAME_SPEED; i++) stepDebris(dt); flushMeshes(); }
   if (BLD && (state === "play" || state === "win" || state === "pause")) updateVisuals(state === "pause" ? 0 : dt);
-  if (state === "menu") { const a = t / 14000; camera.position.set(Math.sin(a) * 5600, 4000, Math.cos(a) * 5600); camera.lookAt(0, 600, 0); }
+  if (state === "menu") { const a = t / 14000; camera.position.set(Math.sin(a) * 560000, 400000, Math.cos(a) * 560000); camera.lookAt(0, 60000, 0); }
   updateEffects(state === "pause" ? 0 : dt * GAME_SPEED);
   minionAnim(state === "pause" ? 0 : dt * GAME_SPEED, t / 1000); autosaveTick(t);
   if (shopOpen) shopCamera(t);
+  { const wantNear = camera.position.y > 5000 ? clamp((camera.position.y - (BLD ? BLD.h : 0)) * 0.3, 2000, 100000) : 10; if (camera.near !== wantNear) { camera.near = wantNear; camera.updateProjectionMatrix(); } }
   const busyShadows = dyn.length > 1500 || MN.length > 1000; sun.shadow.autoUpdate = !busyShadows; if (busyShadows) sun.shadow.needsUpdate = (shadowOn = !shadowOn);
-  const sunMega = BLD && BLD.spec.mega; fitSun(birdView ? 0 : sunMega ? CR.x : BLD ? (CR.x + BLD.cx) * 0.5 : 0, birdView ? 0 : sunMega ? CR.z : BLD ? (CR.z + BLD.cz) * 0.5 : -8); renderFrame(t);
+  const sunMega = BLD && BLD.spec.mega; fitSun(sunMega ? CR.x : BLD ? (CR.x + BLD.cx) * 0.5 : 0, sunMega ? CR.z : BLD ? (CR.z + BLD.cz) * 0.5 : -8); renderFrame(t);
   requestAnimationFrame(frame);
 }
 // a building to look at behind the menu
