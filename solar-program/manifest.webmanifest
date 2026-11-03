@@ -1,0 +1,37 @@
+{
+  "name": "Solar Program",
+  "short_name": "Solar Program",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "description": "A space game! Fly your rocket (WASD, or drag your finger on a phone), bump planets together to crash them into hot new planets, build bases that dig treasure, buy bigger rockets, and make 1,000 Els and Oos your friends. T shows the space map.",
+  "lang": "en",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#ff8a1f",
+  "theme_color": "#ff8a1f",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

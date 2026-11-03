@@ -1,0 +1,2224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Solar Program</title>
+<link rel="icon" href="icon.png">
+<style>
+  html, body { margin: 0; height: 100%; background: #050816; overflow: hidden; color: #fff;
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  [hidden] { display: none !important; }
+
+  #title { position: fixed; left: 16px; right: 16px; top: max(20px, env(safe-area-inset-top));
+    text-align: center; pointer-events: none; }
+  /* A short screen has no room for the title and Settings together. */
+  @media (max-height: 500px) { body[data-screen="settings"] #title { display: none; } }
+  h1 { margin: 0; font-size: clamp(34px, 7vw, 72px); color: #ffe9a8;
+    text-shadow: 0 0 24px rgba(255, 180, 60, .7); }
+  #nogl { margin-top: 8px; font-size: 20px; color: #ffd0c0; }
+
+  .bottom { position: fixed; left: 16px; right: 16px; bottom: max(24px, env(safe-area-inset-bottom));
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+
+  button { font: inherit; font-weight: bold; font-size: clamp(20px, 3vw, 28px); min-height: 60px;
+    padding: 8px 32px; border: 0; border-radius: 18px; cursor: pointer; color: #fff; background: #2f4fb0;
+    box-shadow: 0 5px 0 #1b2f70; touch-action: manipulation; }
+  button:hover { background: #3c60cc; }
+  button:active { transform: translateY(3px); box-shadow: 0 2px 0 #1b2f70; }
+  button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  button.main { background: #ffb52e; color: #3a2000; box-shadow: 0 5px 0 #b86f00; }
+  button.main:hover { background: #ffc550; }
+  button.main:active { box-shadow: 0 2px 0 #b86f00; }
+  button:disabled { background: #39405c; color: #b8bfd8; box-shadow: none; cursor: default; transform: none; }
+
+  .panel { position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: max(24px, env(safe-area-inset-bottom)); box-sizing: border-box;
+    max-height: calc(100% - 48px); overflow: auto; padding: 16px 20px 22px; text-align: center;
+    background: rgba(12, 20, 56, .94); border: 2px solid #5570c8; border-radius: 24px; }
+  .panel h2 { margin: 0 0 6px; font-size: clamp(24px, 4vw, 34px); }
+  .panel p { margin: 0 0 10px; font-size: clamp(16px, 2.4vw, 20px); color: #cfd8ff; }
+
+  #settings { width: min(560px, calc(100% - 32px)); }
+  .opts { display: flex; gap: 10px; margin-bottom: 18px; }
+  .opts button { flex: 1; min-width: 0; padding: 8px 4px; font-size: clamp(16px, 2.6vw, 22px); }
+  .opts button[aria-pressed="true"] { background: #ffb52e; color: #3a2000; box-shadow: 0 5px 0 #b86f00; }
+
+  /* The game screen. HUD off hides everything in here. */
+  body.hud-off #hud { display: none; }
+  #stats { position: fixed; left: 14px; top: max(14px, env(safe-area-inset-top)); display: flex; flex-wrap: wrap;
+    gap: 8px; max-width: calc(50% - 30px); }
+  #stats > span { padding: 6px 14px; border-radius: 14px; background: rgba(8, 14, 44, .75);
+    font-size: clamp(16px, 2.2vw, 22px); font-weight: bold; }
+  #hudButtons { position: fixed; right: 14px; top: max(14px, env(safe-area-inset-top)); display: flex; gap: 10px;
+    flex-wrap: wrap; justify-content: flex-end; max-width: calc(50% - 14px); }
+  #hudButtons button { min-height: 46px; padding: 4px 16px; font-size: clamp(16px, 2.2vw, 20px); }
+  #action { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(24px, env(safe-area-inset-bottom));
+    max-width: calc(100% - 32px); padding: 8px 24px; }
+  #action:active { transform: translateX(-50%) translateY(3px); }
+  #action:disabled { transform: translateX(-50%); background: rgba(40, 46, 80, .92); }
+  #toast { position: fixed; left: 16px; right: 16px; top: 24%; text-align: center; pointer-events: none;
+    font-size: clamp(24px, 4.4vw, 44px); font-weight: bold; color: #ffe9a8; text-shadow: 0 0 16px rgba(0, 0, 0, .9);
+    opacity: 0; transition: opacity .3s; }
+  #hint { position: fixed; left: 16px; right: 16px; bottom: 96px; text-align: center; pointer-events: none;
+    font-size: clamp(15px, 2.2vw, 21px); color: #e6ebff; text-shadow: 0 1px 6px #000; }
+
+  #shop { width: min(860px, calc(100% - 32px)); }
+  #game { touch-action: none; }
+  /* Phones: put a finger down anywhere and drag to fly. */
+  #stick { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none;
+    background: rgba(255, 255, 255, .12); border: 3px solid rgba(255, 255, 255, .45); }
+  #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    background: rgba(255, 181, 46, .85); }
+  #mapInfo { position: fixed; left: 16px; right: 16px; bottom: max(14px, env(safe-area-inset-bottom)); text-align: center;
+    font-size: clamp(15px, 2.2vw, 20px); color: #e6ebff; pointer-events: none; line-height: 1.5; }
+  #mapInfo b { color: #ffe9a8; font-size: 1.15em; }
+  body.map-open #action, body.map-open #hint { display: none; }
+  /* Rubies and emeralds are the diamond picture in red and in teal. */
+  .tint-ruby, .tint-emerald { display: inline-block; }
+  .tint-ruby { filter: hue-rotate(165deg) saturate(2); }
+  .tint-emerald { filter: hue-rotate(-45deg) saturate(1.6); }
+  #rockets { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tile { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 12px 8px; border-radius: 16px;
+    background: rgba(50, 70, 150, .35); font-size: 17px; }
+  .tile.now { outline: 3px solid #ffb52e; }
+  .tile b { font-size: 19px; }
+  .tile em { font-style: normal; font-weight: bold; color: #ffe08a; min-height: 46px; line-height: 46px; }
+  .tile button { min-height: 46px; padding: 4px 14px; font-size: 18px; }
+</style>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff8a1f"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Solar Program"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('sw',e)})})}</script></head>
+<body>
+<canvas id="sky"></canvas>
+<canvas id="game" hidden></canvas>
+
+<div id="title">
+  <h1>Solar Program</h1>
+  <div id="nogl" hidden>Sorry, this game needs 3D (WebGL). Try another browser.</div>
+</div>
+
+<div id="menu" class="bottom">
+  <button id="playBtn" class="main">▶ Play</button>
+  <button id="settingsBtn">⚙️ Settings</button>
+</div>
+
+<div id="settings" class="panel" hidden>
+  <h2>⚙️ Settings</h2>
+  <p>Graphics quality</p>
+  <div id="levels" class="opts">
+    <button data-q="low">Low</button>
+    <button data-q="medium">Medium</button>
+    <button data-q="high">High</button>
+  </div>
+  <p>HUD</p>
+  <div id="hudOpts" class="opts">
+    <button data-hud="on">On</button>
+    <button data-hud="off">Off</button>
+  </div>
+  <button id="settingsBack" class="main">Back</button>
+</div>
+
+<div id="stick" hidden><div id="knob"></div></div>
+
+<div id="mapBox" hidden>
+  <canvas id="map"></canvas>
+  <div id="mapInfo"></div>
+</div>
+
+<div id="hud" hidden>
+  <div id="stats">
+    <span>💎 <b id="gemCount">0</b></span>
+    <span>💰 <b id="goldCount">0</b></span>
+    <span>🧊 <b id="iceCount">0</b></span>
+    <span><span class="tint-ruby">💎</span> <b id="rubyCount">0</b></span>
+    <span><span class="tint-emerald">💎</span> <b id="emeraldCount">0</b></span>
+    <span id="baseCount">🏗️ 0 bases</span>
+    <span id="madeCount">🪐 0 made</span>
+    <span id="friendCount">💚 0 friends</span>
+    <span id="rocketName"></span>
+  </div>
+  <div id="hudButtons">
+    <button id="exploreBtn">💥 Explore (F)</button>
+    <button id="pauseBtn">⏸️ Aliens (B)</button>
+    <button id="mapBtn">🗺️ Map</button>
+    <button id="shopBtn">🛒 Shop</button>
+    <button id="menuBtn">⬅ Menu</button>
+  </div>
+  <div id="toast"></div>
+  <div id="hint">W A S D to fly. Bump planets together to crash them! Fly close to a planet and press E to build a base.</div>
+  <button id="action" class="main" hidden></button>
+</div>
+
+<div id="shop" class="panel" hidden>
+  <h2>🛒 Rocket Shop</h2>
+  <p>You have <b id="shopHave"></b>. Bigger rockets fly faster and grab treasure faster!</p>
+  <div id="rockets"></div>
+  <button id="shopBack" class="main">Back</button>
+</div>
+
+<script src="lib/three.js"></script>
+<script>
+// Solar Program: fly with WASD, crash planets into new hot ones that cool to a random colour,
+// build bases on planets, grab the treasure they dig up, and buy bigger rockets.
+// Yellow planets dig gold, blue planets dig space ice, red planets dig rubies and teal planets dig emeralds.
+// Those four keep their colour when they crash. T opens the space map.
+// Els and Oos fly little saucers. Their faces are yellow until you give them presents (G); then they turn green and are your friends.
+// Friends follow you everywhere, push planets into each other for you, and give you treasure every 10 seconds.
+// B pauses just the Els and Oos; everything else keeps going.
+// F sends your friends off exploring to find planets and smash them, anywhere in space. F again calls them back.
+// Test hashes: #play  #settings  #quality=low|medium|high  #hud=off (hashes are not saved)
+// Tests can reach the game through window.solar.
+const TAU = Math.PI * 2;
+const cv = document.getElementById('sky'), g = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+const fmt = n => Math.floor(n).toLocaleString('en-US');
+const store = {
+  get(k) { try { return localStorage.getItem('solar-program-' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('solar-program-' + k, v); } catch (e) { /* it just won't remember */ } },
+};
+let W = 0, H = 0, nebula = [];
+let current = 'menu';
+
+// ---------- Settings ----------
+const QUALITY = {
+  low:    { dpr: 1,   stars: 70,  twinkle: false, glow: false, shade: false, detail: false, nebula: false,
+            oct: 2, seg: 24, rim: false, sparks: 250,  bgStars: 900 },
+  medium: { dpr: 1.5, stars: 160, twinkle: true,  glow: true,  shade: true,  detail: false, nebula: false,
+            oct: 3, seg: 40, rim: true,  sparks: 700,  bgStars: 1800 },
+  high:   { dpr: 2,   stars: 260, twinkle: true,  glow: true,  shade: true,  detail: true,  nebula: true,
+            oct: 5, seg: 72, rim: true,  sparks: 1500, bgStars: 3000 },
+};
+function loadQuality() {
+  const saved = store.get('quality');
+  return saved && Object.hasOwn(QUALITY, saved) ? saved : 'high';
+}
+let qualityName = loadQuality();
+let q = QUALITY[qualityName];
+function setQuality(name) {
+  qualityName = name;
+  q = QUALITY[name];
+  resize();
+  for (const b of document.querySelectorAll('#levels button')) {
+    b.setAttribute('aria-pressed', b.dataset.q === name ? 'true' : 'false');
+  }
+}
+function setHud(on) {
+  document.body.classList.toggle('hud-off', !on);
+  for (const b of document.querySelectorAll('#hudOpts button')) {
+    b.setAttribute('aria-pressed', (b.dataset.hud === 'on') === on ? 'true' : 'false');
+  }
+}
+
+// ---------- Screens ----------
+function show(next) {
+  if (next === 'play' && !enterGame()) { $('nogl').hidden = false; return; }
+  if (current === 'play' && next !== 'play') { closeShop(); toggleMap(false); saveGame(); stick.on = false; stick.x = stick.z = 0; $('stick').hidden = true; }
+  $('title').hidden = next === 'play';
+  $('menu').hidden = next !== 'menu';
+  $('settings').hidden = next !== 'settings';
+  $('hud').hidden = next !== 'play';
+  $('game').hidden = next !== 'play';
+  document.body.dataset.screen = next;
+  current = next;
+  if (next === 'play') { befriendAll(); startLoop(); }
+}
+$('playBtn').onclick = () => { if (soundOn) ac(); show('play'); };   // a click lets the game make sounds
+$('settingsBtn').onclick = () => show('settings');
+$('settingsBack').onclick = () => show('menu');
+$('menuBtn').onclick = () => show('menu');
+for (const b of document.querySelectorAll('#levels button')) {
+  b.onclick = () => { setQuality(b.dataset.q); store.set('quality', b.dataset.q); };
+}
+for (const b of document.querySelectorAll('#hudOpts button')) {
+  b.onclick = () => { setHud(b.dataset.hud === 'on'); store.set('hud', b.dataset.hud); };
+}
+
+// ---------- Menu sky ----------
+// r is the size and speed is how fast it goes round. Closer planets go faster, like real ones.
+const MENU_PLANETS = [
+  { r: .006, speed: .90,  a: .4,  col: ['#e8e2d8', '#9a9288', '#4a453f'] },                    // Mercury
+  { r: .010, speed: .62,  a: 2.2, col: ['#fff3cf', '#e6c37a', '#7a5a26'] },                    // Venus
+  { r: .011, speed: .50,  a: 4.0, col: ['#bfe6ff', '#2f7fd6', '#0e2f66'], land: true },        // Earth
+  { r: .008, speed: .38,  a: 5.4, col: ['#ffc09a', '#d9603a', '#6e2412'] },                    // Mars
+  { r: .024, speed: .20,  a: 1.0, col: ['#fff0d6', '#e0a565', '#7a4820'], bands: true },       // Jupiter
+  { r: .019, speed: .14,  a: 3.3, col: ['#fbe9bd', '#dfb56e', '#84592a'], rings: true },       // Saturn
+  { r: .014, speed: .10,  a: 5.9, col: ['#e0fbff', '#86dbe6', '#2e7f90'] },                    // Uranus
+  { r: .014, speed: .075, a: 2.8, col: ['#bcd4ff', '#3f6fe0', '#14296e'] },                    // Neptune
+];
+
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const STARS = Array.from({ length: 260 }, () => ({
+  x: rnd(), y: rnd(), r: .4 + rnd() * 1.1, a: .3 + rnd() * .7, tw: rnd() * TAU,
+}));
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, q.dpr);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Soft coloured space clouds, only on High.
+  nebula = [[.18, .28, .55, '90, 60, 190'], [.85, .7, .6, '30, 90, 190'], [.6, .1, .4, '170, 60, 150']].map(([x, y, s, c]) => {
+    const R = Math.max(W, H) * s, n = g.createRadialGradient(x * W, y * H, 0, x * W, y * H, R);
+    n.addColorStop(0, `rgba(${c}, .22)`);
+    n.addColorStop(1, `rgba(${c}, 0)`);
+    return n;
+  });
+}
+addEventListener('resize', resize);
+
+function menuRing(x, y, R, front) {
+  g.lineWidth = R * .34;
+  g.strokeStyle = 'rgba(240, 215, 160, .85)';
+  g.beginPath();
+  g.ellipse(x, y, R * 2.1, R * .62, -.35, front ? 0 : Math.PI, front ? Math.PI : TAU);
+  g.stroke();
+}
+
+function drawMenuPlanet(o, sunX, sunY) {
+  const { p, x, y, R } = o;
+  if (p.rings) menuRing(x, y, R, false);
+  if (q.shade) {
+    // The bright side always faces the sun.
+    const dx = sunX - x, dy = sunY - y, d = Math.hypot(dx, dy) || 1;
+    const gr = g.createRadialGradient(x + dx / d * R * .45, y + dy / d * R * .45, R * .1, x, y, R * 1.15);
+    gr.addColorStop(0, p.col[0]); gr.addColorStop(.55, p.col[1]); gr.addColorStop(1, p.col[2]);
+    g.fillStyle = gr;
+  } else {
+    g.fillStyle = p.col[1];
+  }
+  g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+  if (q.detail && (p.bands || p.land)) {
+    g.save();
+    g.beginPath(); g.arc(x, y, R, 0, TAU); g.clip();
+    if (p.bands) {
+      g.fillStyle = 'rgba(150, 90, 45, .35)';
+      for (const b of [-.55, -.15, .3, .65]) g.fillRect(x - R, y + b * R, R * 2, R * .2);
+    } else {
+      g.fillStyle = 'rgba(80, 170, 90, .8)';
+      g.beginPath(); g.arc(x - R * .3, y - R * .2, R * .4, 0, TAU); g.fill();
+      g.beginPath(); g.arc(x + R * .45, y + R * .3, R * .3, 0, TAU); g.fill();
+    }
+    g.restore();
+  }
+  if (p.rings) menuRing(x, y, R, true);
+}
+
+function frame(ms) {
+  requestAnimationFrame(frame);
+  if (current === 'play') return;   // the game draws itself
+  const t = ms / 1000;
+  g.fillStyle = '#050816';
+  g.fillRect(0, 0, W, H);
+
+  if (q.nebula) for (const n of nebula) { g.fillStyle = n; g.fillRect(0, 0, W, H); }
+
+  g.fillStyle = '#fff';
+  for (let i = 0; i < q.stars; i++) {
+    const s = STARS[i];
+    g.globalAlpha = q.twinkle ? s.a * (.7 + .3 * Math.sin(t * 1.3 + s.tw)) : s.a;
+    g.beginPath(); g.arc(s.x * W, s.y * H, s.r, 0, TAU); g.fill();
+  }
+  g.globalAlpha = 1;
+
+  const u = Math.min(W, H * 1.6), cx = W / 2, cy = H * .55, FLAT = .42;
+
+  g.lineWidth = 1;
+  g.strokeStyle = 'rgba(170, 190, 255, .16)';
+  const list = MENU_PLANETS.map((p, i) => {
+    const rx = u * (.09 + i * .052), ang = p.a + p.speed * t, s = Math.sin(ang);
+    g.beginPath(); g.ellipse(cx, cy, rx, rx * FLAT, 0, 0, TAU); g.stroke();
+    return { p, x: cx + Math.cos(ang) * rx, y: cy + s * rx * FLAT, depth: s * rx,
+      R: Math.max(2.5, p.r * u * (1 + .15 * s)) };
+  }).sort((a, b) => a.depth - b.depth);
+
+  for (const o of list) if (o.depth < 0) drawMenuPlanet(o, cx, cy);
+
+  const sunR = u * .05 * (1 + .015 * Math.sin(t * 1.5));
+  if (q.glow) {
+    const glow = g.createRadialGradient(cx, cy, sunR * .6, cx, cy, sunR * 3.2);
+    glow.addColorStop(0, 'rgba(255, 180, 60, .7)');
+    glow.addColorStop(1, 'rgba(255, 180, 60, 0)');
+    g.fillStyle = glow;
+    g.beginPath(); g.arc(cx, cy, sunR * 3.2, 0, TAU); g.fill();
+  }
+  if (q.shade) {
+    const disc = g.createRadialGradient(cx - sunR * .25, cy - sunR * .25, sunR * .1, cx, cy, sunR);
+    disc.addColorStop(0, '#fff7c2'); disc.addColorStop(.6, '#ffc83d'); disc.addColorStop(1, '#ff8a1f');
+    g.fillStyle = disc;
+  } else {
+    g.fillStyle = '#ffc83d';
+  }
+  g.beginPath(); g.arc(cx, cy, sunR, 0, TAU); g.fill();
+
+  for (const o of list) if (o.depth >= 0) drawMenuPlanet(o, cx, cy);
+}
+
+// ---------- Game numbers (change these to change the game) ----------
+const WORLD_R = 4000;       // how far the planets can go (95 at first, 400 next, now 10 times wider for 10,000 more planets)
+const SUN_R = 13;
+const START_PLANETS = 10116;   // 116 + 10,000 more
+const TINY_PLANETS = 1000;     // and 1,000 tiny ones on top
+const FREE_PLANETS = START_PLANETS + TINY_PLANETS - 2;   // new baby planets appear when there are fewer free ones than this
+const COOL_TIME = 12;       // seconds for a crashed planet to cool down
+const PULL = 8;             // how strongly close planets pull on each other
+const PULL_RANGE = 8;       // planets farther apart than this stay where they are
+const NEAR_GAP = 7;         // how close counts as "at a planet"
+const BASE_PRICE = 20;      // first base is free; the next costs this times the bases you have
+const digRate = p => (1 + p.r * .5) * p.bases;   // treasure a second a base digs up
+const room = p => Math.round(30 * p.r * p.bases);   // treasure it can hold until you collect it
+const TREASURE = {
+  gems:    { emoji: '💎', born: 'A brand new planet!',     spark: [.3, .9, 1.4] },    // purple, pink and green planets, and grey rocks
+  gold:    { emoji: '💰', born: 'A yellow gold planet!',   spark: [1.5, 1.05, .2] },  // yellow planets
+  ice:     { emoji: '🧊', born: 'A blue space ice planet!', spark: [.75, 1.15, 1.5] }, // blue planets
+  ruby:    { emoji: '💎', born: 'A red ruby planet!',      spark: [1.6, .15, .2], tint: 'hue-rotate(165deg) saturate(2)' },     // red planets
+  emerald: { emoji: '💎', born: 'A teal emerald planet!',  spark: [.2, 1.4, .8], tint: 'hue-rotate(-45deg) saturate(1.6)' },  // teal planets
+};
+// How often a crash makes each special planet (the rest are gem planets), and their colours:
+// [first hue, how many hues, how far the 3 colours spread] with hue 0 = red, .12 = yellow, .5 = teal, .6 = blue.
+const SPECIAL = {
+  gold:    { chance: .2, hue: [.12, .04, .01] },
+  ice:     { chance: .2, hue: [.555, .085, .015] },
+  ruby:    { chance: .2, hue: [.985, .03, .008] },
+  emerald: { chance: .2, hue: [.455, .035, .01] },
+};
+const icon = t => TREASURE[t].tint ? `<span class="tint-${t}">${TREASURE[t].emoji}</span>` : TREASURE[t].emoji;
+const ROCKETS = [
+  { name: 'Little Rocket',    cost: {},                                 grab: 10,  speed: 30, size: 1.4 },
+  { name: 'Big Rocket',       cost: { gems: 100 },                      grab: 40,  speed: 40, size: 1.9 },
+  { name: 'Huge Rocket',      cost: { gems: 300, gold: 100 },           grab: 150, speed: 52, size: 2.5 },
+  { name: 'Ginormous Rocket', cost: { gems: 1000, gold: 300, ice: 300, ruby: 100, emerald: 100 }, grab: 600, speed: 70, size: 3.3 },
+];
+const canPay = cost => Object.entries(cost).every(([t, n]) => G[t] >= n);
+const pay = cost => { for (const [t, n] of Object.entries(cost)) G[t] -= n; };
+const costText = cost => Object.entries(cost).map(([t, n]) => `${fmt(n)} ${icon(t)}`).join(' + ');
+
+// ---------- Planet look ----------
+const PLANET_VS = `
+varying vec3 vObj, vN, vW;
+void main() {
+  vObj = position;
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vW = w.xyz;
+  vN = normalize(mat3(modelMatrix) * normal);
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+const PLANET_FS = `
+uniform float uHeat, uSeed, uKind, uTime, uStar;
+uniform vec3 uA, uB, uC;
+uniform highp sampler3D uNoise;
+varying vec3 vObj, vN, vW;
+
+float hash(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float noise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return textureLod(uNoise, (i + f + 0.5) / 32.0, 0.0).r;
+}
+float fbm(vec3 p) {
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < OCT; i++) { s += a * noise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
+  return s;
+}
+vec3 surface(vec3 p) {
+  vec3 w = p * 2.6 + uSeed;
+  float n = fbm(w), n2 = fbm(w * 2.3 + 4.0);
+  vec3 c;
+  if (uKind < 0.5) {            // hills
+    c = mix(uA, uB, smoothstep(0.36, 0.62, n));
+    c = mix(c, uC, smoothstep(0.5, 0.72, n2) * 0.6);
+  } else if (uKind < 1.5) {     // stripes
+    float lat = p.y * 9.0 + n * 3.2 + uSeed;
+    c = mix(uA, uB, 0.5 + 0.5 * sin(lat));
+    c = mix(c, uC, smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(lat * 2.3 + 1.0)) * 0.55);
+    c *= 0.9 + 0.2 * n2;
+  } else if (uKind < 2.5) {     // seas and lands with ice at the top and bottom
+    float land = smoothstep(0.46, 0.5, n);
+    c = mix(uA, mix(uB, uC, smoothstep(0.45, 0.65, n2)), land);
+    c = mix(c, vec3(0.92, 0.95, 1.0), smoothstep(0.72, 0.9, abs(p.y) + n * 0.12));
+  } else {                      // spots
+    c = mix(uA, uB, smoothstep(0.35, 0.62, n));
+    c = mix(c, uC, smoothstep(0.52, 0.58, n2));
+  }
+  return c;
+}
+void main() {
+  vec3 N = normalize(vN), V = normalize(cameraPosition - vW), L = normalize(-vW);
+  vec3 p = normalize(vObj);
+  vec3 col;
+  float facing = max(dot(N, V), 0.0);
+  if (uStar > 0.5) {
+    float n = fbm(p * 5.0 + uTime * 0.05);
+    col = mix(vec3(1.25, 0.42, 0.05), vec3(1.6, 0.95, 0.25), smoothstep(0.3, 0.65, n));
+    col += vec3(0.9, 0.3, 0.04) * pow(1.0 - facing, 2.0);
+  } else {
+    float diff = max(dot(N, L), 0.0), light = diff * 1.25 + 0.1;
+    col = surface(p) * light;
+#if RIM
+    col += uB * pow(1.0 - facing, 3.0) * max(dot(N, L) + 0.4, 0.0) * 0.6;
+#endif
+    if (uHeat > 0.001) {
+      // Hot: all lava. Cooling: a dark crust grows and only the cracks glow. Then the colours show.
+      float crack = abs(fbm(p * 3.4 + uSeed + uTime * 0.02) - 0.47) * 6.0;
+      float width = 0.04 + 2.2 * uHeat * uHeat * uHeat;
+      float lava = (1.0 - smoothstep(width * 0.5, width, crack)) * smoothstep(0.0, 0.08, uHeat);
+      vec3 crust = mix(col, vec3(0.055, 0.04, 0.04) * light, smoothstep(0.0, 0.3, uHeat));
+      vec3 hot = mix(vec3(0.9, 0.12, 0.02), mix(vec3(1.6, 0.5, 0.06), vec3(1.8, 0.95, 0.18), smoothstep(0.7, 1.0, uHeat)), smoothstep(0.2, 0.65, uHeat));
+      hot *= 0.7 + 0.6 * fbm(p * 7.0 + uTime * 0.12);
+      col = mix(crust, hot, lava);
+    }
+  }
+  gl_FragColor = vec4(col, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+  gl_FragColor.rgb += (hash(vec3(gl_FragCoord.xy, 1.0)) - 0.5) / 128.0;   // stops colour bands
+}`;
+
+function randomLook() {
+  let roll = Math.random(), treasure = 'gems';
+  for (const [t, v] of Object.entries(SPECIAL)) { if (roll < v.chance) { treasure = t; break; } roll -= v.chance; }
+  let h, s = .55 + Math.random() * .4, spread;
+  if (treasure !== 'gems') {
+    const [first, width, spr] = SPECIAL[treasure].hue;
+    h = (first + Math.random() * width) % 1;
+    spread = spr;
+    if (treasure !== 'ice') s = .72 + Math.random() * .23;
+  } else {
+    // Gem planets are purple, pink or green: never yellow, blue, red or teal, so the special planets are easy to spot.
+    const u = Math.random() * .3;
+    h = u < .18 ? .74 + u : .26 + (u - .18);
+    spread = .02;
+  }
+  const hue = d => (h + d + 1) % 1, side = Math.random() < .5 ? -1 : 1;
+  const dim = treasure === 'gold' ? .82 : 1;   // a deeper yellow looks more like gold
+  const a = new THREE.Color().setHSL(hue(0), s, (.3 + Math.random() * .15) * dim);
+  const b = new THREE.Color().setHSL(hue(spread * side), s, (.48 + Math.random() * .16) * dim);
+  const c = new THREE.Color().setHSL(hue(-spread * side), s * .9, (.66 + Math.random() * .16) * dim);
+  return { kind: Math.floor(Math.random() * 4), cols: [a.getHex(), b.getHex(), c.getHex()], treasure };
+}
+// For saves made before treasure existed: work it out from the colour.
+function treasureFromColour(o) {
+  if (o.rock !== false) return 'gems';
+  const hsl = {};
+  new THREE.Color(o.cols[1]).getHSL(hsl);
+  const x = hsl.h;
+  return x > .09 && x < .21 ? 'gold' : x > .525 && x < .7 ? 'ice' : x > .955 || x < .045 ? 'ruby' : x > .43 && x < .515 ? 'emerald' : 'gems';
+}
+function applyLook(p, look) {
+  p.kind = look.kind; p.cols = look.cols; p.treasure = look.treasure; p.rock = false;
+  if (look.seed != null) p.seed = look.seed;
+  if (!p.mesh) return;
+  const u = p.mesh.material.uniforms;
+  u.uKind.value = look.kind;
+  u.uA.value.set(look.cols[0]); u.uB.value.set(look.cols[1]); u.uC.value.set(look.cols[2]);
+  u.uSeed.value = p.seed;
+}
+function rockLook() {
+  const t = Math.random() * .08;
+  const a = new THREE.Color().setHSL(.08 + t * .3, .12, .3 + t);
+  const b = new THREE.Color().setHSL(.09 + t * .3, .14, .5 + t);
+  const c = new THREE.Color().setHSL(.08, .1, .2 + t);
+  return { kind: Math.random() < .5 ? 0 : 3, cols: [a.getHex(), b.getHex(), c.getHex()] };
+}
+
+// ---------- The game ----------
+let renderer, scene, camera, sphereGeo, noiseTex, glowTex, treasureTex, ringGeos, baseGeos, baseMats;
+let sun, starField, nebulaSprites = [], worldEdge;
+let gameReady = false, looping = false, last = 0, time = 0, shake = 0, zoom = 1;
+let nextPlanetAt = 0, nextSaveAt = 0, nextHudAt = 0, nextTickAt = 0;
+let shopOpen = false, mapOpen = false, near = null, flameLevel = 0, frames = 0;
+const planets = [], fx = [], keys = {};
+const G = { gems: 0, gold: 0, ice: 0, ruby: 0, emerald: 0, rocket: 0, made: 0 };
+const ship = { x: 0, z: SUN_R + 14, vx: 0, vz: 0, heading: Math.PI, group: null, flame: null, flameGlow: null };
+const focus = { x: 0, z: 0 };
+const BASE_UP = new THREE.Vector3(0, .96, -.28).normalize();
+const BASE_TILT = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), BASE_UP);
+const sparks = { i: 0, data: [], points: null, pos: null, col: null };
+
+const shipR = () => 1.2 * ROCKETS[G.rocket].size;
+const baseTotal = () => planets.reduce((n, p) => n + p.bases, 0);
+const basePrice = () => baseTotal() * BASE_PRICE;
+
+function softDot(size, stops) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  for (const [at, col] of stops) gr.addColorStop(at, col);
+  x.fillStyle = gr;
+  x.fillRect(0, 0, size, size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function emojiTexture(emoji, tint) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.font = '96px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  if (tint) x.filter = tint;
+  x.fillText(emoji, 64, 70);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function addGlowSprite(parent, color, opacity) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, opacity, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  parent.add(s);
+  return s;
+}
+function makeNoiseTexture() {
+  // 32 x 32 x 32 random numbers that repeat. The same numbers every time, so a planet looks the same after a reload.
+  const data = new Uint8Array(32 * 32 * 32);
+  let n = 12345;
+  for (let i = 0; i < data.length; i++) { n = (n * 16807) % 2147483647; data[i] = n % 256; }
+  const t = new THREE.Data3DTexture(data, 32, 32, 32);
+  t.format = THREE.RedFormat;
+  t.type = THREE.UnsignedByteType;
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  t.wrapS = t.wrapT = t.wrapR = THREE.RepeatWrapping;
+  t.unpackAlignment = 1;
+  t.needsUpdate = true;
+  return t;
+}
+function planetMaterial(look, heat, star, seed) {
+  return new THREE.ShaderMaterial({
+    vertexShader: PLANET_VS, fragmentShader: PLANET_FS,
+    defines: { OCT: q.oct, RIM: q.rim ? 1 : 0 },
+    uniforms: {
+      uNoise: { value: noiseTex }, uHeat: { value: heat }, uSeed: { value: seed }, uKind: { value: look.kind }, uTime: { value: 0 },
+      uStar: { value: star ? 1 : 0 },
+      uA: { value: new THREE.Color(look.cols[0]) }, uB: { value: new THREE.Color(look.cols[1]) }, uC: { value: new THREE.Color(look.cols[2]) },
+    },
+  });
+}
+
+function initGame() {
+  if (gameReady) return true;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: $('game'), antialias: true });
+  } catch (e) {
+    return false;
+  }
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x03050f);
+  camera = new THREE.PerspectiveCamera(50, 1, 1, 3000);
+
+  scene.add(new THREE.HemisphereLight(0x99aaff, 0x202030, 1));
+  scene.add(new THREE.PointLight(0xfff1d0, 2.6, 0, 0));   // the sun lights the rocket and the bases
+
+  glowTex = softDot(256, [[0, 'rgba(255,255,255,1)'], [.25, 'rgba(255,255,255,.55)'], [.6, 'rgba(255,255,255,.12)'], [1, 'rgba(255,255,255,0)']]);
+  treasureTex = Object.fromEntries(Object.entries(TREASURE).map(([t, v]) => [t, emojiTexture(v.emoji, v.tint)]));
+  noiseTex = makeNoiseTexture();
+  sphereGeo = new THREE.SphereGeometry(1, q.seg, Math.round(q.seg * .7));
+  ringGeos = [new THREE.RingGeometry(1.45, 1.85, 96), new THREE.RingGeometry(1.95, 2.4, 96)];
+  for (const r of ringGeos) r.rotateX(-Math.PI / 2);
+
+  // The sun
+  sun = new THREE.Group();
+  const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(SUN_R, 72, 50), planetMaterial({ kind: 0, cols: [0, 0, 0] }, 0, true, 3));
+  sun.add(sunMesh);
+  sun.userData.mesh = sunMesh;
+  addGlowSprite(sun, 0xffa63c, .9).scale.setScalar(SUN_R * 6.5);
+  scene.add(sun);
+
+  // Faraway stars and space clouds move with the camera, so they look endless.
+  starField = new THREE.Group();
+  const N = QUALITY.high.bgStars, pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < N; i++) {
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(1500);
+    pos.set([v.x, v.y, v.z], i * 3);
+    c.setHSL(Math.random() < .7 ? .6 : .1, .5, .55 + Math.random() * .4);
+    const b = .3 + Math.random() * .7;
+    col.set([c.r * b, c.g * b, c.b * b], i * 3);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  sg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, vertexColors: true,
+    map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  starField.add(stars);
+  starField.userData.stars = stars;
+  for (const [x, z, s, color] of [[-500, -300, 1100, 0x5a3cbe], [500, 100, 1200, 0x1e5abe], [100, -700, 900, 0xaa3c96]]) {
+    const n = addGlowSprite(starField, color, .22);
+    n.position.set(x, -1200, z);
+    n.scale.setScalar(s * 1.5);
+    nebulaSprites.push(n);
+  }
+  scene.add(starField);
+
+  // A faint line shows the edge of the world.
+  const edge = [];
+  for (let i = 0; i < 720; i++) edge.push(new THREE.Vector3(Math.cos(i / 720 * TAU) * (WORLD_R + 10), 0, Math.sin(i / 720 * TAU) * (WORLD_R + 10)));
+  worldEdge = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(edge),
+    new THREE.LineBasicMaterial({ color: 0x88aaff, transparent: true, opacity: .25 }));
+  scene.add(worldEdge);
+
+  initSparks();
+  buildBaseKit();
+  buildAlienKit();
+  buildShip();
+  addEventListener('resize', sizeGame);
+  sizeGame();
+  if (!loadGame()) { newWorld(); spawnAliens(); }
+  focus.x = ship.x; focus.z = ship.z;
+  gameReady = true;
+  return true;
+}
+
+function sizeGame() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+}
+
+function applyGameQuality() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.dpr));
+  sizeGame();
+  const newGeo = new THREE.SphereGeometry(1, q.seg, Math.round(q.seg * .7));
+  sphereGeo.dispose();
+  sphereGeo = newGeo;
+  const mats = [];
+  for (const p of shownPlanets) { p.mesh.geometry = newGeo; mats.push(p.mesh.material); }
+  mats.push(sun.userData.mesh.material);
+  for (const m of mats) {
+    if (m.defines.OCT !== q.oct || m.defines.RIM !== (q.rim ? 1 : 0)) {
+      m.defines.OCT = q.oct; m.defines.RIM = q.rim ? 1 : 0; m.needsUpdate = true;
+    }
+  }
+  starField.userData.stars.geometry.setDrawRange(0, q.bgStars);
+  for (const n of nebulaSprites) n.visible = q.nebula;
+  sparks.points.geometry.setDrawRange(0, q.sparks);
+  sparks.i = 0;
+}
+
+function enterGame() {
+  if (!initGame()) return false;
+  applyGameQuality();
+  return true;
+}
+function startLoop() {
+  if (looping) return;
+  looping = true;
+  last = -1;   // the first frame sets it (its time can be a little before now, which used to make time go backwards)
+  requestAnimationFrame(tick);
+}
+
+// ---------- Rocket (red and white stripes, a pointy nose and fins) ----------
+function buildShip() {
+  const std = (color, rough, metal, extra) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+  const white = std(0xf4f4f0, .35, .25), red = std(0xd8261f, .4, .2), dark = std(0x2a2f3a, .5, .6);
+  const glass = std(0x7fd0ff, .1, .2, { emissive: 0x1b5a8a });
+  const root = new THREE.Group(), body = new THREE.Group();
+  body.rotation.x = Math.PI / 2;   // the rocket's nose points the way it flies
+  root.add(body);
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); body.add(m); return m; };
+  add(new THREE.CylinderGeometry(.58, .58, 2, 32), white, 0, 0, 0);
+  add(new THREE.ConeGeometry(.58, 1.1, 32), red, 0, 1.55, 0);
+  for (const y of [-.55, .3]) add(new THREE.CylinderGeometry(.595, .595, .28, 32), red, 0, y, 0);
+  add(new THREE.CylinderGeometry(.42, .3, .35, 24), dark, 0, -1.17, 0);
+  const win = add(new THREE.SphereGeometry(.24, 20, 14), glass, 0, .78, .5);
+  win.scale.z = .5;
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * TAU + Math.PI / 4;
+    const fin = add(new THREE.BoxGeometry(.08, .9, .6), red, Math.cos(a) * .72, -.72, Math.sin(a) * .72);
+    fin.rotation.y = -a + Math.PI / 2;
+  }
+  ship.flame = add(new THREE.ConeGeometry(.34, 1.5, 16), new THREE.MeshBasicMaterial({ color: 0xffa030,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), 0, -2.05, 0);
+  ship.flame.rotation.x = Math.PI;
+  ship.flameGlow = addGlowSprite(body, 0xff8a30, .8);
+  ship.flameGlow.position.y = -1.7;
+  ship.group = root;
+  scene.add(root);
+  sizeShip();
+}
+function sizeShip() { ship.group.scale.setScalar(ROCKETS[G.rocket].size); }
+
+// ---------- Bases ----------
+function buildBaseKit() {
+  const std = (color, rough, metal, extra) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+  baseMats = {
+    metal: std(0xa8aeb8, .45, .7), white: std(0xf2f2ee, .4, .15), yellow: std(0xffc21e, .45, .2),
+    glass: std(0x74c9ff, .12, .3, { emissive: 0x1a5f9a }),
+    lamp: std(0xff3a2a, .4, 0, { emissive: 0xff2010, emissiveIntensity: 2 }),
+  };
+  baseGeos = {
+    floor: new THREE.CylinderGeometry(1.25, 1.35, .16, 32),
+    big: new THREE.SphereGeometry(.72, 32, 16, 0, TAU, 0, Math.PI / 2),
+    small: new THREE.SphereGeometry(.34, 24, 12, 0, TAU, 0, Math.PI / 2),
+    pole: new THREE.CylinderGeometry(.05, .08, 1.5, 12),
+    lamp: new THREE.SphereGeometry(.12, 16, 12),
+    drill: new THREE.ConeGeometry(.26, 1, 8),
+    flag: new THREE.BoxGeometry(.5, .28, .03),
+  };
+}
+function addBaseModel(p, instant) {
+  const m = new THREE.Group(), add = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); m.add(o); return o; };
+  add(baseGeos.floor, baseMats.metal, 0, .06, 0);
+  add(baseGeos.big, baseMats.glass, 0, .14, 0);
+  add(baseGeos.small, baseMats.white, .86, .14, .32);
+  add(baseGeos.small, baseMats.white, -.82, .14, .42);
+  add(baseGeos.pole, baseMats.metal, -.4, .86, -.72);
+  const lamp = add(baseGeos.lamp, baseMats.lamp, -.4, 1.66, -.72);
+  const drill = add(baseGeos.drill, baseMats.yellow, .66, .6, -.56);
+  add(baseGeos.flag, baseMats.yellow, -.13, 1.42, -.72);
+  m.quaternion.copy(BASE_TILT);
+  p.group.add(m);
+  const gem = new THREE.Sprite(new THREE.SpriteMaterial({ map: treasureTex[p.treasure], transparent: true, depthWrite: false, toneMapped: false }));
+  p.group.add(gem);
+  p.baseModel = { m, lamp, drill, gem, grow: instant ? 1 : 0 };
+}
+
+function buildBase(p) {
+  G.gems -= basePrice();
+  ensureVisual(p);
+  p.bases = 1;
+  p.vx = p.vz = 0;
+  addBaseModel(p, false);
+  const up = BASE_UP.clone().multiplyScalar(p.r);
+  burst(p.x + up.x, up.y, p.z + up.z, 50, 12, [1, .85, .4]);
+  chime(660, .22); chime(990, .16, .12);
+  saveGame();
+  say('🏗️ You built a base!');
+}
+
+// E key, or the button at the bottom.
+function pressAction() {
+  if (shopOpen) { closeShop(); return; }
+  const p = near;
+  if (!p) return;
+  if (p.bases) { openShop(); return; }
+  if (p.heat > 0) { say('🔥 Too hot! Wait for it to cool.'); return; }
+  const cost = basePrice();
+  if (G.gems < cost) { say(`You need ${fmt(cost)} 💎 to build here.`); return; }
+  buildBase(p);
+}
+
+// ---------- Els and Oos: space people who fly little saucers ----------
+const ALIEN_COUNT = { el: 500, oo: 500 };   // 1,000 in all; it was 10 + 10, then 50 + 50
+const GIFT = 10;             // how much treasure one present is
+const GIFTS_TO_FRIEND = 3;   // presents until a yellow face turns green and they are your friend
+const ALIEN_NEAR = 9;        // how close you need to be to give a present
+const ALIEN_SIZE = 1.8;      // how big the saucers are
+const SAUCER_R = 2.3 * ALIEN_SIZE;
+const ALIEN_SPEED = 50;      // Els and Oos that are not your friends yet (it was 5)
+const SPECIES = {
+  el: { name: 'El', saucer: 0x8d63f2 },   // tall face, two antennae, two eyes
+  oo: { name: 'Oo', saucer: 0xff8c3a },   // round face, two little horns, one big eye
+};
+const FRIEND_GIFT_TIME = 10;  // seconds between treasure presents from each friend
+const FRIEND_GIFT = 10;       // how much treasure a friend gives
+const HELP_RANGE = 35;        // friends help crash planets this close to you
+const HELP_REST = 6;          // seconds a friend rests after helping
+const MAX_HELPERS = 2;        // how many friends help at the same time
+const FRIEND_SPEED = 100;     // friends fly 100 times faster than at first (10 times faster, twice)
+const EXPLORE_RANGE = 150;    // exploring friends look for planets this far around themselves
+const EXPLORE_SPEED = 750;    // how fast exploring friends zoom between spots
+const FRIEND_PUSH_MAX = 40;   // but a planet they bump never goes faster than this
+const HELP_PUSH = 30;         // how fast a helper sends a planet at the other planet
+const WANTS = [['gems', .4], ['gold', .15], ['ice', .15], ['ruby', .15], ['emerald', .15]];   // what they ask for
+const aliens = [];
+let alienKit = null, nearAlien = null, actionMode = '', friendGifts = 0, helpPushes = 0, aliensPaused = false, friendsExplore = false;
+const floatTex = {};
+let giftChimeAt = 0, nextSlot = 0;
+
+function randomWant() {
+  let r = Math.random();
+  for (const [t, w] of WANTS) if ((r -= w) < 0) return t;
+  return 'gems';
+}
+// Yellow means "not your friend yet" (but they never attack). Green means friend.
+function moodColour(h) {
+  const a = [255, 210, 58], b = [70, 216, 106];
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * h)).join(',')})`;
+}
+// Draws one face (in a 256 x 256 space). Yellow means "not your friend yet" (they never attack); green means friend.
+function drawFaceCell(x, kind, gifts) {
+  const h = gifts / GIFTS_TO_FRIEND, col = moodColour(h);
+  x.lineJoin = 'round';
+  x.lineCap = 'round';
+  x.strokeStyle = '#2a2140';
+  x.lineWidth = 7;
+  if (kind === 'el') {
+    for (const sd of [-1, 1]) {
+      x.beginPath(); x.moveTo(128 + sd * 26, 72); x.quadraticCurveTo(128 + sd * 40, 40, 128 + sd * 52, 24); x.stroke();
+      x.fillStyle = '#ff6fb5'; x.beginPath(); x.arc(128 + sd * 52, 24, 13, 0, TAU); x.fill(); x.stroke();
+    }
+    x.fillStyle = col; x.beginPath(); x.ellipse(128, 150, 70, 88, 0, 0, TAU); x.fill(); x.stroke();
+  } else {
+    x.fillStyle = col;
+    for (const sd of [-1, 1]) {
+      x.beginPath(); x.moveTo(128 + sd * 42, 76); x.lineTo(128 + sd * 70, 22); x.lineTo(128 + sd * 80, 92); x.closePath(); x.fill(); x.stroke();
+    }
+    x.beginPath(); x.arc(128, 150, 92, 0, TAU); x.fill(); x.stroke();
+  }
+  x.fillStyle = 'rgba(255, 255, 255, .35)';
+  x.beginPath(); x.ellipse(96, 104, 22, 12, -.6, 0, TAU); x.fill();
+  const eye = (ex, ey, r) => {
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(ex, ey, r, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = '#2a2140'; x.beginPath(); x.arc(ex, ey + r * .15, r * .5, 0, TAU); x.fill();
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - r * .2, ey - r * .1, r * .18, 0, TAU); x.fill();
+  };
+  if (kind === 'el') { eye(100, 138, 20); eye(156, 138, 20); } else eye(128, 128, 34);
+  // A straight mouth when yellow, and a bigger smile with every present.
+  x.lineWidth = 8;
+  x.beginPath(); x.moveTo(96, 198); x.quadraticCurveTo(128, 198 + 46 * h, 160, 198); x.stroke();
+  if (gifts >= GIFTS_TO_FRIEND) {
+    x.fillStyle = 'rgba(255, 110, 150, .55)';
+    for (const sd of [-1, 1]) { x.beginPath(); x.arc(128 + sd * 54, 186, 14, 0, TAU); x.fill(); }
+  }
+}
+// The shared picture: 4 x 4 squares of 128 px. Els 0-3 and Oos 4-7 (by presents), then the treasures, then a heart.
+const FACE_CELL = (kind, gifts) => (kind === 'el' ? 0 : 4) + gifts;
+const ICON_CELL = { gems: 8, gold: 9, ice: 10, ruby: 11, emerald: 12, heart: 13 };
+let atlasCanvas = null, atlasTex = null;
+function buildAtlas() {
+  atlasCanvas = document.createElement('canvas');
+  atlasCanvas.width = atlasCanvas.height = 512;
+  const x = atlasCanvas.getContext('2d');
+  const at = (cell, draw) => { x.save(); x.translate((cell % 4) * 128, Math.floor(cell / 4) * 128); draw(); x.restore(); };
+  for (const kind of ['el', 'oo']) for (let g = 0; g <= GIFTS_TO_FRIEND; g++) at(FACE_CELL(kind, g), () => { x.scale(.5, .5); drawFaceCell(x, kind, g); });
+  const icon = (cell, emoji, tint) => at(cell, () => {
+    x.font = '96px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    if (tint) x.filter = tint;
+    x.fillText(emoji, 64, 70);
+  });
+  for (const [t, v] of Object.entries(TREASURE)) icon(ICON_CELL[t], v.emoji, v.tint);
+  icon(ICON_CELL.heart, '💖');
+  atlasTex = new THREE.CanvasTexture(atlasCanvas);
+  atlasTex.colorSpace = THREE.SRGBColorSpace;
+  atlasTex.generateMipmaps = false;
+  atlasTex.minFilter = THREE.LinearFilter;
+}
+// ---------- Drawing up to 1,200 saucers at once: each part is one "instanced" drawing for all of them ----------
+const MAX_DRAWN_ALIENS = 1200;
+function buildAlienKit() {
+  buildAtlas();
+  const std = (color, extra) => new THREE.MeshStandardMaterial({ color, roughness: .45, metalness: .25, ...extra });
+  const many = (geo, mat, n) => {
+    const m = new THREE.InstancedMesh(geo, mat, n);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    m.frustumCulled = false;
+    m.count = 0;
+    scene.add(m);
+    return m;
+  };
+  const boardMat = new THREE.ShaderMaterial({
+    uniforms: { uAtlas: { value: atlasTex } },
+    vertexShader: `
+      attribute float aCell;
+      varying vec2 vUv;
+      void main() {
+        vec4 c = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+        c.xy += position.xy * length(instanceMatrix[0].xyz);   // always faces the camera
+        gl_Position = projectionMatrix * c;
+        vUv = (vec2(mod(aCell, 4.0), 3.0 - floor(aCell / 4.0)) + uv) / 4.0;
+      }`,
+    fragmentShader: `
+      uniform sampler2D uAtlas;
+      varying vec2 vUv;
+      void main() {
+        vec4 t = texture2D(uAtlas, vUv);
+        if (t.a < 0.5) discard;
+        gl_FragColor = vec4(t.rgb, 1.0);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const boards = many(new THREE.PlaneGeometry(1, 1), boardMat, MAX_DRAWN_ALIENS * 2);
+  boards.geometry.setAttribute('aCell', new THREE.InstancedBufferAttribute(new Float32Array(MAX_DRAWN_ALIENS * 2), 1));
+  boards.geometry.attributes.aCell.setUsage(THREE.DynamicDrawUsage);
+  alienKit = {
+    body: many(new THREE.SphereGeometry(2.3, 28, 12), std(0xffffff), MAX_DRAWN_ALIENS),
+    dome: many(new THREE.SphereGeometry(1.15, 24, 10, 0, TAU, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0xbfe8ff, roughness: .05, metalness: .1, transparent: true, opacity: .4 }), MAX_DRAWN_ALIENS),
+    lights: many(new THREE.TorusGeometry(2.05, .14, 6, 32), std(0xfff2a0, { emissive: 0xffe066, emissiveIntensity: 1.6 }), MAX_DRAWN_ALIENS),
+    boards,
+    colors: Object.fromEntries(Object.entries(SPECIES).map(([k, v]) => [k, new THREE.Color(v.saucer)])),
+  };
+  alienKit.body.setColorAt(0, alienKit.colors.el);   // makes the colour list
+}
+const _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion(), _e4 = new THREE.Euler(), _p4 = new THREE.Vector3(), _s4 = new THREE.Vector3();
+// Every frame: put the saucers near the camera into the drawings.
+function drawAliens() {
+  const K = alienKit, R = 160 * zoom + 60, S = ALIEN_SIZE, cells = K.boards.geometry.attributes.aCell;
+  let n = 0, b = 0;
+  for (const al of aliens) {
+    if (n >= MAX_DRAWN_ALIENS) break;
+    if (Math.abs(al.x - focus.x) > R || Math.abs(al.z - focus.z) > R) continue;
+    const y = S + Math.sin(al.bob) * .5;
+    _q4.setFromEuler(_e4.set(0, 0, Math.sin(al.bob * .7) * .08));
+    _m4.compose(_p4.set(al.x, y, al.z), _q4, _s4.set(S, S * .3, S));
+    K.body.setMatrixAt(n, _m4);
+    K.body.setColorAt(n, K.colors[al.kind]);
+    _m4.compose(_p4.set(al.x, y + .45 * S, al.z), _q4, _s4.set(S, S, S));
+    K.dome.setMatrixAt(n, _m4);
+    _q4.setFromEuler(_e4.set(Math.PI / 2, 0, al.spin));
+    _m4.compose(_p4.set(al.x, y, al.z), _q4, _s4.set(S, S, S));
+    K.lights.setMatrixAt(n, _m4);
+    _m4.makeScale(3.6 * S, 3.6 * S, 1).setPosition(al.x, y + 2.6 * S, al.z);
+    K.boards.setMatrixAt(b, _m4);
+    cells.setX(b++, FACE_CELL(al.kind, al.gifts));
+    if (al.friend) {
+      _m4.makeScale(1.6 * S, 1.6 * S, 1).setPosition(al.x, y + (5 + Math.sin(al.bob * 1.5) * .3) * S, al.z);
+      cells.setX(b, ICON_CELL.heart);
+    } else {
+      _m4.makeScale(1.8 * S, 1.8 * S, 1).setPosition(al.x + 2.8 * S, y + (3.8 + Math.sin(al.bob * 1.3) * .2) * S, al.z);
+      cells.setX(b, ICON_CELL[al.want]);
+    }
+    K.boards.setMatrixAt(b++, _m4);
+    n++;
+  }
+  K.body.count = K.dome.count = K.lights.count = n;
+  K.boards.count = b;
+  for (const m of [K.body, K.dome, K.lights, K.boards]) m.instanceMatrix.needsUpdate = true;
+  K.body.instanceColor.needsUpdate = true;
+  cells.needsUpdate = true;
+}
+function makeAlien(o) {
+  const al = {
+    kind: o.kind, x: o.x, z: o.z, vx: 0, vz: 0, tx: o.x, tz: o.z, wait: 0, bob: Math.random() * TAU, spin: Math.random() * TAU,
+    gifts: Math.min(o.gifts | 0, GIFTS_TO_FRIEND), friend: !!o.friend, want: TREASURE[o.want] ? o.want : randomWant(),
+    job: null, rest: 2 + Math.random() * 3, giftT: 0,
+  };
+  if (al.friend) al.gifts = GIFTS_TO_FRIEND;
+  aliens.push(al);
+  return al;
+}
+// Adds Els and Oos until there are ALIEN_COUNT of each (so older saves get the new ones too).
+function spawnAliens() {
+  rebuildGrid();
+  for (const [kind, n] of Object.entries(ALIEN_COUNT)) {
+    const have = aliens.filter(al => al.kind === kind).length;
+    for (let i = have; i < n; i++) {
+      for (let tries = 0; tries < 80; tries++) {
+        // The first El and the first Oo start close by, so you meet them soon.
+        const close = i === 0, ang = Math.random() * TAU;
+        const d = close ? 22 + Math.random() * 14 : SUN_R + 30 + Math.sqrt(Math.random()) * (WORLD_R - SUN_R - 50);
+        const x = (close ? ship.x : 0) + Math.cos(ang) * d, z = (close ? ship.z : 0) + Math.sin(ang) * d;
+        if (Math.hypot(x, z) < SUN_R + 8 || Math.hypot(x, z) > WORLD_R - 10) continue;
+        if (!clearOf(x, z, SAUCER_R + 3)) continue;
+        makeAlien({ kind, x, z });
+        break;
+      }
+    }
+  }
+}
+function stepAliens(dt) {
+  const r = shipR();
+  let best = null, bestGap = ALIEN_NEAR;
+  for (const al of aliens) {
+    if (al.friend) continue;   // friends are always with you, so they don't take the button
+    const gap = Math.hypot(al.x - ship.x, al.z - ship.z) - SAUCER_R - r;
+    if (gap < bestGap) { bestGap = gap; best = al; }
+  }
+  nearAlien = best;
+  const k = 1 - Math.exp(-dt * 1.5);
+  const friends = aliens.filter(al => al.friend);
+  let helpers = friends.filter(al => al.job).length;
+  for (const al of aliens) {
+    if (!Number.isFinite(al.x + al.z + al.vx + al.vz)) { rescue(al); al.x += ship.x; al.z += ship.z; al.job = null; }
+    if (aliensPaused) {
+      // Paused: they stay exactly where they are. Planets and your rocket just slide around them.
+      al.vx = al.vz = 0;
+      al.job = null;
+      nearPlanets(al.x, al.z, SAUCER_R + 1, p => {
+        const dx = p.x - al.x, dz = p.z - al.z, d = Math.hypot(dx, dz) || .001, min = p.r + SAUCER_R + .3;
+        if (d >= min || p.bases) return;
+        const nx = dx / d, nz = dz / d, vn = p.vx * nx + p.vz * nz;
+        p.x = al.x + nx * min; p.z = al.z + nz * min;
+        if (vn < 0) { p.vx -= vn * nx * 1.6; p.vz -= vn * nz * 1.6; }
+      });
+      const sx = al.x - ship.x, sz = al.z - ship.z, sd = Math.hypot(sx, sz) || .001, smin = SAUCER_R + r;
+      if (sd < smin) { ship.x = al.x - sx / sd * smin; ship.z = al.z - sz / sd * smin; }
+      continue;
+    }
+    if (al.friend) {
+      al.rest -= dt;
+      if (!al.job && al.rest <= 0) {
+        if (friendsExplore) {
+          // Exploring friends all look for planets near themselves, anywhere in space.
+          al.job = findHelpJob(al.x, al.z, EXPLORE_RANGE);
+          if (!al.job) al.rest = 1;
+        } else if (helpers < MAX_HELPERS) {
+          al.job = findHelpJob(ship.x, ship.z, HELP_RANGE);
+          if (al.job) helpers++; else al.rest = 1;
+        }
+      }
+      const steps = Math.min(60, Math.max(1, Math.ceil(Math.hypot(al.vx, al.vz) * dt / 4)));
+      if (al.slot == null) al.slot = nextSlot++;
+      const slot = al.slot, h = dt / steps;
+      // Only the planets it could reach this frame need checking (there are lots of friends and planets).
+      const reach = Math.hypot(al.vx, al.vz) * dt + SAUCER_R + 40;
+      const close = [];
+      nearPlanets(al.x, al.z, reach, p => { close.push(p); });
+      for (let n = 0; n < steps; n++) {
+        steerFriend(al, slot, h, friends.length);
+        al.x += al.vx * h; al.z += al.vz * h;
+        bumpPlanets(al, true, close);
+      }
+      if (Math.hypot(al.vx, al.vz) > 80) spark(al.x, 1.5, al.z, 0, 0, 0, .5, 1.4, .7, .4);   // a sparkly trail when zooming
+      al.giftT += dt;
+      if (al.giftT >= FRIEND_GIFT_TIME) { al.giftT = 0; friendGift(al); }
+    } else if (al === best) {
+      // They stop to say hello when you come close.
+      al.vx *= Math.exp(-dt * 4); al.vz *= Math.exp(-dt * 4);
+    } else {
+      al.wait -= dt;
+      let dx = al.tx - al.x, dz = al.tz - al.z, d = Math.hypot(dx, dz);
+      if (d < 3 || al.wait < 0) {
+        const ang = Math.random() * TAU, far = 15 + Math.random() * 40;
+        const tx = al.x + Math.cos(ang) * far, tz = al.z + Math.sin(ang) * far;
+        const td = Math.hypot(tx, tz) || 1, lim = Math.min(Math.max(td, SUN_R + 20), WORLD_R - 20);
+        al.tx = tx / td * lim; al.tz = tz / td * lim;
+        al.wait = 8 + Math.random() * 8;
+        dx = al.tx - al.x; dz = al.tz - al.z; d = Math.hypot(dx, dz);
+      }
+      al.vx += (dx / (d || 1) * ALIEN_SPEED - al.vx) * k;
+      al.vz += (dz / (d || 1) * ALIEN_SPEED - al.vz) * k;
+    }
+    if (!al.friend) {
+      al.x += al.vx * dt; al.z += al.vz * dt;
+      const list = [];
+      nearPlanets(al.x, al.z, SAUCER_R + 2, p => { list.push(p); });
+      bumpPlanets(al, true, list);
+    }
+    const ds = Math.hypot(al.x, al.z) || 1;
+    if (ds < SUN_R + SAUCER_R) { al.x *= (SUN_R + SAUCER_R) / ds; al.z *= (SUN_R + SAUCER_R) / ds; }
+    if (ds > WORLD_R - 5) { al.x *= (WORLD_R - 5) / ds; al.z *= (WORLD_R - 5) / ds; }
+    // Your rocket nudges them out of the way.
+    const sx = al.x - ship.x, sz = al.z - ship.z, sd = Math.hypot(sx, sz) || .001, smin = SAUCER_R + r;
+    if (sd < smin) { al.x = ship.x + sx / sd * smin; al.z = ship.z + sz / sd * smin; }
+
+    al.bob += dt * 2;
+    al.spin += dt * 2;
+  }
+}
+
+// Friends push planets like your rocket does (but not while flying round to the far side of one).
+// Everyone else flies around them. Saucers never crash.
+function bumpPlanets(al, canPush = true, list = planets) {
+  const pushing = canPush && al.friend && !(al.job && al.job.phase === 'go');
+  for (const p of list) {
+    const dx = p.x - al.x, dz = p.z - al.z, d = Math.hypot(dx, dz) || .001, min = p.r + SAUCER_R + .3;
+    if (d >= min) continue;
+    const nx = dx / d, nz = dz / d;
+    const job = al.job;
+    if (job && job.phase === 'push' && p === job.target) {
+      // A helper aims its push straight at the other planet, so they really crash.
+      const ax = job.partner.x - p.x, az = job.partner.z - p.z, ad = Math.hypot(ax, az) || 1;
+      p.vx = ax / ad * HELP_PUSH; p.vz = az / ad * HELP_PUSH;
+      helpPushes++;
+      endJob(al);
+      al.vx *= .2; al.vz *= .2;
+    } else if (pushing && !p.bases) {
+      const inward = (al.vx - p.vx) * nx + (al.vz - p.vz) * nz;
+      if (inward > 0) {
+        const before = Math.hypot(p.vx, p.vz);
+        p.vx += nx * inward * 1.2 / (1 + p.r * .12); p.vz += nz * inward * 1.2 / (1 + p.r * .12);
+        const after = Math.hypot(p.vx, p.vz), cap = Math.max(FRIEND_PUSH_MAX, before);
+        if (after > cap) { p.vx *= cap / after; p.vz *= cap / after; }
+        al.vx -= nx * inward * .4; al.vz -= nz * inward * .4;
+      }
+      p.x += nx * (min - d) * .5; p.z += nz * (min - d) * .5;
+      al.x -= nx * (min - d) * .5; al.z -= nz * (min - d) * .5;
+    } else {
+      al.x = p.x - nx * min; al.z = p.z - nz * min;
+    }
+  }
+}
+
+// A friend looks for a still planet near (cx, cz), and another planet near that one to crash it into.
+function findHelpJob(cx, cz, range) {
+  const taken = new Set();
+  for (const o of aliens) if (o.job) { taken.add(o.job.target); taken.add(o.job.partner); }
+  let target = null, best = range;
+  nearPlanets(cx, cz, range, p => {
+    if (p.bases || taken.has(p) || Math.hypot(p.vx, p.vz) > 3) return;
+    const d = Math.hypot(p.x - cx, p.z - cz);
+    if (d < best) { best = d; target = p; }
+  });
+  if (!target) return null;
+  let partner = null, gap = 45;
+  nearPlanets(target.x, target.z, target.r + 45, q => {
+    if (q === target || taken.has(q)) return;
+    const d = Math.hypot(q.x - target.x, q.z - target.z) - q.r - target.r;
+    if (d < gap) { gap = d; partner = q; }
+  });
+  return partner ? { target, partner, phase: 'go', t: 0, pt: 0 } : null;
+}
+function endJob(al) { al.job = null; al.rest = HELP_REST + Math.random() * 4; }
+
+function steerFriend(al, i, dt, count = 1) {
+  let tx, tz, top;
+  const j = al.job;
+  if (j && (!planets.includes(j.target) || !planets.includes(j.partner) || j.target.bases || (j.t += dt) > 8)) endJob(al);
+  if (al.job) {
+    const T = j.target, P = j.partner;
+    const dx = P.x - T.x, dz = P.z - T.z, d = Math.hypot(dx, dz) || 1, nx = dx / d, nz = dz / d;
+    if (j.phase === 'go') {
+      // Fly round to the far side of the planet...
+      const back = T.r + SAUCER_R + 2.5;
+      tx = T.x - nx * back; tz = T.z - nz * back; top = 45 * FRIEND_SPEED;
+      if (Math.hypot(tx - al.x, tz - al.z) < 2.5) j.phase = 'push';
+    } else {
+      // ...then fly straight at it, so it gets a big push toward the other planet.
+      tx = T.x + nx * 20; tz = T.z + nz * 20; top = 28 * FRIEND_SPEED;
+      j.pt += dt;
+      if (j.pt > 2.5) endJob(al);
+    }
+  } else if (friendsExplore) {
+    // Exploring: zoom to a new spot nearby, then look for planets there.
+    al.wait -= dt;
+    if (al.wait <= 0 || Math.hypot(al.tx - al.x, al.tz - al.z) < 3) {
+      const ang = Math.random() * TAU, far = 30 + Math.random() * 60;
+      const ex = al.x + Math.cos(ang) * far, ez = al.z + Math.sin(ang) * far;
+      const ed = Math.hypot(ex, ez) || 1, lim = Math.min(Math.max(ed, SUN_R + 20), WORLD_R - 20);
+      al.tx = ex / ed * lim; al.tz = ez / ed * lim;
+      al.wait = 3 + Math.random() * 3;
+    }
+    tx = al.tx; tz = al.tz; top = EXPLORE_SPEED;
+  } else {
+    // Follow the rocket: friends fly in rows behind you (3 across, or more when you have lots of friends).
+    const across = Math.max(3, Math.ceil(Math.sqrt(aliens.length)));   // the same width all the time, so nobody has to move when a new friend joins
+    const h = ship.heading, fx = Math.sin(h), fz = Math.cos(h), row = Math.floor(i / across), col = i % across - (across - 1) / 2;
+    const back = shipR() + SAUCER_R + 4 + row * (SAUCER_R * 2 + 2), side = col * (SAUCER_R * 2 + 2);
+    tx = ship.x - fx * back + fz * side; tz = ship.z - fz * back - fx * side;
+    top = (ROCKETS[G.rocket].speed * 1.3 + 10) * FRIEND_SPEED;
+    if (Math.hypot(tx - al.x, tz - al.z) > 220) { al.x = tx; al.z = tz; al.vx = ship.vx; al.vz = ship.vz; }   // catch up after a long way
+  }
+  // Following friends match the rocket's speed and then close the gap, so they keep up even with the Ginormous Rocket.
+  const dx = tx - al.x, dz = tz - al.z, follow = !al.job && !friendsExplore;
+  const gain = Math.min((follow ? 3 : 2.5) * FRIEND_SPEED, .8 / Math.max(dt, 1e-4));
+  let wx = (follow ? ship.vx : 0) + dx * gain, wz = (follow ? ship.vz : 0) + dz * gain;
+  const w = Math.hypot(wx, wz);
+  if (w > top) { wx *= top / w; wz *= top / w; }
+  const k = 1 - Math.exp(-dt * 5 * FRIEND_SPEED);
+  al.vx += (wx - al.vx) * k;
+  al.vz += (wz - al.vz) * k;
+}
+
+// Every 10 seconds each friend gives you a random treasure, with a little "+10" that floats up.
+function friendGift(al) {
+  const kinds = Object.keys(TREASURE), t = kinds[Math.floor(Math.random() * kinds.length)];
+  G[t] += FRIEND_GIFT;
+  friendGifts++;
+  if (Math.hypot(al.x - focus.x, al.z - focus.z) < 200) {
+    floatText(al.x, 6, al.z, t, FRIEND_GIFT);
+    const now = performance.now();
+    if (now - giftChimeAt > 150) { giftChimeAt = now; chime(990 + Math.random() * 200, .07); }
+  }
+}
+function floatText(x, y, z, t, n) {
+  const key = t + n;
+  if (!floatTex[key]) {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const x2 = c.getContext('2d'), label = `+${n}`;
+    x2.font = 'bold 64px "Trebuchet MS", sans-serif';
+    x2.textBaseline = 'middle';
+    x2.lineWidth = 8; x2.strokeStyle = 'rgba(0, 0, 0, .6)'; x2.fillStyle = '#fff';
+    x2.strokeText(label, 16, 66); x2.fillText(label, 16, 66);
+    const w = x2.measureText(label).width;
+    x2.font = '64px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+    if (TREASURE[t].tint) x2.filter = TREASURE[t].tint;
+    x2.fillText(TREASURE[t].emoji, 28 + w, 70);
+    floatTex[key] = new THREE.CanvasTexture(c);
+    floatTex[key].colorSpace = THREE.SRGBColorSpace;
+  }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: floatTex[key], transparent: true, depthWrite: false, depthTest: false, toneMapped: false }));
+  sp.position.set(x, y, z);
+  sp.scale.set(8, 4, 1);
+  addFx(sp, 1.8, kk => { sp.position.y = y + kk * 5; sp.material.opacity = kk < .7 ? 1 : 1 - (kk - .7) / .3; });
+}
+
+// F key, or the button: send your friends exploring to smash planets, or call them back.
+function toggleExplore(on = !friendsExplore) {
+  friendsExplore = on;
+  $('exploreBtn').textContent = on ? '🚀 Follow me (F)' : '💥 Explore (F)';
+  for (const al of aliens) if (al.friend) { al.job = null; al.rest = Math.random() * 2; al.wait = 0; }
+  if (gameReady) say(on ? '💥 Your friends are off to smash planets!' : '🚀 Your friends are coming back to you');
+}
+$('exploreBtn').onclick = () => toggleExplore();
+
+// Every time you spawn into space (Play), all the Els and Oos become your friends,
+// a few at a time over 20 seconds, nearest first, so there is no big lag at the start.
+const BEFRIEND_TIME = 20;
+let befriendQueue = [], befriendT = 0, befriendGap = 0;
+function befriendAll() {
+  befriendQueue = aliens.filter(al => !al.friend)
+    .sort((a, b) => Math.hypot(a.x - ship.x, a.z - ship.z) - Math.hypot(b.x - ship.x, b.z - ship.z));
+  befriendGap = BEFRIEND_TIME / Math.max(1, befriendQueue.length);
+  befriendT = 0;
+  if (befriendQueue.length) say('💚 The Els and Oos are coming to be your friends!');
+}
+function stepBefriend(dt) {
+  if (!befriendQueue.length) return;
+  befriendT += dt;
+  while (befriendQueue.length && befriendT >= befriendGap) {
+    befriendT -= befriendGap;
+    const al = befriendQueue.shift();
+    if (!al.friend) {
+      al.friend = true; al.gifts = GIFTS_TO_FRIEND; al.job = null; al.rest = 1 + Math.random() * 3; al.giftT = 0;
+      if (Math.hypot(al.x - focus.x, al.z - focus.z) < 150) burst(al.x, 3, al.z, 20, 8, [1.5, .45, .9]);
+    }
+    if (!befriendQueue.length) say(`💚 All ${aliens.length} Els and Oos are your friends!`);
+  }
+}
+
+// B key, or the button: pause the Els and Oos, or let them go again.
+function toggleAlienPause(paused = !aliensPaused) {
+  aliensPaused = paused;
+  $('pauseBtn').textContent = paused ? '▶️ Aliens (B)' : '⏸️ Aliens (B)';
+  if (gameReady) say(paused ? '⏸️ The Els and Oos are paused' : '▶️ The Els and Oos can move again');
+}
+$('pauseBtn').onclick = () => toggleAlienPause();
+
+// G key, or the button: give the El or Oo the present it wants.
+function giveGift(al) {
+  if (!al) return;
+  const name = SPECIES[al.kind].name;
+  if (al.friend) { say(`💚 This ${name} is your friend!`); return; }
+  const t = al.want;
+  if (G[t] < GIFT) { say(`This ${name} wants ${GIFT} ${icon(t)}. You have ${fmt(G[t])}.`); return; }
+  G[t] -= GIFT;
+  al.gifts++;
+  const [cr, cg, cb] = TREASURE[t].spark;
+  for (let i = 0; i < 24; i++) {
+    const life = .45 + Math.random() * .2;
+    spark(ship.x, 1, ship.z, (al.x - ship.x) / life + Math.random() * 4 - 2, 2.6 / life, (al.z - ship.z) / life + Math.random() * 4 - 2, cr, cg, cb, life);
+  }
+  if (al.gifts >= GIFTS_TO_FRIEND) {
+    al.gifts = GIFTS_TO_FRIEND;
+    al.friend = true;
+    say(`🎉 The ${name} is your friend! 💚 It will follow you.`);
+    burst(al.x, 3, al.z, 70, 12, [1.5, .45, .9]);
+    chime(660, .2); chime(880, .18, .12); chime(1320, .16, .24);
+  } else {
+    al.want = randomWant();
+    say(`😊 The ${name} is happier!`);
+    chime(740, .16);
+  }
+  updateHud();
+  saveGame();
+}
+
+// ---------- Shop ----------
+function renderShop() {
+  $('shopHave').innerHTML = Object.keys(TREASURE).map(t => `${fmt(G[t])} ${icon(t)}`).join('  ');
+  $('rockets').innerHTML = ROCKETS.map((r, i) => `
+    <div class="tile${i === G.rocket ? ' now' : ''}">
+      <b>🚀 ${r.name}</b>
+      <span>Grabs ${fmt(r.grab)} treasure a second</span>
+      <span>Speed ${r.speed}</span>
+      ${i <= G.rocket ? '<em>You have it!</em>' : `<button data-buy="${i}"${canPay(r.cost) ? '' : ' disabled'}>Buy: ${costText(r.cost)}</button>`}
+    </div>`).join('');
+}
+// ---------- Space map (T) ----------
+const mapCv = $('map'), mapCtx = mapCv.getContext('2d');
+$('mapInfo').innerHTML = `<b>🗺️ Space map</b>  Press T to close<br>` +
+  `💰 yellow  🧊 blue  ${icon('ruby')} red  ${icon('emerald')} teal  💎 other colours  🏗️ your bases  🛸 Els and Oos  🔺 you`;
+function toggleMap(open = !mapOpen) {
+  mapOpen = open;
+  $('mapBox').hidden = !open;
+  document.body.classList.toggle('map-open', open);
+  if (open) drawMap();
+}
+let mapLayer = null, mapLayerAt = -1e9;
+function drawMap() {
+  const dpr = Math.min(devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight;
+  const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+  if (mapCv.width !== cw || mapCv.height !== ch) { mapCv.width = cw; mapCv.height = ch; }
+  const top = 72, bottom = 64, R = Math.max(40, Math.min(w / 2 - 16, (h - top - bottom) / 2));
+  const cx = w / 2, cy = top + (h - top - bottom) / 2, k = R / (WORLD_R + 10);
+  const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, TAU); };
+  const now = performance.now();
+  if (!mapLayer || mapLayer.width !== cw || mapLayer.height !== ch || now - mapLayerAt > 500) {
+    if (!mapLayer) mapLayer = document.createElement('canvas');
+    if (mapLayer.width !== cw || mapLayer.height !== ch) { mapLayer.width = cw; mapLayer.height = ch; }
+    mapLayerAt = now;
+    const m = mapLayer.getContext('2d');
+    m.setTransform(dpr, 0, 0, dpr, 0, 0);
+    m.clearRect(0, 0, w, h);
+    m.fillStyle = 'rgba(3, 6, 22, .94)';
+    m.fillRect(0, 0, w, h);
+    m.lineWidth = 1;
+    m.strokeStyle = 'rgba(140, 170, 255, .12)';
+    for (const f of [.25, .5, .75]) { circle(m, cx, cy, R * f); m.stroke(); }
+    m.lineWidth = 2;
+    m.strokeStyle = 'rgba(140, 170, 255, .45)';
+    circle(m, cx, cy, R); m.stroke();
+    const sunR = Math.max(6, SUN_R * k), glow = m.createRadialGradient(cx, cy, 0, cx, cy, sunR * 3);
+    glow.addColorStop(0, 'rgba(255, 190, 70, .9)');
+    glow.addColorStop(1, 'rgba(255, 190, 70, 0)');
+    m.fillStyle = glow; circle(m, cx, cy, sunR * 3); m.fill();
+    m.fillStyle = '#ffd25a'; circle(m, cx, cy, sunR); m.fill();
+    for (const p of planets) {
+      const x = cx + p.x * k, y = cy + p.z * k;
+      const d = Math.max(p.heat > 0 ? 1.6 : p.rock ? .7 : 1.3, p.r * k * 1.6);
+      m.fillStyle = p.heat > 0 ? '#ff9a3a' : '#' + p.cols[1].toString(16).padStart(6, '0');
+      if (d < 3) m.fillRect(x - d, y - d, d * 2, d * 2); else { circle(m, x, y, d); m.fill(); }
+    }
+    m.font = '18px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+    m.textAlign = 'center';
+    m.textBaseline = 'bottom';
+    m.strokeStyle = '#fff';
+    for (const p of planets) {
+      if (!p.bases) continue;
+      const x = cx + p.x * k, y = cy + p.z * k, d = Math.max(2.5, p.r * k * 1.6);
+      circle(m, x, y, d + 4); m.stroke();
+      m.fillText('🏗️', x, y - d - 5);
+    }
+  }
+  const m = mapCtx;
+  m.setTransform(1, 0, 0, 1, 0, 0);
+  m.clearRect(0, 0, cw, ch);
+  m.drawImage(mapLayer, 0, 0);
+  m.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Els and Oos: little saucers, yellow until they are your friends, then green.
+  m.strokeStyle = '#2a2140';
+  m.lineWidth = 1.5;
+  for (const al of aliens) {
+    const x = cx + al.x * k, y = cy + al.z * k;
+    m.fillStyle = moodColour(al.gifts / GIFTS_TO_FRIEND);
+    m.beginPath(); m.ellipse(x, y, 6.5, 3.5, 0, 0, TAU); m.fill(); m.stroke();
+    m.beginPath(); m.arc(x, y - 2.5, 3, Math.PI, 0); m.fill(); m.stroke();
+  }
+  // You are the red arrow, pointing the way you fly.
+  const sx = cx + ship.x * k, sy = cy + ship.z * k, dx = Math.sin(ship.heading), dy = Math.cos(ship.heading);
+  const pulse = Math.sin(now / 200);
+  m.strokeStyle = `rgba(255, 255, 255, ${.45 + .35 * pulse})`;
+  m.lineWidth = 2;
+  circle(m, sx, sy, 12 + 3 * pulse); m.stroke();
+  m.fillStyle = '#ff4a3a'; m.strokeStyle = '#fff'; m.lineWidth = 1.5;
+  m.beginPath();
+  m.moveTo(sx + dx * 11, sy + dy * 11);
+  m.lineTo(sx - dx * 7 + dy * 7, sy - dy * 7 - dx * 7);
+  m.lineTo(sx - dx * 7 - dy * 7, sy - dy * 7 + dx * 7);
+  m.closePath(); m.fill(); m.stroke();
+}
+$('mapBtn').onclick = () => toggleMap();
+
+function openShop() { shopOpen = true; renderShop(); $('shop').hidden = false; updateHud(); }
+function closeShop() { shopOpen = false; $('shop').hidden = true; }
+$('rockets').onclick = e => {
+  const b = e.target.closest('button[data-buy]');
+  if (!b) return;
+  const i = Number(b.dataset.buy), r = ROCKETS[i];
+  if (i <= G.rocket || !canPay(r.cost)) return;
+  pay(r.cost);
+  G.rocket = i;
+  sizeShip();
+  burst(ship.x, 0, ship.z, 60, 14, [.5, .9, 1]);
+  chime(520, .2); chime(780, .18, .1); chime(1040, .16, .2);
+  saveGame();
+  renderShop();
+  updateHud();
+};
+$('shopBack').onclick = closeShop;
+$('shopBtn').onclick = openShop;
+$('action').onclick = () => (actionMode === 'alien' ? giveGift(nearAlien) : pressAction());
+
+// ---------- Touch stick (phones): put a finger down anywhere on space and drag the way you want to fly ----------
+const stick = { on: false, id: null, ox: 0, oy: 0, x: 0, z: 0 };
+const STICK_R = 60;
+$('game').addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' || stick.on) return;
+  stick.on = true; stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.z = 0;
+  const el = $('stick');
+  el.style.left = e.clientX + 'px'; el.style.top = e.clientY + 'px';
+  $('knob').style.transform = '';
+  el.hidden = false;
+  $('hint').textContent = 'Drag to fly. Bump planets together to crash them! Fly close to a planet and tap the yellow button to build a base.';
+});
+addEventListener('pointermove', e => {
+  if (!stick.on || e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy;
+  const d = Math.hypot(dx, dy);
+  if (d > STICK_R) { dx *= STICK_R / d; dy *= STICK_R / d; }
+  $('knob').style.transform = `translate(${dx}px, ${dy}px)`;
+  const strength = d < 8 ? 0 : 1;
+  stick.x = dx / STICK_R * strength; stick.z = dy / STICK_R * strength;
+});
+const stickUp = e => {
+  if (!stick.on || e.pointerId !== stick.id) return;
+  stick.on = false; stick.x = stick.z = 0;
+  $('stick').hidden = true;
+};
+addEventListener('pointerup', stickUp);
+addEventListener('pointercancel', stickUp);
+
+// ---------- Keys ----------
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (shopOpen) closeShop();
+    else if (mapOpen) toggleMap(false);
+    else if (current !== 'menu') show('menu');
+    return;
+  }
+  if (current !== 'play') return;
+  keys[e.code] = true;
+  if (e.repeat) return;
+  if (e.code === 'KeyE') pressAction();
+  if (e.code === 'KeyM') toggleSound();
+  if (e.code === 'KeyT') toggleMap();
+  if (e.code === 'KeyG') giveGift(nearAlien);
+  if (e.code === 'KeyB') toggleAlienPause();
+  if (e.code === 'KeyF') toggleExplore();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+// ---------- Space grid: finds nearby planets fast, even with 10,000 of them ----------
+const CELL = 40;
+const grid = new Map();
+let gridStamp = 0;
+const cellKey = (cx, cz) => (cx + 512) * 1024 + (cz + 512);
+function gridPlace(p) {
+  if (!Number.isFinite(p.x + p.z + p.r + p.vx + p.vz)) rescue(p);
+  const x0 = Math.floor((p.x - p.r) / CELL), x1 = Math.floor((p.x + p.r) / CELL);
+  const z0 = Math.floor((p.z - p.r) / CELL), z1 = Math.floor((p.z + p.r) / CELL);
+  if (p.cells && p.gx0 === x0 && p.gx1 === x1 && p.gz0 === z0 && p.gz1 === z1) return;
+  gridRemove(p);
+  p.gx0 = x0; p.gx1 = x1; p.gz0 = z0; p.gz1 = z1;
+  p.cells = [];
+  for (let cx = x0; cx <= x1; cx++) for (let cz = z0; cz <= z1; cz++) {
+    const key = cellKey(cx, cz);
+    let list = grid.get(key);
+    if (!list) grid.set(key, list = []);
+    list.push(p);
+    p.cells.push(list);
+  }
+}
+function gridRemove(p) {
+  if (!p.cells) return;
+  for (const list of p.cells) {
+    const i = list.indexOf(p);
+    if (i >= 0) { list[i] = list[list.length - 1]; list.pop(); }
+  }
+  p.cells = null;
+}
+function rebuildGrid() {
+  grid.clear();
+  for (const p of planets) { p.cells = null; gridPlace(p); }
+}
+function rescue(o) {
+  const a = Math.random() * TAU, d = SUN_R + 40 + Math.random() * 200;
+  o.x = Math.cos(a) * d; o.z = Math.sin(a) * d; o.vx = o.vz = 0;
+  if (!Number.isFinite(o.r)) o.r = 2;
+}
+// A planet is awake when it moves (or just crashed). Sleeping planets don't need checking against each other.
+const awake = p => p.vx !== 0 || p.vz !== 0 || p.wakeT > 0;
+// Calls fn once for every planet whose edge might be within `range` of (x, z).
+function nearPlanets(x, z, range, fn) {
+  if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(range)) return;
+  range = Math.min(range, 1000);
+  const stamp = ++gridStamp;
+  const x0 = Math.floor((x - range) / CELL), x1 = Math.floor((x + range) / CELL);
+  const z0 = Math.floor((z - range) / CELL), z1 = Math.floor((z + range) / CELL);
+  for (let cx = x0; cx <= x1; cx++) for (let cz = z0; cz <= z1; cz++) {
+    const list = grid.get(cellKey(cx, cz));
+    if (!list) continue;
+    for (const p of list) {
+      if (p.stamp === stamp || p.gone) continue;
+      p.stamp = stamp;
+      fn(p);
+    }
+  }
+}
+function clearOf(x, z, gap) {
+  let ok = true;
+  nearPlanets(x, z, gap, p => { if (Math.hypot(p.x - x, p.z - z) < p.r + gap) ok = false; });
+  return ok;
+}
+
+// ---------- Planets ----------
+let nextPlanetId = 1;
+const shownPlanets = new Set();
+function makePlanet(o) {
+  const p = {
+    id: nextPlanetId++, x: o.x, z: o.z, vx: o.vx || 0, vz: o.vz || 0, r: o.r, shown: o.shown ?? o.r, heat: o.heat || 0,
+    seed: o.seed ?? Math.random() * 50, kind: o.kind, cols: o.cols, rock: o.rock !== false, bases: o.bases || 0,
+    ring: o.ring ?? null, ringTilt: [(Math.random() - .5) * .7, (Math.random() - .5) * .7],
+    treasure: o.treasure || treasureFromColour(o), stock: o.stock ?? o.gems ?? 0,
+    spin: (.05 + Math.random() * .2) * (Math.random() < .5 ? -1 : 1), wob: 99, stamp: 0, gone: false, tiny: !!o.tiny,
+    wakeT: 0, cells: null, gx0: 0, gx1: 0, gz0: 0, gz1: 0,
+    group: null, mesh: null, glow: null, rings: [], baseModel: null,
+  };
+  planets.push(p);
+  gridPlace(p);
+  if (p.bases) ensureVisual(p);
+  return p;
+}
+// Only planets near the camera (and planets with bases) get 3D shapes. The rest are just numbers until you fly close.
+function ensureVisual(p) {
+  if (p.group || p.gone) return;
+  const mesh = new THREE.Mesh(sphereGeo, planetMaterial({ kind: p.kind, cols: p.cols }, p.heat, false, p.seed));
+  const group = new THREE.Group();
+  group.add(mesh);
+  p.group = group; p.mesh = mesh;
+  p.glow = addGlowSprite(group, 0xff7a20, 0);
+  group.position.set(p.x, 0, p.z);
+  scene.add(group);
+  buildRings(p);
+  if (p.bases) addBaseModel(p, true);
+  shownPlanets.add(p);
+}
+function dropVisual(p) {
+  if (!p.group) return;
+  scene.remove(p.group);
+  p.mesh.material.dispose();
+  p.glow.material.dispose();
+  for (const m of p.rings) m.material.dispose();
+  if (p.baseModel) p.baseModel.gem.material.dispose();
+  p.group = p.mesh = p.glow = p.baseModel = null;
+  p.rings = [];
+  shownPlanets.delete(p);
+}
+function updateVisuals(dt) {
+  const R = 95 * zoom + 30;
+  nearPlanets(focus.x, focus.z, R, ensureVisual);
+  for (const p of shownPlanets) {
+    if (!p.bases && Math.hypot(p.x - focus.x, p.z - focus.z) - p.r > R + 60) { dropVisual(p); continue; }
+    drawPlanet(p, dt);
+  }
+}
+function setRings(p, color) {
+  p.ring = color;
+  p.ringTilt = [(Math.random() - .5) * .7, (Math.random() - .5) * .7];
+  buildRings(p);
+}
+function buildRings(p) {
+  if (!p.group) return;
+  for (const m of p.rings) { p.group.remove(m); m.material.dispose(); }
+  p.rings = [];
+  if (p.ring == null) return;
+  ringGeos.forEach(geo => {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: p.ring, transparent: true, side: THREE.DoubleSide, depthWrite: false, opacity: 0 }));
+    m.rotation.set(p.ringTilt[0], 0, p.ringTilt[1]);
+    p.group.add(m);
+    p.rings.push(m);
+  });
+}
+function removePlanet(p) {
+  planets.splice(planets.indexOf(p), 1);
+  gridRemove(p);
+  dropVisual(p);
+  p.gone = true;
+}
+function babyPlanet(x, z, vx, vz, shown, tiny = false) {
+  const look = rockLook();
+  return makePlanet({ x, z, vx, vz, r: tiny ? .5 + Math.random() * .6 : 1.6 + Math.random() * 1.5, shown, kind: look.kind, cols: look.cols, tiny });
+}
+function newWorld() { fillSpace(START_PLANETS); fillTiny(); }
+// The 1,000 tiny planets go in any free spots all over space.
+function fillTiny() {
+  rebuildGrid();
+  let have = planets.filter(p => p.tiny).length;
+  for (let tries = 0; have < TINY_PLANETS && tries < TINY_PLANETS * 20; tries++) {
+    const a = Math.random() * TAU, d = SUN_R + 15 + Math.sqrt(Math.random()) * (WORLD_R - SUN_R - 25);
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    if (Math.hypot(x - ship.x, z - ship.z) < 12 || !clearOf(x, z, 14)) continue;
+    babyPlanet(x, z, 0, 0, undefined, true);
+    have++;
+  }
+}
+// Spreads baby planets evenly over space (a jiggled grid, so they never start too close), skipping spots already taken.
+function fillSpace(count) {
+  if (planets.length >= count) return;
+  rebuildGrid();
+  const inner = SUN_R + 12, outer = WORLD_R - 8;
+  const step = Math.sqrt(Math.PI * (outer * outer - inner * inner) / count) * .97, jig = step / 2 - 10;
+  const spots = [];
+  for (let x = -outer; x <= outer; x += step) for (let z = -outer; z <= outer; z += step) {
+    const px = x + (Math.random() * 2 - 1) * jig, pz = z + (Math.random() * 2 - 1) * jig, d = Math.hypot(px, pz);
+    if (d < inner || d > outer || Math.hypot(px - ship.x, pz - ship.z) < 12) continue;
+    spots.push([px, pz]);
+  }
+  for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [spots[i], spots[j]] = [spots[j], spots[i]]; }
+  for (const [px, pz] of spots) {
+    if (planets.length >= count) break;
+    if (!clearOf(px, pz, 16)) continue;
+    babyPlanet(px, pz, 0, 0);
+  }
+}
+function spawnBaby() {
+  // A new baby planet grows somewhere you can't see right now, away from the others.
+  const a = Math.random() * TAU, d = SUN_R + 15 + Math.sqrt(Math.random()) * (WORLD_R - SUN_R - 25);
+  const x = Math.cos(a) * d, z = Math.sin(a) * d;
+  if (Math.hypot(x - ship.x, z - ship.z) < 80 || !clearOf(x, z, 20)) return;
+  babyPlanet(x, z, (Math.random() - .5) * .8, (Math.random() - .5) * .8, 0);
+}
+
+function crash(a, b) {
+  const big = a.bases && !b.bases ? a : b.bases && !a.bases ? b : (a.r >= b.r ? a : b);
+  const small = big === a ? b : a;
+  const ma = big.r ** 3, mb = small.r ** 3, m = ma + mb;
+  const d = Math.hypot(small.x - big.x, small.z - big.z) || 1;
+  const hitX = big.x + (small.x - big.x) / d * big.r, hitZ = big.z + (small.z - big.z) / d * big.r;
+  if (!big.bases) {   // a planet with a base stays where it is
+    big.x = (big.x * ma + small.x * mb) / m;
+    big.z = (big.z * ma + small.z * mb) / m;
+    big.vx = (big.vx * ma + small.vx * mb) / m;
+    big.vz = (big.vz * ma + small.vz * mb) / m;
+  }
+  // Yellow (gold), blue (ice), red (ruby) and teal (emerald) planets are very important,
+  // so they keep their colour and just get bigger. If both are, the bigger one wins.
+  const special = o => !o.rock && o.treasure !== 'gems';
+  const keep = special(big) && special(small) ? (small.r > big.r ? small : big) : special(big) ? big : special(small) ? small : null;
+  const waiting = [[big.treasure, big.stock], [small.treasure, small.stock]];
+  big.r = Math.cbrt(m);
+  big.heat = 1;       // hot at first
+  big.wob = 0;
+  big.bases += small.bases;
+  if (keep === small) {
+    applyLook(big, { kind: small.kind, cols: small.cols, treasure: small.treasure, seed: small.seed });
+    setRings(big, small.ring);
+  } else if (!keep) {
+    applyLook(big, randomLook());   // the colour it will have once it has cooled
+    setRings(big, big.r > 3.8 && Math.random() < .5 ? new THREE.Color().setHSL(Math.random(), .45, .7).getHex() : null);
+  }
+  // Treasure waiting in a base: the same kind stays there, any other kind goes straight to you.
+  big.stock = 0;
+  for (const [t, n] of waiting) { if (t === big.treasure) big.stock += n; else G[t] += n; }
+  removePlanet(small);
+  G.made++;
+  explode(hitX, hitZ, big.r);
+  big.wakeT = .5;
+  $('hint').hidden = G.made > 0 && baseTotal() > 0;
+}
+
+// ---------- Crash fireworks ----------
+function initSparks() {
+  const N = QUALITY.high.sparks;
+  sparks.pos = new Float32Array(N * 3);
+  sparks.col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) sparks.data.push({ l: 0, m: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, r: 0, g: 0, b: 0 });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(sparks.pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(sparks.col, 3));
+  sparks.points = new THREE.Points(geo, new THREE.PointsMaterial({ size: 1.1, map: glowTex, vertexColors: true, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  sparks.points.frustumCulled = false;
+  scene.add(sparks.points);
+}
+function spark(x, y, z, vx, vy, vz, r, gr, b, life) {
+  const d = sparks.data[sparks.i];
+  sparks.i = (sparks.i + 1) % q.sparks;
+  Object.assign(d, { l: life, m: life, x, y, z, vx, vy, vz, r, g: gr, b });
+}
+function burst(x, y, z, n, speed, col) {
+  for (let i = 0; i < n; i++) {
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(speed * (.3 + Math.random() * .9));
+    spark(x, y, z, v.x, v.y, v.z, col[0], col[1], col[2], .5 + Math.random() * .8);
+  }
+}
+function stepSparks(dt) {
+  const { data, pos, col } = sparks;
+  const damp = Math.exp(-dt * 1.6);
+  for (let i = 0; i < q.sparks; i++) {
+    const d = data[i];
+    if (d.l <= 0) continue;
+    d.l -= dt;
+    const k = Math.max(d.l / d.m, 0);
+    d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt;
+    d.vx *= damp; d.vy *= damp; d.vz *= damp;
+    pos[i * 3] = d.x; pos[i * 3 + 1] = d.y; pos[i * 3 + 2] = d.z;
+    col[i * 3] = d.r * k; col[i * 3 + 1] = d.g * k; col[i * 3 + 2] = d.b * k;
+  }
+  const geo = sparks.points.geometry;
+  geo.attributes.position.needsUpdate = true;
+  geo.attributes.color.needsUpdate = true;
+}
+function addFx(obj, dur, update) {
+  scene.add(obj);
+  fx.push({ obj, t: 0, dur, update });
+}
+function stepFx(dt) {
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i];
+    f.t += dt;
+    const k = Math.min(f.t / f.dur, 1);
+    f.update(k);
+    if (k >= 1) {
+      scene.remove(f.obj);
+      f.obj.material.dispose();
+      if (!f.obj.isSprite) f.obj.geometry.dispose();
+      fx.splice(i, 1);
+    }
+  }
+}
+function explode(x, z, r) {
+  if (Math.hypot(x - focus.x, z - focus.z) > 300) { boomSound(Math.min(r / 9, 1)); return; }
+  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd080, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  flash.position.set(x, 1, z);
+  addFx(flash, .5, k => { flash.scale.setScalar(r * (3 + 8 * k)); flash.material.opacity = 1 - k; });
+
+  const wave = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 96), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true,
+    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  wave.rotation.x = -Math.PI / 2;
+  wave.position.set(x, 0, z);
+  addFx(wave, .9, k => { wave.scale.setScalar(1 + r * 8 * k); wave.material.opacity = (1 - k) * .9; });
+
+  const n = Math.round(q.sparks * .35);
+  for (let i = 0; i < n; i++) {
+    const v = new THREE.Vector3().randomDirection();
+    v.y *= .5;
+    v.multiplyScalar((8 + Math.random() * 34) * (.7 + r * .1));
+    const t = Math.random();
+    spark(x, 0, z, v.x, v.y, v.z, 1.6, .5 + t * .9, t * .3, .5 + Math.random() * 1.3);
+  }
+  const away = Math.hypot(x - focus.x, z - focus.z);
+  if (away < 200) shake = Math.max(shake, Math.min(3, .7 + r * .25) * (1 - away / 200));
+  boomSound(Math.min(r / 9, 1));
+}
+
+// ---------- Sound (M turns it on and off) ----------
+const BOOM_VOLUME = 50;   // how loud the BOOM is when planets crash, out of 100
+let audio = null, boomBus = null, booms = 0, lastBoomAt = -1e9, soundOn = store.get('sound') !== 'off';
+const noiseFor = new WeakMap();
+function noise(a) {
+  let b = noiseFor.get(a);
+  if (!b) {
+    b = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    noiseFor.set(a, b);
+  }
+  return b;
+}
+// All booms go through a squeezer, so lots of crashes at once stay loud but never crackle.
+function makeBus(a) {
+  const c = a.createDynamicsCompressor();
+  c.threshold.value = -14; c.knee.value = 8; c.ratio.value = 6; c.attack.value = .003; c.release.value = .25;
+  c.connect(a.destination);
+  return c;
+}
+function ac() {
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+    boomBus = makeBus(audio);
+  }
+  if (audio.state === 'suspended') audio.resume();
+  return audio;
+}
+// Every crash: a sharp crack, a big rumbling BOOM and a deep thump. Bigger planets boom longer.
+function boomSound(big, a, out) {
+  if (!a) {
+    if (!soundOn) return;
+    const now = performance.now();
+    if (now - lastBoomAt < 120) return;
+    lastBoomAt = now;
+    a = ac(); out = boomBus; booms++;
+  }
+  const t = a.currentTime + .01, v = BOOM_VOLUME / 100, len = 1.4 + big * 1.2;
+  const env = (node, peak, attack, decay) => {
+    const g = a.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(.0001, t + attack + decay);
+    node.connect(g); g.connect(out);
+  };
+  const crack = a.createBufferSource(), bp = a.createBiquadFilter();
+  crack.buffer = noise(a);
+  bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = .7;
+  crack.connect(bp); env(bp, v * .85, .004, .25);
+  crack.start(t); crack.stop(t + .4);
+  const rumble = a.createBufferSource(), lp = a.createBiquadFilter();
+  rumble.buffer = noise(a); rumble.loop = true;
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(2200, t);
+  lp.frequency.exponentialRampToValueAtTime(70, t + len);
+  rumble.connect(lp); env(lp, v * 1.6, .01, len);
+  rumble.start(t); rumble.stop(t + len + .1);
+  const thump = a.createOscillator();
+  thump.frequency.setValueAtTime(110, t);
+  thump.frequency.exponentialRampToValueAtTime(32, t + .8);
+  env(thump, v * .8, .006, .9);
+  thump.start(t); thump.stop(t + 1);
+}
+// For tests: make one boom without speakers and measure how loud it is (1 = as loud as possible).
+async function renderBoom(big = .5) {
+  const off = new OfflineAudioContext(1, 44100 * 3, 44100);
+  boomSound(big, off, makeBus(off));
+  const d = (await off.startRendering()).getChannelData(0);
+  let peak = 0, sum = 0;
+  for (const x of d) { peak = Math.max(peak, Math.abs(x)); sum += x * x; }
+  return { peak, rms: Math.sqrt(sum / d.length) };
+}
+function chime(freq, vol, delay = 0) {
+  if (!soundOn) return;
+  const a = ac(), t = a.currentTime + delay, o = a.createOscillator(), gn = a.createGain();
+  o.type = 'triangle';
+  o.frequency.value = freq;
+  gn.gain.setValueAtTime(vol, t);
+  gn.gain.exponentialRampToValueAtTime(.001, t + .35);
+  o.connect(gn); gn.connect(a.destination);
+  o.start(t); o.stop(t + .35);
+}
+function toggleSound() {
+  soundOn = !soundOn;
+  store.set('sound', soundOn ? 'on' : 'off');
+  say(soundOn ? '🔊 Sound on' : '🔇 Sound off');
+}
+
+// ---------- On-screen words ----------
+let toastTimer = 0;
+function say(text) {
+  const t = $('toast');
+  t.innerHTML = text;
+  t.style.opacity = 1;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = 0; }, 2200);
+}
+function setText(id, text) { const e = $(id); if (e.textContent !== text) e.textContent = text; }
+function updateHud() {
+  const n = baseTotal();
+  setText('gemCount', fmt(G.gems));
+  setText('goldCount', fmt(G.gold));
+  setText('iceCount', fmt(G.ice));
+  setText('rubyCount', fmt(G.ruby));
+  setText('emeraldCount', fmt(G.emerald));
+  setText('baseCount', `🏗️ ${n} base${n === 1 ? '' : 's'}`);
+  setText('madeCount', `🪐 ${G.made} made`);
+  const friends = aliens.filter(al => al.friend).length;
+  setText('friendCount', `💚 ${friends} friend${friends === 1 ? '' : 's'}`);
+  setText('rocketName', `🚀 ${ROCKETS[G.rocket].name}`);
+  const a = $('action'), p = near;
+  let text = '', off = false;
+  actionMode = nearAlien ? 'alien' : p ? 'planet' : '';
+  if (nearAlien) {
+    const al = nearAlien, name = SPECIES[al.kind].name;
+    if (al.friend) {
+      text = `💚 Your ${name} friend!`;
+      off = true;
+    } else {
+      text = `🎁 Give ${GIFT} ${icon(al.want)} to the ${name} (G)  ${'💚'.repeat(al.gifts)}${'🤍'.repeat(GIFTS_TO_FRIEND - al.gifts)}`;
+      off = G[al.want] < GIFT;
+    }
+  } else if (p) {
+    if (p.bases) {
+      text = `🛒 Rocket shop (E)  ${icon(p.treasure)} ${fmt(p.stock)} here`;
+    } else if (p.heat > 0) {
+      text = '🔥 Too hot! Wait for it to cool';
+      off = true;
+    } else {
+      const cost = basePrice();
+      text = (cost === 0 ? '🏗️ Build a base: free! (E)' : `🏗️ Build a base: ${fmt(cost)} 💎 (E)`) + `  It digs ${icon(p.treasure)}`;
+      off = G.gems < cost;
+    }
+  }
+  a.hidden = !text || shopOpen;
+  if (a.dataset.html !== text) { a.dataset.html = text; a.innerHTML = text; }
+  a.disabled = off;
+}
+
+// ---------- Saving ----------
+function saveGame() {
+  if (!gameReady) return;
+  const round = n => Math.round(n * 100) / 100;
+  store.set('save', JSON.stringify({
+    v: 2, t: Date.now(), aliensPaused, friendsExplore, gems: round(G.gems), gold: round(G.gold), ice: round(G.ice), ruby: round(G.ruby), emerald: round(G.emerald), rocket: G.rocket, made: G.made, ship: [round(ship.x), round(ship.z)],
+    aliens: aliens.map(al => ({ kind: al.kind, x: round(al.x), z: round(al.z), gifts: al.gifts, friend: al.friend, want: al.want })),
+    // Each planet is a short list of numbers, so 10,000 planets fit in the save.
+    planets: planets.map(p => [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, round(p.vx), round(p.vz), round(p.r), round(p.heat),
+      Math.round(p.seed * 10) / 10, p.kind, p.cols[0], p.cols[1], p.cols[2], p.rock ? 1 : 0, p.bases, p.treasure, round(p.stock), p.ring ?? -1, p.tiny ? 1 : 0]),
+  }));
+}
+// Every frame (about 60 times a second), a tiny save of your progress: treasure, rocket, planets made and where you are.
+// A frame (about 16 ms) is as often as the game changes anything.
+// All of space (11,000 planets) is the big save, every 10 seconds and when the game closes.
+function quickSave() {
+  store.set('quick', JSON.stringify({ t: Date.now(),
+    g: [G.gems, G.gold, G.ice, G.ruby, G.emerald].map(n => Math.round(n * 100) / 100).concat(G.rocket, G.made),
+    s: [Math.round(ship.x * 10) / 10, Math.round(ship.z * 10) / 10] }));
+}
+function planetFromSave(a) {
+  return { x: a[0], z: a[1], vx: a[2], vz: a[3], r: a[4], heat: a[5], seed: a[6], kind: a[7], cols: [a[8], a[9], a[10]],
+    rock: a[11] === 1, bases: a[12], treasure: a[13], stock: a[14], ring: a[15] === -1 ? null : a[15], tiny: a[16] === 1 };
+}
+function loadGame() {
+  let s;
+  try { s = JSON.parse(store.get('save')); } catch (e) { return false; }
+  if (!s || (s.v !== 1 && s.v !== 2) || !Array.isArray(s.planets)) return false;
+  G.gems = +s.gems || 0;
+  if (s.aliensPaused) toggleAlienPause(true);
+  if (s.friendsExplore) toggleExplore(true);
+  G.gold = +s.gold || 0;
+  G.ice = +s.ice || 0;
+  G.ruby = +s.ruby || 0;
+  G.emerald = +s.emerald || 0;
+  G.rocket = Math.min(Math.max(s.rocket | 0, 0), ROCKETS.length - 1);
+  G.made = s.made | 0;
+  if (Array.isArray(s.ship)) { ship.x = +s.ship[0] || 0; ship.z = +s.ship[1] || 0; }
+  // The quick save is newer than the big save, so it wins.
+  try {
+    const q = JSON.parse(store.get('quick'));
+    if (q && q.t > (s.t || 0) && Array.isArray(q.g) && Array.isArray(q.s)) {
+      [G.gems, G.gold, G.ice, G.ruby, G.emerald] = q.g.slice(0, 5).map(n => +n || 0);
+      G.rocket = Math.min(Math.max(q.g[5] | 0, 0), ROCKETS.length - 1);
+      G.made = q.g[6] | 0;
+      ship.x = +q.s[0] || 0; ship.z = +q.s[1] || 0;
+    }
+  } catch (e) { /* no quick save yet */ }
+  for (const o of s.planets) makePlanet(Array.isArray(o) ? planetFromSave(o) : o);
+  fillSpace(START_PLANETS + planets.filter(p => p.tiny).length);   // older saves get the new planets too
+  fillTiny();
+  if (Array.isArray(s.aliens)) for (const o of s.aliens) if (SPECIES[o.kind]) makeAlien(o);
+  spawnAliens();
+  sizeShip();
+  $('hint').hidden = G.made > 0 && baseTotal() > 0;
+  return true;
+}
+addEventListener('pagehide', saveGame);
+
+// ---------- Each frame ----------
+function stepShip(dt) {
+  if (!Number.isFinite(ship.x + ship.z + ship.vx + ship.vz)) { ship.x = 0; ship.z = SUN_R + 14; ship.vx = ship.vz = 0; }
+  const R = ROCKETS[G.rocket];
+  let ax = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), az = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
+  if (ax && az) { ax *= Math.SQRT1_2; az *= Math.SQRT1_2; }
+  if (stick.on && (stick.x || stick.z)) { ax = stick.x; az = stick.z; }   // phones: the touch stick
+  const moving = ax !== 0 || az !== 0;
+  const k = 1 - Math.exp(-dt * (moving ? 3 : 1.2));
+  ship.vx += (ax * R.speed - ship.vx) * k;
+  ship.vz += (az * R.speed - ship.vz) * k;
+  ship.x += ship.vx * dt;
+  ship.z += ship.vz * dt;
+
+  const r = shipR();
+  // The sun is solid.
+  let d = Math.hypot(ship.x, ship.z) || 1;
+  if (d < SUN_R + r) {
+    ship.x *= (SUN_R + r) / d; ship.z *= (SUN_R + r) / d;
+  } else if (d > WORLD_R + 10) {
+    const back = Math.min((d - WORLD_R - 10) * 8, 200) * dt;
+    ship.vx -= ship.x / d * back; ship.vz -= ship.z / d * back;
+  }
+  // Bump planets out of the way. Planets with a base stay still.
+  nearPlanets(ship.x, ship.z, r + 1, p => {
+    const dx = p.x - ship.x, dz = p.z - ship.z, dist = Math.hypot(dx, dz) || .001, min = p.r + r;
+    if (dist >= min) return;
+    const nx = dx / dist, nz = dz / dist, inward = (ship.vx - p.vx) * nx + (ship.vz - p.vz) * nz;
+    if (p.bases) {
+      ship.x -= nx * (min - dist); ship.z -= nz * (min - dist);
+      if (inward > 0) { ship.vx -= nx * inward; ship.vz -= nz * inward; }
+      return;
+    }
+    ship.x -= nx * (min - dist) * .5; ship.z -= nz * (min - dist) * .5;
+    p.x += nx * (min - dist) * .5; p.z += nz * (min - dist) * .5;
+    if (inward > 0) {
+      const push = 1.25 * Math.sqrt(R.size / 1.4) / (1 + p.r * .12);
+      p.vx += nx * inward * push; p.vz += nz * inward * push;
+      ship.vx -= nx * inward * .35; ship.vz -= nz * inward * .35;
+    }
+  });
+  const speed = Math.hypot(ship.vx, ship.vz);
+  if (speed > 1) {
+    const want = Math.atan2(ship.vx, ship.vz);
+    let turn = (want - ship.heading) % TAU;
+    if (turn > Math.PI) turn -= TAU;
+    if (turn < -Math.PI) turn += TAU;
+    ship.heading += turn * (1 - Math.exp(-dt * 10));
+  }
+  ship.group.position.set(ship.x, 0, ship.z);
+  ship.group.rotation.y = ship.heading;
+  flameLevel += ((moving ? 1 : .12) - flameLevel) * (1 - Math.exp(-dt * 8));
+  ship.flame.scale.set(1, flameLevel * (.85 + Math.random() * .3), 1);
+  ship.flame.position.y = -1.3 - .75 * flameLevel;
+  ship.flameGlow.scale.setScalar(.6 + flameLevel * 2.2);
+}
+
+function stepPlanets(dt) {
+  let pair = null;
+  for (const a of planets) {
+    if (!awake(a)) continue;
+    nearPlanets(a.x, a.z, a.r + PULL_RANGE + 2, b => {
+      if (b === a || (awake(b) && b.id < a.id)) return;   // each pair once
+      const dx = b.x - a.x, dz = b.z - a.z, d2 = dx * dx + dz * dz, touch = a.r + b.r, reach = touch + PULL_RANGE;
+      if (d2 > reach * reach) return;
+      const d = Math.sqrt(d2) || .001, nx = dx / d, nz = dz / d;
+      if (d < touch * .93 && !pair) pair = [a, b];
+      // A near miss still crashes: close planets pull together, and the smaller one moves more.
+      const close = 1 - Math.max(d - touch, 0) / PULL_RANGE, f = PULL * close * close * dt * 2 / touch;
+      if (!a.bases) { const pull = f * b.r; a.vx += nx * pull; a.vz += nz * pull; }
+      if (!b.bases) { const pull = f * a.r; b.vx -= nx * pull; b.vz -= nz * pull; }
+    });
+  }
+  if (pair) crash(pair[0], pair[1]);
+
+  const damp = Math.exp(-dt * .35);
+  for (const p of planets) {
+    p.wob += dt;
+    p.shown += (p.r - p.shown) * (1 - Math.exp(-dt * 5));
+    if (p.wakeT > 0) p.wakeT -= dt;
+    gridPlace(p);
+    if (!p.bases) {
+      p.vx *= damp; p.vz *= damp;
+      if (p.vx * p.vx + p.vz * p.vz < 1e-4) p.vx = p.vz = 0;   // nearly still: let it sleep
+      p.x += p.vx * dt; p.z += p.vz * dt;
+      const d = Math.hypot(p.x, p.z) || 1, edge = WORLD_R - p.r;
+      if (d > edge) {
+        const back = (d - edge) * 6 * dt;
+        p.vx -= p.x / d * back; p.vz -= p.z / d * back;
+      }
+    }
+    // Planets bounce off the sun.
+    const d = Math.hypot(p.x, p.z) || 1, min = SUN_R + p.r;
+    if (d < min) {
+      const nx = p.x / d, nz = p.z / d, out = p.vx * nx + p.vz * nz;
+      p.x = nx * min; p.z = nz * min;
+      if (out < 0) { p.vx -= 1.6 * out * nx; p.vz -= 1.6 * out * nz; }
+    }
+    if (p.heat > 0) {
+      p.heat -= dt / COOL_TIME;
+      if (p.heat <= 0) {
+        p.heat = 0;
+        say(`✨ ${TREASURE[p.treasure].born} ${icon(p.treasure)}`);
+        chime(880, .16); chime(1320, .12, .1);
+        burst(p.x, 0, p.z, 40, p.r * 3, [1, 1, .8]);
+      }
+    } else if (p.bases) {
+      p.stock = Math.min(room(p), p.stock + digRate(p) * dt);
+    }
+  }
+}
+
+function stepNear(dt) {
+  const r = shipR();
+  let best = null, bestGap = NEAR_GAP;
+  nearPlanets(ship.x, ship.z, NEAR_GAP + r, p => {
+    const gap = Math.hypot(p.x - ship.x, p.z - ship.z) - p.r - r;
+    if (gap < bestGap) { bestGap = gap; best = p; }
+  });
+  near = best;
+  // A rocket at a base grabs its treasure. Bigger rockets grab faster.
+  if (best && best.bases && best.stock >= .01) {
+    const take = Math.min(ROCKETS[G.rocket].grab * dt, best.stock);
+    best.stock -= take;
+    G[best.treasure] += take;
+    const from = BASE_UP.clone().multiplyScalar(best.r);
+    const fx1 = best.x + from.x, fy = from.y, fz = best.z + from.z, life = .45;
+    const [cr, cg, cb] = TREASURE[best.treasure].spark;
+    spark(fx1, fy, fz, (ship.x - fx1) / life, -fy / life, (ship.z - fz) / life, cr, cg, cb, life);
+    if (time > nextTickAt) { nextTickAt = time + .14; chime(1100 + Math.random() * 300, .05); }
+  }
+}
+
+function drawPlanet(p, dt) {
+  const s = p.shown * (1 + .14 * Math.exp(-p.wob * 3.5) * Math.sin(p.wob * 18));
+  p.group.position.set(p.x, 0, p.z);
+  p.mesh.scale.setScalar(s);
+  p.mesh.rotation.y += p.spin * dt;
+  const u = p.mesh.material.uniforms;
+  u.uHeat.value = p.heat;
+  u.uTime.value = time;
+  p.glow.visible = p.heat > 0;
+  if (p.heat > 0) {
+    p.glow.material.opacity = Math.min(p.heat * 1.3, 1);
+    p.glow.scale.setScalar(s * (3.2 + p.heat * 1.6));
+  }
+  if (p.rings.length) {
+    const show = (1 - Math.min(p.heat / .3, 1)) * .7;
+    p.rings.forEach((m, i) => { m.scale.setScalar(s); m.material.opacity = show * (i ? .6 : 1); m.visible = show > .01; });
+  }
+  const b = p.baseModel;
+  if (b) {
+    b.grow = Math.min(b.grow + dt * 2.5, 1);
+    const pop = b.grow < 1 ? b.grow * (1 + .3 * Math.sin(b.grow * Math.PI)) : 1;
+    b.m.position.copy(BASE_UP).multiplyScalar(s * .985);
+    b.m.scale.setScalar(.001 + pop * (1 + p.r * .1));
+    b.drill.rotation.y += dt * 5;
+    b.lamp.visible = Math.sin(time * 4) > -.4;
+    const full = Math.min(p.stock / 15, 1);
+    if (b.gem.material.map !== treasureTex[p.treasure]) { b.gem.material.map = treasureTex[p.treasure]; b.gem.material.needsUpdate = true; }
+    b.gem.visible = full > .02;
+    b.gem.material.opacity = full;
+    b.gem.scale.setScalar(2.2 + p.r * .12);
+    b.gem.position.set(BASE_UP.x * s, BASE_UP.y * s + 3 + p.r * .12 + Math.sin(time * 2.4) * .3, BASE_UP.z * s);
+  }
+}
+
+function stepWorld(dt) {
+  dt = Math.min(Math.max(dt, 0), .05);   // time never goes backwards
+  time += dt;
+  stepShip(dt);
+  stepPlanets(dt);
+  stepNear(dt);
+  stepAliens(dt);
+  stepBefriend(dt);
+  stepSparks(dt);
+  stepFx(dt);
+  updateVisuals(dt);
+  let free = 0;
+  for (const p of planets) if (!p.bases) free++;
+  if (free < FREE_PLANETS && time > nextPlanetAt) { spawnBaby(); nextPlanetAt = time + 1.5; }
+  if (time > nextSaveAt) { nextSaveAt = time + 10; saveGame(); }
+}
+
+function tick(now) {
+  if (current !== 'play') { looping = false; return; }
+  requestAnimationFrame(tick);
+  frames++;
+  if (last < 0) last = now;
+  const dt = Math.min(Math.max((now - last) / 1000, 0), .05);
+  last = now;
+
+  if (!shopOpen) stepWorld(dt);
+  quickSave();
+  if (now > nextHudAt) { nextHudAt = now + 100; updateHud(); }
+
+  // Camera: above and behind, and it backs away for big rockets and big planets.
+  const R = ROCKETS[G.rocket];
+  let want = 1 + (R.size - 1.4) * .3;
+  if (near) want = Math.max(want, near.r / 7);
+  zoom += (want - zoom) * (1 - Math.exp(-dt * 2));
+  focus.x += (ship.x + ship.vx * .25 - focus.x) * (1 - Math.exp(-dt * 5));
+  focus.z += (ship.z + ship.vz * .25 - focus.z) * (1 - Math.exp(-dt * 5));
+  const h = 46 * zoom, back = h * .62;
+  shake *= Math.exp(-dt * 4.5);
+  camera.position.set(focus.x + (Math.random() - .5) * shake, h, focus.z + back + (Math.random() - .5) * shake);
+  camera.lookAt(focus.x, 0, focus.z);
+  starField.position.copy(camera.position);
+  sun.userData.mesh.material.uniforms.uTime.value = time;
+  sun.userData.mesh.rotation.y += dt * .03;
+
+  drawAliens();
+  renderer.render(scene, camera);
+  if (mapOpen) drawMap();
+}
+
+window.solar = { planets, ship, G, ROCKETS, COOL_TIME, WORLD_R, TINY_PLANETS, removePlanet, get shownCount() { return shownPlanets.size; },
+  clearArea(x, z, R) { for (const p of planets.slice()) if (!p.bases && Math.hypot(p.x - x, p.z - z) < R + p.r) removePlanet(p); }, TREASURE, randomLook, applyLook, get treasureTex() { return treasureTex; }, get near() { return near; }, get shopOpen() { return shopOpen; },
+  get frames() { return frames; }, get mapOpen() { return mapOpen; }, aliens, giveGift, GIFT, GIFTS_TO_FRIEND,
+  get nearAlien() { return nearAlien; }, keys, get friendGifts() { return friendGifts; }, get helpPushes() { return helpPushes; }, get aliensPaused() { return aliensPaused; }, get friendsExplore() { return friendsExplore; }, get booms() { return booms; }, stick, befriendAll,
+  makeStranger(al) { al.friend = false; al.gifts = 0; al.job = null; al.slot = null; },
+  facePixel(al) { const c = FACE_CELL(al.kind, al.gifts); return [...atlasCanvas.getContext('2d').getImageData((c % 4) * 128 + 64, Math.floor(c / 4) * 128 + 87, 1, 1).data]; }, BOOM_VOLUME, renderBoom, saveGame,
+  step(dt) { stepWorld(dt); }, quickSave,
+  advance(seconds) { for (let t = 0; t < seconds; t += 1 / 30) stepWorld(1 / 30); updateHud(); } };
+
+// ---------- Start ----------
+setQuality(qualityName);
+setHud(store.get('hud') !== 'off');
+document.body.dataset.screen = 'menu';
+for (const part of location.hash.slice(1).split(',')) {
+  const [k, v] = part.split('=');
+  if (k === 'quality' && Object.hasOwn(QUALITY, v)) setQuality(v);
+  if (k === 'hud') setHud(v !== 'off');
+  if (k === 'play') show('play');
+  if (k === 'settings') show('settings');
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
