@@ -14,7 +14,7 @@
   #title { position: fixed; left: 16px; right: 16px; top: max(20px, env(safe-area-inset-top));
     text-align: center; pointer-events: none; }
   /* A short screen has no room for the title and Settings together. */
-  @media (max-height: 500px) { body[data-screen="settings"] #title { display: none; } }
+  @media (max-height: 500px) { body[data-screen="settings"] #title, body[data-screen="wipe"] #title { display: none; } }
   h1 { margin: 0; font-size: clamp(34px, 7vw, 72px); color: #ffe9a8;
     text-shadow: 0 0 24px rgba(255, 180, 60, .7); }
   #nogl { margin-top: 8px; font-size: 20px; color: #ffd0c0; }
@@ -41,14 +41,23 @@
   .panel p { margin: 0 0 10px; font-size: clamp(16px, 2.4vw, 20px); color: #cfd8ff; }
 
   #settings { width: min(560px, calc(100% - 32px)); }
+  /* Delete all saved data: small and quiet under Play, and it asks "Are you sure?" first */
+  #menu .break { flex-basis: 100%; height: 0; }
+  #wipeBtn { min-height: 40px; padding: 4px 16px; font-size: 15px; background: #39405c; color: #d8ddf0; box-shadow: 0 3px 0 #22273a; }
+  #wipeBtn:hover { background: #4a526e; }
+  #wipeAsk { width: min(560px, calc(100% - 32px)); }
+  #wipeAsk .opts button { padding: 8px 10px; }
+  #wipeYes { background: #e0463a; box-shadow: 0 5px 0 #8f2219; }
+  #wipeYes:hover { background: #ec5a4e; }
   .opts { display: flex; gap: 10px; margin-bottom: 18px; }
   .opts button { flex: 1; min-width: 0; padding: 8px 4px; font-size: clamp(16px, 2.6vw, 22px); }
   .opts button[aria-pressed="true"] { background: #ffb52e; color: #3a2000; box-shadow: 0 5px 0 #b86f00; }
 
   /* The game screen. HUD off hides everything in here. */
   body.hud-off #hud { display: none; }
-  #stats { position: fixed; left: 14px; top: max(14px, env(safe-area-inset-top)); display: flex; flex-wrap: wrap;
-    gap: 8px; max-width: calc(50% - 30px); }
+  #leftCol { position: fixed; left: 14px; top: max(14px, env(safe-area-inset-top)); display: flex; flex-direction: column;
+    gap: 8px; max-width: calc(50% - 30px); pointer-events: none; }
+  #stats { display: flex; flex-wrap: wrap; gap: 8px; }
   #stats > span { padding: 6px 14px; border-radius: 14px; background: rgba(8, 14, 44, .75);
     font-size: clamp(16px, 2.2vw, 22px); font-weight: bold; }
   #hudButtons { position: fixed; right: 14px; top: max(14px, env(safe-area-inset-top)); display: flex; gap: 10px;
@@ -64,7 +73,31 @@
   #hint { position: fixed; left: 16px; right: 16px; bottom: 96px; text-align: center; pointer-events: none;
     font-size: clamp(15px, 2.2vw, 21px); color: #e6ebff; text-shadow: 0 1px 6px #000; }
 
+
+  /* The quest card sits under the treasure numbers. */
+  #quest { box-sizing: border-box; padding: 8px 12px; border-radius: 14px; background: rgba(44, 28, 90, .85);
+    border: 2px solid #ffcf5a; font-size: clamp(13px, 1.8vw, 17px); line-height: 1.3; max-width: 300px; }
+  #quest .qt { display: block; color: #ffe08a; font-weight: bold; }
+  #quest .qk { display: block; }
+  #quest .qp { display: block; color: #bff0c8; font-weight: bold; }
+  #quest .qh { display: block; color: #cfd8ff; font-size: .92em; }
+  #quest.done { border-color: #7fe08a; }
+  #questBanner { position: fixed; left: 0; right: 0; top: 36%; text-align: center; pointer-events: none; opacity: 0;
+    font-size: clamp(30px, 7vw, 76px); font-weight: bold; color: #fff2b0; text-shadow: 0 0 22px #ff9a00, 0 4px 0 #8a4a00; }
+  #questBanner small { display: block; font-size: .45em; color: #fff; text-shadow: 0 2px 8px #000; }
+  #questBanner.show { animation: qpop 3s ease-out forwards; }
+  @keyframes qpop { 0% { opacity: 0; transform: scale(.4); } 12% { opacity: 1; transform: scale(1.15); } 22% { transform: scale(1); }
+    80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+  /* An arrow at the edge of the screen shows the way to the quest thing. */
+  #questArrow { position: fixed; left: 0; top: 0; pointer-events: none; display: none; text-align: center; }
+  #questArrow .ar { display: block; font-size: 44px; line-height: 1; color: #ffd24a; text-shadow: 0 0 10px #000, 0 0 4px #000; }
+  #questArrow .lb { display: block; font-size: 15px; font-weight: bold; padding: 2px 8px; border-radius: 10px; background: rgba(8, 14, 44, .85); white-space: nowrap; }
+
   #shop { width: min(860px, calc(100% - 32px)); }
+  #warpBox { width: min(520px, calc(100% - 32px)); }
+  #galaxies { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; max-height: 52vh; overflow-y: auto; }
+  #galaxies button { font-size: 16px; padding: 10px 8px; }
+  @media (max-width: 520px) { #galaxies { grid-template-columns: 1fr; } }
   #game { touch-action: none; }
   /* Phones: put a finger down anywhere and drag to fly. */
   #stick { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none;
@@ -100,6 +133,17 @@
 <div id="menu" class="bottom">
   <button id="playBtn" class="main">▶ Play</button>
   <button id="settingsBtn">⚙️ Settings</button>
+  <div class="break"></div>
+  <button id="wipeBtn">🗑️ Delete all saved data</button>
+</div>
+
+<div id="wipeAsk" class="panel" hidden>
+  <h2>🗑️ Delete everything?</h2>
+  <p>Your treasure, bases, rockets, quests, planets, alien friends and settings will all go, and you can't get them back!</p>
+  <div class="opts">
+    <button id="wipeNo" class="main">No, keep it</button>
+    <button id="wipeYes">Yes, delete everything</button>
+  </div>
 </div>
 
 <div id="settings" class="panel" hidden>
@@ -126,6 +170,7 @@
 </div>
 
 <div id="hud" hidden>
+  <div id="leftCol">
   <div id="stats">
     <span>💎 <b id="gemCount">0</b></span>
     <span>💰 <b id="goldCount">0</b></span>
@@ -136,10 +181,16 @@
     <span id="madeCount">🪐 0 made</span>
     <span id="friendCount">💚 0 friends</span>
     <span id="rocketName"></span>
+    <span id="galaxyName"></span>
   </div>
+  <div id="quest" hidden></div>
+  </div>
+  <div id="questBanner"></div>
+  <div id="questArrow"><span class="ar">➤</span><span class="lb"></span></div>
   <div id="hudButtons">
     <button id="exploreBtn">💥 Explore (F)</button>
     <button id="pauseBtn">⏸️ Aliens (B)</button>
+    <button id="warpBtn" hidden>🌀 Warp (H)</button>
     <button id="mapBtn">🗺️ Map</button>
     <button id="shopBtn">🛒 Shop</button>
     <button id="menuBtn">⬅ Menu</button>
@@ -148,6 +199,14 @@
   <div id="hint">W A S D to fly. Bump planets together to crash them! Fly close to a planet and press E to build a base.</div>
   <button id="action" class="main" hidden></button>
 </div>
+
+<div id="warpBox" class="panel" hidden>
+  <h2>🌀 Warp Drive</h2>
+  <p>Where do you want to go?</p>
+  <div id="galaxies"></div>
+  <button id="warpBack" class="main">Back</button>
+</div>
+<canvas id="warpFx" style="display:none; z-index: 20; pointer-events: none"></canvas>
 
 <div id="shop" class="panel" hidden>
   <h2>🛒 Rocket Shop</h2>
@@ -172,9 +231,10 @@ const TAU = Math.PI * 2;
 const cv = document.getElementById('sky'), g = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 const fmt = n => Math.floor(n).toLocaleString('en-US');
+let wiping = false;   // true while deleting all saved data, so nothing saves again on the way out
 const store = {
   get(k) { try { return localStorage.getItem('solar-program-' + k); } catch (e) { return null; } },
-  set(k, v) { try { localStorage.setItem('solar-program-' + k, v); } catch (e) { /* it just won't remember */ } },
+  set(k, v) { if (wiping) return; try { localStorage.setItem('solar-program-' + k, v); } catch (e) { /* it just won't remember */ } },
 };
 let W = 0, H = 0, nebula = [];
 let current = 'menu';
@@ -212,19 +272,31 @@ function setHud(on) {
 // ---------- Screens ----------
 function show(next) {
   if (next === 'play' && !enterGame()) { $('nogl').hidden = false; return; }
-  if (current === 'play' && next !== 'play') { closeShop(); toggleMap(false); saveGame(); stick.on = false; stick.x = stick.z = 0; $('stick').hidden = true; }
+  if (current === 'play' && next !== 'play') { closeShop(); closeWarp(); toggleMap(false); saveGame(); stick.on = false; stick.x = stick.z = 0; $('stick').hidden = true; }
   $('title').hidden = next === 'play';
   $('menu').hidden = next !== 'menu';
   $('settings').hidden = next !== 'settings';
+  $('wipeAsk').hidden = next !== 'wipe';
   $('hud').hidden = next !== 'play';
   $('game').hidden = next !== 'play';
   document.body.dataset.screen = next;
   current = next;
-  if (next === 'play') { befriendAll(); startLoop(); }
+  if (next === 'play') { if (questNo > QUEST_FRIENDS) befriendAll(); startLoop(); }   // aliens only become friends on their own once quest 4 is done
 }
 $('playBtn').onclick = () => { if (soundOn) ac(); show('play'); };   // a click lets the game make sounds
 $('settingsBtn').onclick = () => show('settings');
 $('settingsBack').onclick = () => show('menu');
+// Delete all saved data, so the game starts again from the very beginning.
+// It asks "Are you sure?" first, and Enter or Esc mean No, so only pressing the red button deletes.
+$('wipeBtn').onclick = () => { show('wipe'); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); };
+$('wipeNo').onclick = () => show('menu');
+$('wipeYes').onclick = () => {
+  wiping = true;
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('solar-program-')) localStorage.removeItem(k);   // only this game's saves
+  } catch (e) { /* nothing was saved anyway */ }
+  location.reload();
+};
 $('menuBtn').onclick = () => show('menu');
 for (const b of document.querySelectorAll('#levels button')) {
   b.onclick = () => { setQuality(b.dataset.q); store.set('quality', b.dataset.q); };
@@ -357,6 +429,22 @@ function frame(ms) {
 // ---------- Game numbers (change these to change the game) ----------
 const WORLD_R = 4000;       // how far the planets can go (95 at first, 400 next, now 10 times wider for 10,000 more planets)
 const SUN_R = 13;
+// The questline: 4 quests in a row.
+const QUESTS = 8;
+const QUEST_FRIENDS = 4;      // finishing this quest makes every El and Oo your friend (and they are friends on every Play from then on)
+const QUEST_REWARD = [0, 50, 100, 200, 0, 0, 0, 0, 500];   // 💎 you get for finishing quest 1 to 8 (prizes: 4 the friends, 5 the Golden Rocket, 7 the Warp Drive)
+const QUEST_PRIZE = { 4: 'All the aliens are your friends now! 💖', 5: 'The Golden Rocket is yours! 🚀✨', 6: 'Oh no! You can not get to Earth. It is in another galaxy!', 7: 'The Warp Drive is yours! Press H 🌀' };
+const GOLD_DIST = [700, 1100];   // quest 5: the Golden Rocket floats this far from the rocket
+const SIGN_DIST = [600, 900];    // quest 6: the Earth signpost
+const WARP_DIST = [700, 1100];   // quest 7: the Warp Drive
+const EARTH_R = 11;             // how big Earth is
+const EARTH_NEAR = 15;          // quest 8: fly this close to Earth's edge to find it
+const QUEST2_BASES = 2;       // quest 2: build this many more bases
+const MAP_LOST_DIST = [400, 700];   // quest 3: the lost map floats this far from the rocket
+const MAP_EDGE_GAP = 120;     // and stays this far inside the edge of space
+const MAP_PICKUP = 7;         // how close the rocket must get to grab the map
+const QUEST4_GOLD = 100;      // quest 4: gold to get (counts gold gained, not spent)
+const QUEST_DONE_SHOW = 8;    // seconds the small "all quests done" card stays after the last quest
 const START_PLANETS = 10116;   // 116 + 10,000 more
 const TINY_PLANETS = 1000;     // and 1,000 tiny ones on top
 const FREE_PLANETS = START_PLANETS + TINY_PLANETS - 2;   // new baby planets appear when there are fewer free ones than this
@@ -382,13 +470,16 @@ const SPECIAL = {
   ruby:    { chance: .2, hue: [.985, .03, .008] },
   emerald: { chance: .2, hue: [.455, .035, .01] },
 };
+const TREASURE_KINDS = Object.keys(TREASURE);
 const icon = t => TREASURE[t].tint ? `<span class="tint-${t}">${TREASURE[t].emoji}</span>` : TREASURE[t].emoji;
 const ROCKETS = [
   { name: 'Little Rocket',    cost: {},                                 grab: 10,  speed: 30, size: 1.4 },
   { name: 'Big Rocket',       cost: { gems: 100 },                      grab: 40,  speed: 40, size: 1.9 },
   { name: 'Huge Rocket',      cost: { gems: 300, gold: 100 },           grab: 150, speed: 52, size: 2.5 },
   { name: 'Ginormous Rocket', cost: { gems: 1000, gold: 300, ice: 300, ruby: 100, emerald: 100 }, grab: 600, speed: 70, size: 3.3 },
+  { name: 'Golden Rocket',    cost: {}, quest: true,                    grab: 1000, speed: 90, size: 3.5 },   // not for sale: you find it in Quest 5
 ];
+const GOLDEN = ROCKETS.length - 1;
 const canPay = cost => Object.entries(cost).every(([t, n]) => G[t] >= n);
 const pay = cost => { for (const [t, n] of Object.entries(cost)) G[t] -= n; };
 const costText = cost => Object.entries(cost).map(([t, n]) => `${fmt(n)} ${icon(t)}`).join(' + ');
@@ -403,7 +494,9 @@ void main() {
   vN = normalize(mat3(modelMatrix) * normal);
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
+const SUN_UNIFORM = { value: new THREE.Vector3() };   // where the sun is: the middle of the galaxy you are in
 const PLANET_FS = `
+uniform vec3 uSunPos;
 uniform float uHeat, uSeed, uKind, uTime, uStar;
 uniform vec3 uA, uB, uC;
 uniform highp sampler3D uNoise;
@@ -447,7 +540,7 @@ vec3 surface(vec3 p) {
   return c;
 }
 void main() {
-  vec3 N = normalize(vN), V = normalize(cameraPosition - vW), L = normalize(-vW);
+  vec3 N = normalize(vN), V = normalize(cameraPosition - vW), L = normalize(uSunPos - vW);
   vec3 p = normalize(vObj);
   vec3 col;
   float facing = max(dot(N, V), 0.0);
@@ -455,6 +548,7 @@ void main() {
     float n = fbm(p * 5.0 + uTime * 0.05);
     col = mix(vec3(1.25, 0.42, 0.05), vec3(1.6, 0.95, 0.25), smoothstep(0.3, 0.65, n));
     col += vec3(0.9, 0.3, 0.04) * pow(1.0 - facing, 2.0);
+    if (dot(uC, vec3(1.0)) > 0.01) col = dot(col, vec3(0.3, 0.59, 0.11)) * uA * 1.7;   // another galaxy's star has its own colour
   } else {
     float diff = max(dot(N, L), 0.0), light = diff * 1.25 + 0.1;
     col = surface(p) * light;
@@ -478,9 +572,55 @@ void main() {
   gl_FragColor.rgb += (hash(vec3(gl_FragCoord.xy, 1.0)) - 0.5) / 128.0;   // stops colour bands
 }`;
 
-function randomLook() {
-  let roll = Math.random(), treasure = 'gems';
-  for (const [t, v] of Object.entries(SPECIAL)) { if (roll < v.chance) { treasure = t; break; } roll -= v.chance; }
+// Earth: blue oceans, green and brown land, white ice caps, a drifting layer of cloud and a bright blue edge. All made in code.
+const EARTH_FS = `
+uniform vec3 uSunPos;
+uniform float uHeat, uTime;
+uniform highp sampler3D uNoise;
+varying vec3 vObj, vN, vW;
+float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float noise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return textureLod(uNoise, (i + f + 0.5) / 32.0, 0.0).r;
+}
+float fbm(vec3 p) {
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < OCT; i++) { s += a * noise(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; }
+  return s;
+}
+void main() {
+  vec3 N = normalize(vN), V = normalize(cameraPosition - vW), L = normalize(uSunPos - vW);
+  vec3 p = normalize(vObj);
+  vec3 w = p * 1.9 + 3.3;
+  float n = fbm(w), n2 = fbm(w * 2.6 + 7.0);
+  float land = smoothstep(0.50, 0.54, n);
+  vec3 ocean = mix(vec3(0.02, 0.09, 0.30), vec3(0.07, 0.32, 0.60), smoothstep(0.30, 0.50, n));
+  vec3 ground = mix(vec3(0.14, 0.40, 0.13), vec3(0.52, 0.41, 0.24), smoothstep(0.42, 0.68, n2));
+  ground = mix(ground, vec3(0.80, 0.76, 0.62), smoothstep(0.66, 0.78, n) * 0.5);
+  vec3 c = mix(ocean, ground, land);
+  c = mix(c, vec3(0.94, 0.96, 1.0), smoothstep(0.78, 0.9, abs(p.y) + (n - 0.5) * 0.15));
+  float cloud = smoothstep(0.52, 0.80, fbm(p * 3.3 + vec3(uTime * 0.012, 0.0, 0.0) + 11.0));
+  c = mix(c, vec3(1.0), cloud * 0.85);
+  float diff = max(dot(N, L), 0.0);
+  vec3 col = c * (diff * 1.25 + 0.08);
+  col += vec3(0.25, 0.52, 1.0) * pow(1.0 - max(dot(N, V), 0.0), 3.0) * clamp(dot(N, L) + 0.5, 0.0, 1.0);
+  gl_FragColor = vec4(col, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+  gl_FragColor.rgb += (hash(vec3(gl_FragCoord.xy, 1.0)) - 0.5) / 128.0;
+}`;
+function earthMaterial() {
+  return new THREE.ShaderMaterial({
+    vertexShader: PLANET_VS, fragmentShader: EARTH_FS,
+    defines: { OCT: q.oct, RIM: q.rim ? 1 : 0 },
+    uniforms: { uSunPos: SUN_UNIFORM, uNoise: { value: noiseTex }, uHeat: { value: 0 }, uTime: { value: 0 } },
+  });
+}
+
+function randomLook(want = null) {
+  let roll = Math.random(), treasure = want || 'gems';
+  if (!want) for (const [t, v] of Object.entries(SPECIAL)) { if (roll < v.chance) { treasure = t; break; } roll -= v.chance; }
   let h, s = .55 + Math.random() * .4, spread;
   if (treasure !== 'gems') {
     const [first, width, spr] = SPECIAL[treasure].hue;
@@ -541,6 +681,18 @@ const sparks = { i: 0, data: [], points: null, pos: null, col: null };
 
 const shipR = () => 1.2 * ROCKETS[G.rocket].size;
 const baseTotal = () => planets.reduce((n, p) => n + p.bases, 0);
+// If you need a yellow, red, teal or blue planet, crashes near you make one.
+// You need one when quest 4 wants gold, or the next rocket costs gold, ice, rubies or emeralds you don't have enough of,
+// and you don't have a base on a planet of that colour yet.
+const NEED_RANGE = 250;   // crashes this close to your rocket make the colour you need
+function neededTreasure() {
+  const need = new Set();
+  if (questNo === QUEST_FRIENDS && quest4Gold < QUEST4_GOLD) need.add('gold');
+  const next = ROCKETS[G.rocket + 1];
+  if (next && !next.quest) for (const [t, n] of Object.entries(next.cost)) if (t !== 'gems' && G[t] < n) need.add(t);
+  if (need.size) for (const p of planets) if (p.bases && need.delete(p.treasure) && !need.size) break;
+  return [...need];
+}
 const basePrice = () => baseTotal() * BASE_PRICE;
 
 function softDot(size, stops) {
@@ -591,7 +743,7 @@ function planetMaterial(look, heat, star, seed) {
     vertexShader: PLANET_VS, fragmentShader: PLANET_FS,
     defines: { OCT: q.oct, RIM: q.rim ? 1 : 0 },
     uniforms: {
-      uNoise: { value: noiseTex }, uHeat: { value: heat }, uSeed: { value: seed }, uKind: { value: look.kind }, uTime: { value: 0 },
+      uSunPos: SUN_UNIFORM, uNoise: { value: noiseTex }, uHeat: { value: heat }, uSeed: { value: seed }, uKind: { value: look.kind }, uTime: { value: 0 },
       uStar: { value: star ? 1 : 0 },
       uA: { value: new THREE.Color(look.cols[0]) }, uB: { value: new THREE.Color(look.cols[1]) }, uC: { value: new THREE.Color(look.cols[2]) },
     },
@@ -669,6 +821,7 @@ function initGame() {
   addEventListener('resize', sizeGame);
   sizeGame();
   if (!loadGame()) { newWorld(); spawnAliens(); }
+  applyGalaxy(galaxy);
   focus.x = ship.x; focus.z = ship.z;
   gameReady = true;
   return true;
@@ -713,9 +866,11 @@ function startLoop() {
 }
 
 // ---------- Rocket (red and white stripes, a pointy nose and fins) ----------
-function buildShip() {
+function rocketModel(gold) {
   const std = (color, rough, metal, extra) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
-  const white = std(0xf4f4f0, .35, .25), red = std(0xd8261f, .4, .2), dark = std(0x2a2f3a, .5, .6);
+  const white = gold ? std(0xffd23c, .28, .6, { emissive: 0x6b4800 }) : std(0xf4f4f0, .35, .25);
+  const red = gold ? std(0xe0a010, .3, .65, { emissive: 0x4a3000 }) : std(0xd8261f, .4, .2);
+  const dark = gold ? std(0x8a5a10, .4, .7, { emissive: 0x2a1800 }) : std(0x2a2f3a, .5, .6);
   const glass = std(0x7fd0ff, .1, .2, { emissive: 0x1b5a8a });
   const root = new THREE.Group(), body = new THREE.Group();
   body.rotation.x = Math.PI / 2;   // the rocket's nose points the way it flies
@@ -732,16 +887,31 @@ function buildShip() {
     const fin = add(new THREE.BoxGeometry(.08, .9, .6), red, Math.cos(a) * .72, -.72, Math.sin(a) * .72);
     fin.rotation.y = -a + Math.PI / 2;
   }
-  ship.flame = add(new THREE.ConeGeometry(.34, 1.5, 16), new THREE.MeshBasicMaterial({ color: 0xffa030,
+  const flame = add(new THREE.ConeGeometry(.34, 1.5, 16), new THREE.MeshBasicMaterial({ color: 0xffa030,
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), 0, -2.05, 0);
-  ship.flame.rotation.x = Math.PI;
-  ship.flameGlow = addGlowSprite(body, 0xff8a30, .8);
-  ship.flameGlow.position.y = -1.7;
-  ship.group = root;
-  scene.add(root);
+  flame.rotation.x = Math.PI;
+  const glow = addGlowSprite(body, 0xff8a30, .8);
+  glow.position.y = -1.7;
+  return { root, flame, glow };
+}
+function buildShip(gold = G.rocket >= GOLDEN) {
+  const m = rocketModel(gold);
+  ship.flame = m.flame;
+  ship.flameGlow = m.glow;
+  ship.group = m.root;
+  ship.gold = gold;
+  scene.add(m.root);
   sizeShip();
 }
-function sizeShip() { ship.group.scale.setScalar(ROCKETS[G.rocket].size); }
+function sizeShip() {
+  const gold = G.rocket >= GOLDEN;
+  if (ship.gold !== gold) {   // the Golden Rocket has its own shiny body
+    scene.remove(ship.group);
+    buildShip(gold);
+    return;
+  }
+  ship.group.scale.setScalar(ROCKETS[G.rocket].size);
+}
 
 // ---------- Bases ----------
 function buildBaseKit() {
@@ -789,6 +959,7 @@ function buildBase(p) {
   chime(660, .22); chime(990, .16, .12);
   saveGame();
   say('🏗️ You built a base!');
+  questEvent('base', p);
 }
 
 // E key, or the button at the bottom.
@@ -796,6 +967,7 @@ function pressAction() {
   if (shopOpen) { closeShop(); return; }
   const p = near;
   if (!p) return;
+  if (p.fixed) { say(p.earth ? 'This is Earth! People live here 🌍' : `This is ${p.name}! A real planet 🌍`); return; }
   if (p.bases) { openShop(); return; }
   if (p.heat > 0) { say('🔥 Too hot! Wait for it to cool.'); return; }
   const cost = basePrice();
@@ -829,7 +1001,7 @@ const WANTS = [['gems', .4], ['gold', .15], ['ice', .15], ['ruby', .15], ['emera
 const aliens = [];
 let alienKit = null, nearAlien = null, actionMode = '', friendGifts = 0, helpPushes = 0, aliensPaused = false, friendsExplore = false;
 const floatTex = {};
-let giftChimeAt = 0, nextSlot = 0;
+let giftChimeAt = 0, nextSlot = 0, floatAt = 0;
 
 function randomWant() {
   let r = Math.random();
@@ -1013,6 +1185,9 @@ function spawnAliens() {
     }
   }
 }
+const jobTaken = new Set(), closeList = [];   // planets that helpers are already working on; planets near one saucer
+let closeAl = null, closeReach = 0;
+const collectClose = p => { const dx = p.x - closeAl.x, dz = p.z - closeAl.z, rr = closeReach + p.r; if (dx * dx + dz * dz < rr * rr) closeList.push(p); };
 function stepAliens(dt) {
   const r = shipR();
   let best = null, bestGap = ALIEN_NEAR;
@@ -1023,8 +1198,12 @@ function stepAliens(dt) {
   }
   nearAlien = best;
   const k = 1 - Math.exp(-dt * 1.5);
-  const friends = aliens.filter(al => al.friend);
-  let helpers = friends.filter(al => al.job).length;
+  let friendTotal = 0, helpers = 0;
+  jobTaken.clear();
+  for (const al of aliens) {
+    if (al.friend) friendTotal++;
+    if (al.friend && al.job) { helpers++; jobTaken.add(al.job.target); jobTaken.add(al.job.partner); }
+  }
   for (const al of aliens) {
     if (!Number.isFinite(al.x + al.z + al.vx + al.vz)) { rescue(al); al.x += ship.x; al.z += ship.z; al.job = null; }
     if (aliensPaused) {
@@ -1054,15 +1233,19 @@ function stepAliens(dt) {
           if (al.job) helpers++; else al.rest = 1;
         }
       }
-      const steps = Math.min(60, Math.max(1, Math.ceil(Math.hypot(al.vx, al.vz) * dt / 4)));
+      let steps = Math.min(60, Math.max(1, Math.ceil(Math.hypot(al.vx, al.vz) * dt / 4)));
       if (al.slot == null) al.slot = nextSlot++;
       const slot = al.slot, h = dt / steps;
       // Only the planets it could reach this frame need checking (there are lots of friends and planets).
       const reach = Math.hypot(al.vx, al.vz) * dt + SAUCER_R + 40;
-      const close = [];
-      nearPlanets(al.x, al.z, reach, p => { close.push(p); });
+      const close = closeList;
+      close.length = 0;
+      closeAl = al; closeReach = reach;
+      nearPlanets(al.x, al.z, reach, collectClose);
+      // Nothing near enough to bump into: one big step is enough (small steps only stop it skipping through a planet).
+      if (!close.length) steps = 1;
       for (let n = 0; n < steps; n++) {
-        steerFriend(al, slot, h, friends.length);
+        steerFriend(al, slot, steps === 1 ? dt : h, friendTotal);
         al.x += al.vx * h; al.z += al.vz * h;
         bumpPlanets(al, true, close);
       }
@@ -1088,9 +1271,10 @@ function stepAliens(dt) {
     }
     if (!al.friend) {
       al.x += al.vx * dt; al.z += al.vz * dt;
-      const list = [];
-      nearPlanets(al.x, al.z, SAUCER_R + 2, p => { list.push(p); });
-      bumpPlanets(al, true, list);
+      closeList.length = 0;
+      closeAl = al; closeReach = SAUCER_R + 2;
+      nearPlanets(al.x, al.z, SAUCER_R + 2, collectClose);
+      if (closeList.length) bumpPlanets(al, true, closeList);
     }
     const ds = Math.hypot(al.x, al.z) || 1;
     if (ds < SUN_R + SAUCER_R) { al.x *= (SUN_R + SAUCER_R) / ds; al.z *= (SUN_R + SAUCER_R) / ds; }
@@ -1139,8 +1323,7 @@ function bumpPlanets(al, canPush = true, list = planets) {
 
 // A friend looks for a still planet near (cx, cz), and another planet near that one to crash it into.
 function findHelpJob(cx, cz, range) {
-  const taken = new Set();
-  for (const o of aliens) if (o.job) { taken.add(o.job.target); taken.add(o.job.partner); }
+  const taken = jobTaken;
   let target = null, best = range;
   nearPlanets(cx, cz, range, p => {
     if (p.bases || taken.has(p) || Math.hypot(p.vx, p.vz) > 3) return;
@@ -1154,14 +1337,16 @@ function findHelpJob(cx, cz, range) {
     const d = Math.hypot(q.x - target.x, q.z - target.z) - q.r - target.r;
     if (d < gap) { gap = d; partner = q; }
   });
-  return partner ? { target, partner, phase: 'go', t: 0, pt: 0 } : null;
+  if (!partner) return null;
+  taken.add(target); taken.add(partner);
+  return { target, partner, phase: 'go', t: 0, pt: 0 };
 }
 function endJob(al) { al.job = null; al.rest = HELP_REST + Math.random() * 4; }
 
 function steerFriend(al, i, dt, count = 1) {
   let tx, tz, top;
   const j = al.job;
-  if (j && (!planets.includes(j.target) || !planets.includes(j.partner) || j.target.bases || (j.t += dt) > 8)) endJob(al);
+  if (j && (j.target.gone || j.partner.gone || j.target.bases || (j.t += dt) > 8)) endJob(al);   // gone = crashed away
   if (al.job) {
     const T = j.target, P = j.partner;
     const dx = P.x - T.x, dz = P.z - T.z, d = Math.hypot(dx, dz) || 1, nx = dx / d, nz = dz / d;
@@ -1209,12 +1394,13 @@ function steerFriend(al, i, dt, count = 1) {
 
 // Every 10 seconds each friend gives you a random treasure, with a little "+10" that floats up.
 function friendGift(al) {
-  const kinds = Object.keys(TREASURE), t = kinds[Math.floor(Math.random() * kinds.length)];
+  const t = TREASURE_KINDS[Math.floor(Math.random() * TREASURE_KINDS.length)];
   G[t] += FRIEND_GIFT;
+  if (t === 'gold') earned('gold', FRIEND_GIFT);
   friendGifts++;
   if (Math.hypot(al.x - focus.x, al.z - focus.z) < 200) {
-    floatText(al.x, 6, al.z, t, FRIEND_GIFT);
     const now = performance.now();
+    if (now - floatAt > 120) { floatAt = now; floatText(al.x, 6, al.z, t, FRIEND_GIFT); }   // at most about 8 floating "+10" a second
     if (now - giftChimeAt > 150) { giftChimeAt = now; chime(990 + Math.random() * 200, .07); }
   }
 }
@@ -1312,6 +1498,502 @@ function giveGift(al) {
   saveGame();
 }
 
+// ---------- Quests: 8 in a row (the card under the treasure numbers) ----------
+let questNo = 1, quest2Bases = 0, quest4Gold = 0, questHideAt = 0;   // questNo 9 means every quest is done
+const qpos = {};   // where the quest things float in space: 3 lost map, 5 Golden Rocket, 6 Earth sign, 7 Warp Drive  ({ x, z })
+const qobj = {};   // their 3D shapes
+let warpOwned = false;
+const _arrowV = new THREE.Vector3();
+let questTarget = null, questScanAt = 0, arrowLayoutAt = 0, arrowTop = 120, arrowLeft = 50;
+const QTHING = {
+  3: { dist: MAP_LOST_DIST, mark: '🗺️', pick: MAP_PICKUP,     glow: 0xffc040, beam: 0xffd070, sparkle: false, build: buildMapShape },
+  5: { dist: GOLD_DIST,     mark: '🚀', pick: MAP_PICKUP + 4, glow: 0xffd040, beam: 0xffe080, sparkle: [1.6, 1.3, .3], build: buildGoldShape },
+  6: { dist: SIGN_DIST,     mark: '🌍', pick: 14,             glow: 0x5ac8ff, beam: 0x8ad8ff, sparkle: false, build: buildSignShape },
+  7: { dist: WARP_DIST,     mark: '⚡', pick: MAP_PICKUP + 3, glow: 0x7a6aff, beam: 0x9a8aff, sparkle: [.6, .7, 1.7], build: buildWarpShape },
+};
+const QUEST_START_SAY = {
+  3: '😱 Oh no! Your map is lost! Find it!', 5: '✨ A Golden Rocket is out there! Find it!',
+  6: '🌍 Let us go home to Earth!', 7: '⚡ Find the Warp Drive!', 8: '🌀 Press H to warp!',
+};
+
+function questBanner(big, small) {
+  const b = $('questBanner');
+  b.innerHTML = big + (small ? `<small>${small}</small>` : '');
+  b.classList.remove('show');
+  void b.offsetWidth;   // lets the pop-up play again
+  b.classList.add('show');
+}
+function questConfetti() {
+  const cols = [[1.6, .4, .4], [.4, 1.6, .5], [.5, .8, 1.7], [1.7, 1.4, .3], [1.5, .5, 1.5]];
+  for (const c of cols) burst(ship.x + (Math.random() - .5) * 8, 2, ship.z + (Math.random() - .5) * 8, 36, 18, c);
+}
+function questChime() { [523, 659, 784, 1047].forEach((f, i) => chime(f, .18, i * .11)); }
+
+// A free spot in the home galaxy, between lo and hi from the rocket and not inside a planet.
+function placeFar(lo, hi, gap) {
+  const maxR = WORLD_R - MAP_EDGE_GAP;
+  for (let tries = 0; tries < 100; tries++) {
+    const a = Math.random() * TAU, d = lo + Math.random() * (hi - lo);
+    const x = ship.x + Math.cos(a) * d, z = ship.z + Math.sin(a) * d, fromSun = Math.hypot(x, z);
+    if (fromSun > maxR || fromSun < SUN_R + 40 || !clearOf(x, z, gap)) continue;
+    return { x, z };
+  }
+  // Near the edge of space: float it back toward the middle.
+  const a = Math.atan2(-ship.z, -ship.x), d = lo + Math.random() * (hi - lo);
+  return { x: ship.x + Math.cos(a) * d, z: ship.z + Math.sin(a) * d };
+}
+function placeQuestThing(n) { qpos[n] = placeFar(QTHING[n].dist[0], QTHING[n].dist[1], 14); }
+
+function buildMapShape(g) {
+  const paper = new THREE.MeshStandardMaterial({ color: 0xf6e6b4, emissive: 0x8a6a24, emissiveIntensity: .7, roughness: .8 });
+  const edge = new THREE.MeshStandardMaterial({ color: 0xc99a4a, emissive: 0x5a3a10, emissiveIntensity: .6, roughness: .8 });
+  const ribbon = new THREE.MeshStandardMaterial({ color: 0xd8261f, emissive: 0x801010, emissiveIntensity: .6, roughness: .6 });
+  const spin = new THREE.Group();
+  const roll = new THREE.Group();
+  roll.rotation.z = Math.PI / 2;   // the scroll lies on its side
+  roll.add(new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 9, 20), paper));
+  roll.add(new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 9.4, 14), edge));
+  roll.add(new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 1.1, 20), ribbon));
+  spin.add(roll);
+  g.add(spin);
+  g.userData.spin = spin;
+}
+function buildGoldShape(g) {
+  const m = rocketModel(true);
+  m.root.scale.setScalar(3.2);
+  m.flame.visible = false; m.glow.visible = false;
+  const spin = new THREE.Group();
+  spin.add(m.root);
+  g.add(spin);
+  g.userData.spin = spin;
+}
+function buildWarpShape(g) {
+  const glowy = (c, op) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const spin = new THREE.Group(), ring2 = new THREE.Group();
+  spin.add(new THREE.Mesh(new THREE.TorusGeometry(5.5, .7, 12, 40), glowy(0x6a8aff, .9)));
+  ring2.rotation.x = Math.PI / 2;
+  ring2.add(new THREE.Mesh(new THREE.TorusGeometry(4, .5, 12, 36), glowy(0xb070ff, .9)));
+  spin.add(ring2);
+  spin.add(new THREE.Mesh(new THREE.SphereGeometry(2.2, 20, 14), glowy(0xd8ccff, .95)));
+  spin.rotation.x = Math.PI / 2.6;
+  g.add(spin);
+  g.userData.spin = ring2;
+  g.userData.tumble = spin;
+}
+function buildSignShape(g) {
+  const c = document.createElement('canvas');
+  c.width = 640; c.height = 300;
+  const x = c.getContext('2d');
+  x.fillStyle = 'rgba(10, 30, 70, .92)';
+  x.strokeStyle = '#8ad8ff'; x.lineWidth = 10;
+  x.beginPath(); x.roundRect(8, 8, 624, 284, 36); x.fill(); x.stroke();
+  x.textAlign = 'center'; x.fillStyle = '#fff';
+  x.font = '90px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+  x.fillText('🌍 →', 320, 105);
+  x.font = 'bold 50px "Trebuchet MS", sans-serif';
+  x.fillText('Milky Way Galaxy', 320, 185);
+  x.fillStyle = '#ffe08a';
+  x.font = 'bold 44px "Trebuchet MS", sans-serif';
+  x.fillText('Too far to fly!', 320, 250);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  const board = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, toneMapped: false }));
+  board.scale.set(32, 15, 1);
+  board.position.y = 9;
+  g.add(board);
+}
+function buildQThing(n) {
+  const spec = QTHING[n], g = new THREE.Group();
+  spec.build(g);
+  addGlowSprite(g, spec.glow, .95).scale.setScalar(n === 6 ? 44 : 34);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.9, 3, 38, 16, 1, true), new THREE.MeshBasicMaterial({
+    color: spec.beam, transparent: true, opacity: .28, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  beam.position.y = 19;
+  g.add(beam);
+  scene.add(g);
+  return g;
+}
+function removeQThing(n) {
+  const o = qobj[n];
+  if (!o) return;
+  scene.remove(o);
+  o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { if (c.material.map) c.material.map.dispose(); c.material.dispose(); } });
+  delete qobj[n];
+}
+
+function startQuest(n, announce) {
+  questNo = n; quest2Bases = 0; quest4Gold = 0; questTarget = null; questScanAt = 0;
+  for (const k of [3, 5, 6, 7]) if (k !== n) { delete qpos[k]; removeQThing(k); }
+  if (n === 3) toggleMap(false);
+  if (QTHING[n]) placeQuestThing(n);
+  if (announce && QUEST_START_SAY[n]) setTimeout(() => { if (questNo === n) say(QUEST_START_SAY[n]); }, 2600);
+  updateQuestPanel();
+}
+function completeQuest() {
+  const n = questNo, reward = QUEST_REWARD[n] || 0;
+  G.gems += reward;
+  questConfetti(); questChime();
+  if (n < QUESTS) {
+    questBanner('⭐ Quest complete!', QUEST_PRIZE[n] || (reward ? `+${reward} 💎` : ''));
+    startQuest(n + 1, true);
+    if (n === QUEST_FRIENDS) befriendAll();
+  } else {
+    questBanner('🎉 All quests done!', `You found Earth! 🌍  +${reward} 💎`);
+    chime(1319, .16, .5); chime(1568, .16, .62);
+    startQuest(QUESTS + 1);
+    questHideAt = performance.now() + QUEST_DONE_SHOW * 1000;
+  }
+  updateHud();
+  saveGame();
+}
+function questEvent(kind, p) {
+  if (kind === 'base') {
+    if (questNo === 1) {
+      if (p.rock) completeQuest();
+      else say('That is not a grey planet. Try a grey one 🌑');
+    } else if (questNo === 2) {
+      if (++quest2Bases >= QUEST2_BASES) completeQuest();
+    }
+  } else if (kind === 'thing') {
+    const n = questNo;
+    if (n === 3) { completeQuest(); say('You found your map! 🗺️'); }
+    else if (n === 5) { G.rocket = Math.max(G.rocket, GOLDEN); sizeShip(); completeQuest(); say('You found the Golden Rocket! ✨'); }
+    else if (n === 6) { completeQuest(); say('Oh no! You can not get to Earth. It is in another galaxy!'); }
+    else if (n === 7) { warpOwned = true; updateWarpUi(); completeQuest(); say('You found the Warp Drive! Press H to warp! 🌀'); }
+  } else if (kind === 'earth' && questNo === 8) {
+    completeQuest();
+    say('You found Earth! 🌍');
+  }
+}
+// Treasure coming in. Quest 4 counts gold gained, so spending gold never takes it back.
+function earned(t, n) {
+  if (questNo === 4 && t === 'gold' && n > 0) {
+    quest4Gold += n;
+    if (quest4Gold >= QUEST4_GOLD) completeQuest();
+  }
+}
+// Each game step: the quest thing spins and bobs, and the rocket can grab it. Earth is found by flying close.
+function stepQuest(dt) {
+  const n = questNo;
+  for (const k in qobj) if (+k !== n) removeQThing(+k);
+  if (QTHING[n] && qpos[n] && galaxy === 0) {
+    const spec = QTHING[n], pos = qpos[n];
+    if (!qobj[n]) qobj[n] = buildQThing(n);
+    const o = qobj[n];
+    o.position.set(pos.x, 3 + Math.sin(time * 2) * .9, pos.z);
+    if (o.userData.spin) o.userData.spin.rotation.y += dt * 1.4;
+    if (o.userData.tumble) o.userData.tumble.rotation.z += dt * .9;
+    if (spec.sparkle && Math.hypot(pos.x - focus.x, pos.z - focus.z) < 260 && Math.random() < dt * 22) {
+      const [cr, cg, cb] = spec.sparkle;
+      spark(pos.x + (Math.random() - .5) * 8, 2 + Math.random() * 7, pos.z + (Math.random() - .5) * 8, (Math.random() - .5) * 3, 2 + Math.random() * 3, (Math.random() - .5) * 3, cr, cg, cb, .9);
+    }
+    if (Math.hypot(ship.x - pos.x, ship.z - pos.z) < spec.pick + shipR()) {
+      burst(pos.x, 3, pos.z, 60, 14, spec.sparkle || [1.6, 1.3, .4]);
+      questEvent('thing');
+    }
+  } else if (n === 8 && galaxy === 1) {
+    const e = earthPlanet();
+    if (e && Math.hypot(ship.x - e.x, ship.z - e.z) < e.r + EARTH_NEAR) questEvent('earth');
+  }
+}
+const earthPlanet = () => planets.find(p => p.earth);
+
+let goldBaseAt = 0, goldBase = false;
+function hasGoldBase() {   // looked up at most 4 times a second, because there are 11,000 planets
+  const now = performance.now();
+  if (now - goldBaseAt > 250) { goldBaseAt = now; goldBase = planets.some(p => p.bases && p.treasure === 'gold'); }
+  return goldBase;
+}
+function updateQuestPanel() {
+  const el = $('quest');
+  let html = '', cls = '';
+  const row = (c, t) => `<span class="${c}">${t}</span>`;
+  if (questNo > QUESTS) {
+    cls = 'done';
+    html = row('qt', '⭐ All quests done!');
+    if (!questHideAt || performance.now() > questHideAt) html = '';
+  } else {
+    html = row('qt', `⭐ Quest ${questNo} of ${QUESTS}`);
+    if (questNo === 1) html += row('qk', 'Build a base on a grey planet 🌑') + row('qh', 'Fly close to it and press E.');
+    if (questNo === 2) html += row('qk', `Get more 💎 crystals and build ${QUEST2_BASES} more bases`) + row('qp', `Bases: ${quest2Bases} / ${QUEST2_BASES}`)
+      + row('qh', `Next base: ${fmt(basePrice())} 💎 (you have ${fmt(G.gems)})`);
+    if (questNo === 3) html += row('qk', 'Oh no! You lost your map! 🗺️ Find it somewhere in space.') + row('qh', 'Follow the arrow!');
+    if (questNo === 4) html += row('qk', `Get ${QUEST4_GOLD} 💰 gold to make all the aliens your friends`) + row('qp', `💰 ${fmt(quest4Gold)} / ${QUEST4_GOLD}`)
+      + (hasGoldBase() ? '' : row('qh', (questTarget ? '' : 'Crash planets to make a yellow one. ') + 'Build a base on a yellow planet to dig gold'));
+    if (questNo === 5) html += row('qk', 'Find the Golden Rocket 🚀✨') + row('qh', 'Follow the arrow!');
+    if (questNo === 6) html += row('qk', 'Find Earth 🌍') + row('qh', 'Follow the arrow!');
+    if (questNo === 7) html += row('qk', 'Find the Warp Drive ⚡') + row('qh', 'Follow the arrow!');
+    if (questNo === 8) html += row('qk', 'Warp to the Milky Way and find Earth 🌍')
+      + row('qh', galaxy === 0 ? 'Press H to warp! 🌀' : 'Fly to Earth, the blue planet!');
+  }
+  if (el.dataset.html !== html) { el.dataset.html = html; el.innerHTML = html; el.className = cls; }
+  el.hidden = !html;
+}
+
+// The arrow: points to the nearest grey planet (quest 1), a yellow planet (4), the quest thing (3, 5, 6, 7) or Earth (8).
+function questArrow() {
+  const el = $('questArrow');
+  let tx = 0, tz = 0, mark = '', on = current === 'play' && !mapOpen && !shopOpen && !warpOpen && !warping && questNo <= QUESTS;
+  if (on) {
+    const now = performance.now();
+    if (QTHING[questNo]) {
+      questTarget = galaxy === 0 ? qpos[questNo] : null; mark = QTHING[questNo].mark;
+    } else if (questNo === 8) {
+      questTarget = galaxy === 1 ? earthPlanet() : null; mark = '🌍';
+    } else if (galaxy === 0 && (questNo === 1 || (questNo === 4 && !hasGoldBase()))) {
+      if (now > questScanAt) {
+        questScanAt = now + 250;
+        let best = null, bestD = Infinity;
+        for (const p of planets) {
+          if (p.bases || p.gone || p.fixed || (questNo === 1 ? !p.rock || p.heat > 0 : p.treasure !== 'gold')) continue;
+          const d = (p.x - ship.x) ** 2 + (p.z - ship.z) ** 2;
+          if (d < bestD) { bestD = d; best = p; }
+        }
+        questTarget = best;
+      }
+      mark = questNo === 1 ? '🌑' : '💰';
+    } else questTarget = null;
+    if (questTarget) { tx = questTarget.x; tz = questTarget.z; } else on = false;
+  }
+  if (on) {
+    const v = _arrowV.set(tx, 0, tz).project(camera);
+    if (v.z < 1 && Math.abs(v.x) < .8 && Math.abs(v.y) < .8) on = false;   // it is already on the screen
+  }
+  if (!on) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
+  const dx = tx - ship.x, dz = tz - ship.z, dist = Math.hypot(dx, dz) || 1;
+  const ux = dx / dist, uz = dz / dist;   // screen right is +x and screen down is +z
+  const w = innerWidth, h = innerHeight;
+  const now2 = performance.now();
+  if (now2 - arrowLayoutAt > 500) {   // keep the arrow clear of the treasure numbers and the buttons
+    arrowLayoutAt = now2;
+    if (innerWidth < 700) {
+      arrowLeft = $('leftCol').getBoundingClientRect().right + 85;   // room for the arrow's own size
+      arrowTop = $('hudButtons').getBoundingClientRect().bottom + 75;
+    } else { arrowLeft = 50; arrowTop = 120; }
+  }
+  const side = 55, bottom = 150;
+  const left = Math.min(arrowLeft, w * .6), top = Math.min(arrowTop, h - bottom - 80);
+  const cx = (left + w - side) / 2, cy = (top + h - bottom) / 2, halfW = (w - side - left) / 2, halfH = (h - bottom - top) / 2;
+  const kx = Math.abs(ux) > 1e-4 ? halfW / Math.abs(ux) : Infinity;
+  const kz = Math.abs(uz) > 1e-4 ? halfH / Math.abs(uz) : Infinity;
+  const k = Math.min(kx, kz);
+  el.style.display = 'block';
+  el.style.transform = `translate(${cx + ux * k}px, ${cy + uz * k}px) translate(-50%, -50%)`;
+  el.firstChild.style.transform = `rotate(${Math.atan2(uz, ux)}rad)`;
+  const lb = `${mark} ${fmt(dist)}`;
+  if (el.lastChild.textContent !== lb) el.lastChild.textContent = lb;
+}
+
+// ---------- Galaxies and the Warp Drive (H) ----------
+// Add a galaxy by adding to this list: name, centre, size, sky colour, where you arrive, and a function that builds it.
+// Each galaxy: name, centre, size, sky colour and where you arrive. 'look' makes the made-up ones (a star and 30 to 50 planets from a fixed seed, so it is the same every visit).
+// look = star colour, planet colours (3 each), chance of rings, rainbow switch, how many planets.
+const GALAXIES = [
+  { name: 'Othro Galaxy', tag: ' (home)', cx: 0, cz: 0, R: WORLD_R, sky: 0x03050f },
+  { name: 'Milky Way Galaxy', tag: '', cx: 12000, cz: 0, R: 2100, sky: 0x041421, arrive: [-1900, 0], build: buildMilkyWay },
+  { name: 'Andromeda Galaxy', cx: -12000, cz: 0, sky: 0x050a1c, art: 'andromeda', look: { star: 0xbfd8ff, n: 40, ring: .15,
+    pal: [[0x3a6ee0, 0x5a8aff, 0x1c3a90], [0xdde8ff, 0xffffff, 0xaabbdd], [0x6aa8ff, 0x9ac8ff, 0x3a5aa0]] } },
+  { name: 'Whirlpool Galaxy', cx: 0, cz: 12000, sky: 0x0a0818, art: 'whirlpool', look: { star: 0xfff2c0, n: 40, ring: .15,
+    pal: [[0x4a8aff, 0x6aa8ff, 0x2a50b0], [0xff7ac8, 0xffa8e0, 0xb04a90], [0xe0d8ff, 0xffffff, 0xa098c8]] } },
+  { name: 'Wobblon Galaxy', cx: 0, cz: -12000, sky: 0x1a0a1c, look: { star: 0xff7ac8, n: 38, ring: .2,
+    pal: [[0xff8ad0, 0xffb0e4, 0xc0509a], [0xb07aff, 0xd0a8ff, 0x7a4ac0], [0xff9ac0, 0xffc8dc, 0xc86a90]] } },
+  { name: 'Zyphor Galaxy', cx: 12000, cz: 12000, sky: 0x041424, look: { star: 0xcfe8ff, n: 36, ring: .15,
+    pal: [[0x9ad8ff, 0xc8eeff, 0x5aa0d0], [0x6ab4f0, 0x9ad0ff, 0x3a7ab8], [0xe0f6ff, 0xffffff, 0xa8c8e0]] } },
+  { name: 'Glimmerflap Galaxy', cx: -12000, cz: 12000, sky: 0x1a1404, look: { star: 0xffd24a, n: 42, ring: .2,
+    pal: [[0xffd24a, 0xfff0a0, 0xc09a20], [0xffffff, 0xfffbe0, 0xd8d0a0], [0xe8b840, 0xffe080, 0xa07818]] } },
+  { name: 'Krunchoo Galaxy', cx: 12000, cz: -12000, sky: 0x1a0c04, look: { star: 0xff8a2a, n: 44, ring: .1,
+    pal: [[0xd2691e, 0xf09050, 0x8a4010], [0x8b5a2b, 0xb8804a, 0x5a3a18], [0xe08840, 0xffb070, 0xa05a20]] } },
+  { name: 'Pindle Galaxy', cx: -12000, cz: -12000, sky: 0x041a10, look: { star: 0x6aff8a, n: 38, ring: .15,
+    pal: [[0x3acc6a, 0x70f090, 0x208040], [0x20b8a8, 0x60e0d0, 0x108070], [0x8ae08a, 0xc0ffc0, 0x48a048]] } },
+  { name: 'Snazzle Galaxy', cx: 0, cz: 17000, sky: 0x1c0408, look: { star: 0xff3a3a, n: 40, ring: .6,
+    pal: [[0xe02a2a, 0xff6a6a, 0x901818], [0xe02a9a, 0xff6ac8, 0x901868], [0xb0102a, 0xe04a5a, 0x700818]] } },
+  { name: 'Quorbit Galaxy', cx: 0, cz: -17000, sky: 0x120a20, look: { star: 0xb06aff, n: 34, ring: 1,
+    pal: [[0x9a5aff, 0xc09aff, 0x6a30c0], [0xd08aff, 0xe8c0ff, 0x9a50c8], [0x7a7aff, 0xa8a8ff, 0x4a4ac0]] } },
+  { name: 'Bubbalux Galaxy', cx: 17000, cz: 0, sky: 0x0c0c18, look: { star: 0xffffff, n: 46, ring: .2, rainbow: true,
+    pal: [[0xff4a4a, 0xff8a8a, 0xb02a2a]] } },
+];
+const RAINBOW = [0xff4a4a, 0xff9a2a, 0xffe03a, 0x4acc4a, 0x3aa0ff, 0x8a5aff, 0xff6ac8];
+for (const g of GALAXIES) { g.R = g.R || 1500; g.tag = g.tag || ''; if (g.look) { g.build = () => buildLookGalaxy(g); g.arrive = [-1300, 0]; } }
+
+const WARP_TIME = 1.5;      // seconds the warp lasts
+let galaxy = 0, warping = null, warpOpen = false, awayNoted = false, othroPos = null;
+const galaxyBuilt = {};
+const GC = { x: 0, z: 0, R: WORLD_R };   // the centre and size of the galaxy you are in
+
+function seededRng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+// A made-up galaxy: its own star in the middle and planets spread around it. Nothing here moves.
+function buildLookGalaxy(g) {
+  const L = g.look, gi = GALAXIES.indexOf(g), rnd = seededRng(7919 * (gi + 3));
+  makePlanet({ x: g.cx, z: g.cz, r: 30, rock: false, kind: 0, cols: [L.star, L.star, L.star], treasure: 'gems', fixed: true, mw: true, gal: gi, name: 'Star', star: true });
+  const placed = [{ x: 0, z: 0, r: 60 }, { x: g.arrive[0], z: g.arrive[1], r: 80 }];
+  for (let i = 0, tries = 0; i < L.n && tries < 4000; tries++) {
+    const d = 130 + Math.sqrt(rnd()) * 1320, a = rnd() * TAU, r = 3 + rnd() * rnd() * 13;
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    if (placed.some(q => Math.hypot(q.x - x, q.z - z) < q.r + r + 24)) continue;
+    placed.push({ x, z, r }); i++;
+    const pal = L.rainbow ? [RAINBOW[i % 7], RAINBOW[(i + 1) % 7], RAINBOW[(i + 3) % 7]] : L.pal[Math.floor(rnd() * L.pal.length)];
+    const ring = rnd() < L.ring && r > 5 ? pal[1] : null;
+    makePlanet({ x: g.cx + x, z: g.cz + z, r, rock: false, kind: rnd() < .4 ? 1 : 0, cols: pal, treasure: 'gems', ring, seed: rnd() * 50, fixed: true, mw: true, gal: gi });
+  }
+}
+// A big faint picture of the galaxy in the sky (Andromeda and the Whirlpool), drawn in code.
+let skyArt = null;
+function skyTexture(kind) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const x = c.getContext('2d');
+  x.translate(256, 256);
+  const blob = (px, py, r, col, a) => { const gr = x.createRadialGradient(px, py, 0, px, py, r); gr.addColorStop(0, `rgba(${col}, ${a})`); gr.addColorStop(1, `rgba(${col}, 0)`); x.fillStyle = gr; x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill(); };
+  if (kind === 'andromeda') {
+    x.rotate(-.5); x.scale(1, .38);   // a tilted disc
+    blob(0, 0, 250, '90, 120, 230', .35);
+    const rnd = seededRng(5);
+    for (let arm = 0; arm < 2; arm++) for (let t = 0; t < 140; t++) {
+      const a = t * .09 + arm * Math.PI, d = 14 + t * 1.6;
+      blob(Math.cos(a) * d + (rnd() - .5) * 10, Math.sin(a) * d + (rnd() - .5) * 10, 16 + t * .1, '150, 180, 255', .12);
+    }
+    blob(0, 0, 70, '255, 225, 150', .85);
+    blob(0, 0, 26, '255, 245, 215', 1);
+  } else {
+    const rnd = seededRng(9);
+    blob(0, 0, 230, '80, 100, 210', .22);
+    for (let arm = 0; arm < 2; arm++) for (let t = 0; t < 170; t++) {
+      const a = t * .06 + arm * Math.PI, d = 12 + t * 1.15;
+      blob(Math.cos(a) * d + (rnd() - .5) * 6, Math.sin(a) * d + (rnd() - .5) * 6, 12 + t * .05, t % 5 === 0 ? '255, 130, 200' : '150, 185, 255', .17);
+    }
+    blob(0, 0, 40, '255, 240, 200', .95);
+    blob(-196, -150, 34, '255, 225, 170', .8);   // the little companion at the end of an arm
+    blob(-196, -150, 12, '255, 250, 235', 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function setSkyArt(kind) {
+  if (skyArt) { scene.remove(skyArt); skyArt.material.map.dispose(); skyArt.material.dispose(); skyArt = null; }
+  if (!kind) return;
+  skyArt = new THREE.Sprite(new THREE.SpriteMaterial({ map: skyTexture(kind), transparent: true, depthWrite: false, fog: false, toneMapped: false, opacity: .8 }));
+  skyArt.scale.setScalar(1700);
+  scene.add(skyArt);
+}
+
+// Our Solar System, with the planets in the real order. Distances are squeezed so it all fits. Nothing here moves.
+function buildMilkyWay() {
+  const g = GALAXIES[1];
+  const bodies = [   // name, distance from the Sun, angle, radius, look
+    { name: 'The Sun', d: 0, a: 0, r: 50, star: true },
+    { name: 'Mercury', d: 90, a: 40, r: 3, kind: 0, cols: [0x6e6a66, 0x9a948c, 0x4a4540] },
+    { name: 'Venus', d: 190, a: 130, r: 6, kind: 0, cols: [0xc9a24a, 0xe8c878, 0x9a7a30] },
+    { name: 'Earth', d: 300, a: 0, r: EARTH_R, earth: true },
+    { name: 'The Moon', d: 300, a: 0, r: 3, kind: 0, cols: [0x8a8a8a, 0xb5b5b5, 0x555555], off: [26, 12] },
+    { name: 'Mars', d: 440, a: 300, r: 5.5, kind: 0, cols: [0xa8451f, 0xd2693a, 0x7a2e12] },
+    { name: 'Jupiter', d: 720, a: 200, r: 30, kind: 1, cols: [0xd8b48a, 0xb8825a, 0xf0dfc0] },
+    { name: 'Saturn', d: 1030, a: 110, r: 25, kind: 1, cols: [0xe6d3a0, 0xc9a96a, 0xf3e8c8], ring: 0xd9c9a0 },
+    { name: 'Uranus', d: 1330, a: 250, r: 14, kind: 0, cols: [0x9fe3ee, 0x7fd0e0, 0xb8f0f5] },
+    { name: 'Neptune', d: 1650, a: 330, r: 13, kind: 1, cols: [0x3a5fe0, 0x2848b0, 0x6a8aff] },
+  ];
+  for (const b of bodies) {
+    const ang = b.a * Math.PI / 180;
+    const x = g.cx + Math.cos(ang) * b.d + (b.off ? b.off[0] : 0), z = g.cz + Math.sin(ang) * b.d + (b.off ? b.off[1] : 0);
+    makePlanet({ x, z, r: b.r, rock: false, kind: b.kind ?? 0, cols: b.cols || [0, 0, 0], treasure: 'gems', ring: b.ring ?? null,
+      fixed: true, mw: true, gal: 1, name: b.name, earth: !!b.earth, star: !!b.star });
+  }
+}
+function applyGalaxy(i) {
+  galaxy = i;
+  const g = GALAXIES[i];
+  GC.x = g.cx; GC.z = g.cz; GC.R = g.R;
+  SUN_UNIFORM.value.set(g.cx, 0, g.cz);
+  scene.background.setHex(g.sky);
+  sun.visible = worldEdge.visible = i === 0;
+  setText('galaxyName', `🌌 ${g.name}`);
+  setSkyArt(g.art);
+  mapLayerCount = -1;
+  nearAlien = null;
+  if (i !== 0 && alienKit) for (const m of [alienKit.body, alienKit.dome, alienKit.lights, alienKit.boards]) m.count = 0;   // the friends wait at home
+  updateQuestPanel();
+}
+function warpTo(i, instant) {
+  if (!GALAXIES[i] || i === galaxy || warping) return;
+  closeWarp();
+  if (instant) { arriveIn(i); return; }
+  warping = { t: 0, to: i, done: false };
+  warpSound();
+}
+function arriveIn(i) {
+  if (galaxy === 0) othroPos = { x: ship.x, z: ship.z };
+  const g = GALAXIES[i];
+  if (g.build && !galaxyBuilt[i]) { galaxyBuilt[i] = true; g.build(); }
+  applyGalaxy(i);
+  if (i === 0) { const o = othroPos || { x: 0, z: SUN_R + 14 }; ship.x = o.x; ship.z = o.z; }
+  else { ship.x = g.cx + g.arrive[0]; ship.z = g.cz + g.arrive[1]; }
+  ship.vx = ship.vz = 0;
+  focus.x = ship.x; focus.z = ship.z;
+  burst(ship.x, 2, ship.z, 50, 16, [.6, .8, 1.7]);
+  if (i !== 0 && !awayNoted) { awayNoted = true; setTimeout(() => say('Your alien friends wait for you at home 💚'), 1800); }
+  else if (i === 0) say('Welcome home! 💚');
+  saveGame();
+}
+const WARP_STREAKS = Array.from({ length: 220 }, () => ({ a: Math.random() * TAU, r: Math.random(), s: .5 + Math.random() }));
+function drawWarp() {
+  const c = $('warpFx');
+  if (!warping) { if (c.style.display !== 'none') c.style.display = 'none'; return; }
+  if (c.style.display !== 'block') c.style.display = 'block';
+  const w = innerWidth, h = innerHeight;
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = c.getContext('2d'), t = Math.min(warping.t / WARP_TIME, 1), k = Math.sin(Math.PI * t);
+  x.clearRect(0, 0, w, h);
+  x.fillStyle = `rgba(4, 6, 30, ${.15 + .75 * k})`;
+  x.fillRect(0, 0, w, h);
+  const R = Math.hypot(w, h) / 2, cx = w / 2, cy = h / 2;
+  x.strokeStyle = `rgba(190, 215, 255, ${.35 + .6 * k})`;
+  x.lineWidth = 1.6;
+  x.beginPath();
+  for (const s of WARP_STREAKS) {
+    const ca = Math.cos(s.a), sa = Math.sin(s.a), r0 = R * (s.r * .25 + t * t * s.s * .9), r1 = r0 + R * (.03 + .55 * k) * s.s;
+    x.moveTo(cx + ca * r0, cy + sa * r0); x.lineTo(cx + ca * r1, cy + sa * r1);
+  }
+  x.stroke();
+}
+function stepWarp(dt) {
+  if (!warping) return;
+  warping.t += dt;
+  if (!warping.done && warping.t >= WARP_TIME * .5) { warping.done = true; arriveIn(warping.to); }
+  if (warping.t >= WARP_TIME) warping = null;
+}
+function warpSound() {
+  if (!soundOn) return;
+  const a = ac(), t = a.currentTime + .01, src = a.createBufferSource(), bp = a.createBiquadFilter(), gn = a.createGain();
+  src.buffer = noise(a);
+  bp.type = 'bandpass'; bp.Q.value = 2.2;
+  bp.frequency.setValueAtTime(250, t);
+  bp.frequency.exponentialRampToValueAtTime(3200, t + WARP_TIME * .5);
+  bp.frequency.exponentialRampToValueAtTime(220, t + WARP_TIME);
+  gn.gain.setValueAtTime(.0001, t);
+  gn.gain.exponentialRampToValueAtTime(.5, t + WARP_TIME * .45);
+  gn.gain.exponentialRampToValueAtTime(.0001, t + WARP_TIME);
+  src.connect(bp); bp.connect(gn); gn.connect(a.destination);
+  src.start(t); src.stop(t + WARP_TIME + .1);
+}
+function renderGalaxies() {
+  $('galaxies').innerHTML = GALAXIES.map((g, i) => `<button data-g="${i}"${i === galaxy ? ' disabled' : ''}>🌌 ${g.name}${g.tag}${i === galaxy ? ' - you are here' : ''}</button>`).join('');
+}
+function updateWarpUi() { $('warpBtn').hidden = !warpOwned; }
+function toggleWarpPicker(open = !warpOpen) {
+  if (open && !warpOwned) { say('You need a Warp Drive! ⚡'); return; }
+  if (open && (warping || current !== 'play')) return;
+  if (open) { closeShop(); toggleMap(false); renderGalaxies(); }
+  warpOpen = open;
+  $('warpBox').hidden = !open;
+}
+function closeWarp() { warpOpen = false; $('warpBox').hidden = true; }
+$('warpBtn').onclick = () => toggleWarpPicker();
+$('warpBack').onclick = closeWarp;
+$('galaxies').onclick = e => { const b = e.target.closest('button[data-g]'); if (b) warpTo(+b.dataset.g); };
+
 // ---------- Shop ----------
 function renderShop() {
   $('shopHave').innerHTML = Object.keys(TREASURE).map(t => `${fmt(G[t])} ${icon(t)}`).join('  ');
@@ -1320,32 +2002,58 @@ function renderShop() {
       <b>🚀 ${r.name}</b>
       <span>Grabs ${fmt(r.grab)} treasure a second</span>
       <span>Speed ${r.speed}</span>
-      ${i <= G.rocket ? '<em>You have it!</em>' : `<button data-buy="${i}"${canPay(r.cost) ? '' : ' disabled'}>Buy: ${costText(r.cost)}</button>`}
+      ${i <= G.rocket ? '<em>You have it!</em>' : r.quest ? '<em>Find it in Quest 5!</em>' : `<button data-buy="${i}"${canPay(r.cost) ? '' : ' disabled'}>Buy: ${costText(r.cost)}</button>`}
     </div>`).join('');
 }
 // ---------- Space map (T) ----------
 const mapCv = $('map'), mapCtx = mapCv.getContext('2d');
-$('mapInfo').innerHTML = `<b>🗺️ Space map</b>  Press T to close<br>` +
+const MAP_INFO_HOME = `<b>🗺️ Space map</b>  Press T to close<br>` +
   `💰 yellow  🧊 blue  ${icon('ruby')} red  ${icon('emerald')} teal  💎 other colours  🏗️ your bases  🛸 Els and Oos  🔺 you`;
+$('mapInfo').innerHTML = MAP_INFO_HOME;
+function setMapInfo() {
+  $('mapInfo').innerHTML = galaxy === 0 ? MAP_INFO_HOME : `<b>🌌 ${GALAXIES[galaxy].name}</b>  Press T to close<br>${galaxy === 1 ? 'Our Solar System! 🌍 Earth is the blue one.' : 'Planets here are real and stay put.'} 🔺 you`;
+}
 function toggleMap(open = !mapOpen) {
+  if (open && questNo === 3) { say('Your map is lost! Find it first 🗺️'); return; }
+  if (open && warpOpen) closeWarp();
   mapOpen = open;
   $('mapBox').hidden = !open;
   document.body.classList.toggle('map-open', open);
-  if (open) drawMap();
+  if (open) { setMapInfo(); drawMap(true); }
 }
-let mapLayer = null, mapLayerAt = -1e9;
-function drawMap() {
+let mapLayer = null, mapLayerAt = -1e9, mapLayerMoving = false, mapLayerCount = -1;
+// One little saucer picture for each mood, so drawing a thousand of them is quick.
+const saucerPics = {};
+function mapSaucer(gifts, dpr) {
+  const key = gifts + '@' + dpr;
+  if (saucerPics[key]) return saucerPics[key];
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(16 * dpr); c.height = Math.ceil(12 * dpr);
+  const m = c.getContext('2d');
+  m.setTransform(dpr, 0, 0, dpr, 0, 0);
+  m.strokeStyle = '#2a2140';
+  m.lineWidth = 1.5;
+  m.fillStyle = moodColour(gifts / GIFTS_TO_FRIEND);
+  m.beginPath(); m.ellipse(8, 7, 6.5, 3.5, 0, 0, TAU); m.fill(); m.stroke();
+  m.beginPath(); m.arc(8, 4.5, 3, Math.PI, 0); m.fill(); m.stroke();
+  return saucerPics[key] = c;
+}
+let mapDrawAt = -1e9;
+function drawMap(force) {
   const dpr = Math.min(devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight;
   const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
   if (mapCv.width !== cw || mapCv.height !== ch) { mapCv.width = cw; mapCv.height = ch; }
   const top = 72, bottom = 64, R = Math.max(40, Math.min(w / 2 - 16, (h - top - bottom) / 2));
-  const cx = w / 2, cy = top + (h - top - bottom) / 2, k = R / (WORLD_R + 10);
+  const cx = w / 2, cy = top + (h - top - bottom) / 2, k = R / (GC.R + 10);
   const circle = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, TAU); };
   const now = performance.now();
-  if (!mapLayer || mapLayer.width !== cw || mapLayer.height !== ch || now - mapLayerAt > 500) {
-    if (!mapLayer) mapLayer = document.createElement('canvas');
+  // The saucers and you only move a little each frame on this small map, so about 20 pictures a second look the same.
+  if (!force && mapLayer && now - mapDrawAt < 45) return;
+  mapDrawAt = now;
+  if (!mapLayer || mapLayer.width !== cw || mapLayer.height !== ch || (now - mapLayerAt > 1500 && (movingPlanets > 0 || mapLayerMoving || planets.length !== mapLayerCount))) {   // nothing moved: the same picture will do
+    if (!mapLayer) { mapLayer = document.createElement('canvas'); $('mapBox').insertBefore(mapLayer, mapCv); }   // the planets sit on a canvas of their own, behind the one that moves
     if (mapLayer.width !== cw || mapLayer.height !== ch) { mapLayer.width = cw; mapLayer.height = ch; }
-    mapLayerAt = now;
+    mapLayerAt = now; mapLayerMoving = movingPlanets > 0; mapLayerCount = planets.length;
     const m = mapLayer.getContext('2d');
     m.setTransform(dpr, 0, 0, dpr, 0, 0);
     m.clearRect(0, 0, w, h);
@@ -1362,18 +2070,40 @@ function drawMap() {
     glow.addColorStop(1, 'rgba(255, 190, 70, 0)');
     m.fillStyle = glow; circle(m, cx, cy, sunR * 3); m.fill();
     m.fillStyle = '#ffd25a'; circle(m, cx, cy, sunR); m.fill();
+    // Little planets are squares, drawn one colour at a time (there are 11,000 of them).
+    const byColour = new Map();
     for (const p of planets) {
-      const x = cx + p.x * k, y = cy + p.z * k;
+      if (p.gal !== galaxy) continue;   // each galaxy shows only its own planets
+      const x = cx + (p.x - GC.x) * k, y = cy + (p.z - GC.z) * k;
+      if (p.gal) {
+        if (p.star) continue;
+        m.fillStyle = p.earth ? '#3a8ae0' : '#' + p.cols[1].toString(16).padStart(6, '0');
+        circle(m, x, y, Math.max(3, p.r * k * 1.6)); m.fill();
+        m.fillStyle = '#e6ebff'; m.font = '12px "Trebuchet MS", sans-serif'; m.textAlign = 'center'; m.textBaseline = 'bottom';
+        if (p.name !== 'The Moon') m.fillText(p.name, x, y - Math.max(3, p.r * k * 1.6) - 3);
+        continue;
+      }
       const d = Math.max(p.heat > 0 ? 1.6 : p.rock ? .7 : 1.3, p.r * k * 1.6);
-      m.fillStyle = p.heat > 0 ? '#ff9a3a' : '#' + p.cols[1].toString(16).padStart(6, '0');
-      if (d < 3) m.fillRect(x - d, y - d, d * 2, d * 2); else { circle(m, x, y, d); m.fill(); }
+      if (p.mapColFor !== p.cols[1]) { p.mapColFor = p.cols[1]; p.mapCol = '#' + p.cols[1].toString(16).padStart(6, '0'); }
+      const col = p.heat > 0 ? '#ff9a3a' : p.mapCol;
+      if (d < 3) {
+        let list = byColour.get(col);
+        if (!list) byColour.set(col, list = []);
+        list.push(x - d, y - d, d * 2);
+      } else { m.fillStyle = col; circle(m, x, y, d); m.fill(); }
+    }
+    for (const [col, list] of byColour) {
+      m.fillStyle = col;
+      m.beginPath();
+      for (let i = 0; i < list.length; i += 3) m.rect(list[i], list[i + 1], list[i + 2], list[i + 2]);
+      m.fill();
     }
     m.font = '18px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
     m.textAlign = 'center';
     m.textBaseline = 'bottom';
     m.strokeStyle = '#fff';
     for (const p of planets) {
-      if (!p.bases) continue;
+      if (!p.bases || galaxy !== 0) continue;
       const x = cx + p.x * k, y = cy + p.z * k, d = Math.max(2.5, p.r * k * 1.6);
       circle(m, x, y, d + 4); m.stroke();
       m.fillText('🏗️', x, y - d - 5);
@@ -1382,19 +2112,21 @@ function drawMap() {
   const m = mapCtx;
   m.setTransform(1, 0, 0, 1, 0, 0);
   m.clearRect(0, 0, cw, ch);
-  m.drawImage(mapLayer, 0, 0);
   m.setTransform(dpr, 0, 0, dpr, 0, 0);
   // Els and Oos: little saucers, yellow until they are your friends, then green.
-  m.strokeStyle = '#2a2140';
-  m.lineWidth = 1.5;
-  for (const al of aliens) {
-    const x = cx + al.x * k, y = cy + al.z * k;
-    m.fillStyle = moodColour(al.gifts / GIFTS_TO_FRIEND);
-    m.beginPath(); m.ellipse(x, y, 6.5, 3.5, 0, 0, TAU); m.fill(); m.stroke();
-    m.beginPath(); m.arc(x, y - 2.5, 3, Math.PI, 0); m.fill(); m.stroke();
+  if (galaxy === 0) {
+    for (const al of aliens) m.drawImage(mapSaucer(al.gifts, dpr), cx + al.x * k - 8, cy + al.z * k - 7, 16, 12);
+    // The thing you are looking for (the Golden Rocket, the Earth sign or the Warp Drive) shows as a little picture.
+    const pos = qpos[questNo];
+    if (pos && QTHING[questNo] && questNo !== 3) {
+      const px = cx + pos.x * k, py = cy + pos.z * k;
+      m.fillStyle = 'rgba(255, 215, 80, .35)'; circle(m, px, py, 11); m.fill();
+      m.font = '18px "Segoe UI Emoji", "Apple Color Emoji", sans-serif'; m.textAlign = 'center'; m.textBaseline = 'middle';
+      m.fillText(QTHING[questNo].mark, px, py);
+    }
   }
   // You are the red arrow, pointing the way you fly.
-  const sx = cx + ship.x * k, sy = cy + ship.z * k, dx = Math.sin(ship.heading), dy = Math.cos(ship.heading);
+  const sx = cx + (ship.x - GC.x) * k, sy = cy + (ship.z - GC.z) * k, dx = Math.sin(ship.heading), dy = Math.cos(ship.heading);
   const pulse = Math.sin(now / 200);
   m.strokeStyle = `rgba(255, 255, 255, ${.45 + .35 * pulse})`;
   m.lineWidth = 2;
@@ -1414,7 +2146,7 @@ $('rockets').onclick = e => {
   const b = e.target.closest('button[data-buy]');
   if (!b) return;
   const i = Number(b.dataset.buy), r = ROCKETS[i];
-  if (i <= G.rocket || !canPay(r.cost)) return;
+  if (i <= G.rocket || r.quest || !canPay(r.cost)) return;
   pay(r.cost);
   G.rocket = i;
   sizeShip();
@@ -1459,8 +2191,10 @@ addEventListener('pointercancel', stickUp);
 
 // ---------- Keys ----------
 addEventListener('keydown', e => {
+  if (current === 'wipe' && e.key === 'Enter') { e.preventDefault(); show('menu'); return; }   // Enter means No
   if (e.key === 'Escape') {
-    if (shopOpen) closeShop();
+    if (warpOpen) closeWarp();
+    else if (shopOpen) closeShop();
     else if (mapOpen) toggleMap(false);
     else if (current !== 'menu') show('menu');
     return;
@@ -1471,6 +2205,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyE') pressAction();
   if (e.code === 'KeyM') toggleSound();
   if (e.code === 'KeyT') toggleMap();
+  if (e.code === 'KeyH') toggleWarpPicker();
   if (e.code === 'KeyG') giveGift(nearAlien);
   if (e.code === 'KeyB') toggleAlienPause();
   if (e.code === 'KeyF') toggleExplore();
@@ -1551,6 +2286,7 @@ function makePlanet(o) {
     ring: o.ring ?? null, ringTilt: [(Math.random() - .5) * .7, (Math.random() - .5) * .7],
     treasure: o.treasure || treasureFromColour(o), stock: o.stock ?? o.gems ?? 0,
     spin: (.05 + Math.random() * .2) * (Math.random() < .5 ? -1 : 1), wob: 99, stamp: 0, gone: false, tiny: !!o.tiny,
+    fixed: !!(o.fixed || o.earth), mw: !!o.mw, gal: o.gal || 0, earth: !!o.earth, star: !!o.star, name: o.name || '',
     wakeT: 0, cells: null, gx0: 0, gx1: 0, gz0: 0, gz1: 0,
     group: null, mesh: null, glow: null, rings: [], baseModel: null,
   };
@@ -1562,11 +2298,13 @@ function makePlanet(o) {
 // Only planets near the camera (and planets with bases) get 3D shapes. The rest are just numbers until you fly close.
 function ensureVisual(p) {
   if (p.group || p.gone) return;
-  const mesh = new THREE.Mesh(sphereGeo, planetMaterial({ kind: p.kind, cols: p.cols }, p.heat, false, p.seed));
+  const mesh = new THREE.Mesh(sphereGeo, p.earth ? earthMaterial() : planetMaterial({ kind: p.kind, cols: p.cols }, p.heat, p.star, p.seed));
   const group = new THREE.Group();
   group.add(mesh);
   p.group = group; p.mesh = mesh;
   p.glow = addGlowSprite(group, 0xff7a20, 0);
+  if (p.earth) { p.atmo = addGlowSprite(group, 0x5aa8ff, .55); p.atmo.scale.setScalar(p.r * 2.7); }   // a soft blue glow of air
+  if (p.star) { p.atmo = addGlowSprite(group, p.cols[1] || 0xffa63c, .9); p.atmo.scale.setScalar(p.r * 6.5); }
   group.position.set(p.x, 0, p.z);
   scene.add(group);
   buildRings(p);
@@ -1578,6 +2316,7 @@ function dropVisual(p) {
   scene.remove(p.group);
   p.mesh.material.dispose();
   p.glow.material.dispose();
+  if (p.atmo) { p.atmo.material.dispose(); p.atmo = null; }
   for (const m of p.rings) m.material.dispose();
   if (p.baseModel) p.baseModel.gem.material.dispose();
   p.group = p.mesh = p.glow = p.baseModel = null;
@@ -1684,7 +2423,9 @@ function crash(a, b) {
     applyLook(big, { kind: small.kind, cols: small.cols, treasure: small.treasure, seed: small.seed });
     setRings(big, small.ring);
   } else if (!keep) {
-    applyLook(big, randomLook());   // the colour it will have once it has cooled
+    // The colour it will have once it has cooled. Near you, it is a colour you need, if you need one.
+    const need = Math.hypot(big.x - ship.x, big.z - ship.z) < NEED_RANGE ? neededTreasure() : [];
+    applyLook(big, randomLook(need.length ? need[Math.floor(Math.random() * need.length)] : null));
     setRings(big, big.r > 3.8 && Math.random() < .5 ? new THREE.Color().setHSL(Math.random(), .45, .7).getHex() : null);
   }
   // Treasure waiting in a base: the same kind stays there, any other kind goes straight to you.
@@ -1891,7 +2632,8 @@ function updateHud() {
   setText('emeraldCount', fmt(G.emerald));
   setText('baseCount', `🏗️ ${n} base${n === 1 ? '' : 's'}`);
   setText('madeCount', `🪐 ${G.made} made`);
-  const friends = aliens.filter(al => al.friend).length;
+  let friends = 0;
+  for (const al of aliens) if (al.friend) friends++;
   setText('friendCount', `💚 ${friends} friend${friends === 1 ? '' : 's'}`);
   setText('rocketName', `🚀 ${ROCKETS[G.rocket].name}`);
   const a = $('action'), p = near;
@@ -1907,7 +2649,10 @@ function updateHud() {
       off = G[al.want] < GIFT;
     }
   } else if (p) {
-    if (p.bases) {
+    if (p.fixed) {
+      text = p.earth ? '🌍 This is Earth! People live here' : `🪐 ${p.name}: a real planet`;
+      off = true;
+    } else if (p.bases) {
       text = `🛒 Rocket shop (E)  ${icon(p.treasure)} ${fmt(p.stock)} here`;
     } else if (p.heat > 0) {
       text = '🔥 Too hot! Wait for it to cool';
@@ -1918,22 +2663,35 @@ function updateHud() {
       off = G.gems < cost;
     }
   }
-  a.hidden = !text || shopOpen;
+  a.hidden = !text || shopOpen || warpOpen;
   if (a.dataset.html !== text) { a.dataset.html = text; a.innerHTML = text; }
   a.disabled = off;
+  updateQuestPanel();
 }
 
 // ---------- Saving ----------
 function saveGame() {
   if (!gameReady) return;
   const round = n => Math.round(n * 100) / 100;
-  store.set('save', JSON.stringify({
-    v: 2, t: Date.now(), aliensPaused, friendsExplore, gems: round(G.gems), gold: round(G.gold), ice: round(G.ice), ruby: round(G.ruby), emerald: round(G.emerald), rocket: G.rocket, made: G.made, ship: [round(ship.x), round(ship.z)],
+  const head = JSON.stringify({
+    v: 2, t: Date.now(), qu: questSave(), aliensPaused, friendsExplore, gems: round(G.gems), gold: round(G.gold), ice: round(G.ice), ruby: round(G.ruby), emerald: round(G.emerald), rocket: G.rocket, made: G.made, ship: [round(ship.x), round(ship.z)],
     aliens: aliens.map(al => ({ kind: al.kind, x: round(al.x), z: round(al.z), gifts: al.gifts, friend: al.friend, want: al.want })),
-    // Each planet is a short list of numbers, so 10,000 planets fit in the save.
-    planets: planets.map(p => [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, round(p.vx), round(p.vz), round(p.r), round(p.heat),
-      Math.round(p.seed * 10) / 10, p.kind, p.cols[0], p.cols[1], p.cols[2], p.rock ? 1 : 0, p.bases, p.treasure, round(p.stock), p.ring ?? -1, p.tiny ? 1 : 0]),
-  }));
+  });
+  // Each planet is a short list of numbers, so 10,000 planets fit in the save.
+  // A planet that sits still has the same text as last time, so it is only written out again after it has moved.
+  const rows = [];
+  for (let i = 0; i < planets.length; i++) {
+    const p = planets[i];
+    if (p.mw) continue;   // the Milky Way is built again each time
+    const live = p.bases > 0 || p.heat > 0 || awake(p);
+    if (p.row === undefined || live || p.rowLive) {
+      p.row = JSON.stringify([Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, round(p.vx), round(p.vz), round(p.r), round(p.heat),
+        Math.round(p.seed * 10) / 10, p.kind, p.cols[0], p.cols[1], p.cols[2], p.rock ? 1 : 0, p.bases, p.treasure, round(p.stock), p.ring ?? -1, p.tiny ? 1 : 0]);
+      p.rowLive = live;
+    }
+    rows.push(p.row);
+  }
+  store.set('save', head.slice(0, -1) + ',"planets":[' + rows.join(',') + ']}');
 }
 // Every frame (about 60 times a second), a tiny save of your progress: treasure, rocket, planets made and where you are.
 // A frame (about 16 ms) is as often as the game changes anything.
@@ -1941,16 +2699,24 @@ function saveGame() {
 function quickSave() {
   store.set('quick', JSON.stringify({ t: Date.now(),
     g: [G.gems, G.gold, G.ice, G.ruby, G.emerald].map(n => Math.round(n * 100) / 100).concat(G.rocket, G.made),
-    s: [Math.round(ship.x * 10) / 10, Math.round(ship.z * 10) / 10] }));
+    s: [Math.round(ship.x * 10) / 10, Math.round(ship.z * 10) / 10], qu: questSave() }));
+}
+// Quest number, bases for quest 2, gold for quest 4, where the quest things float (map, golden rocket, Earth sign, warp drive),
+// which galaxy you are in, whether you have the warp drive, and where you left home. Older saves are shorter.
+function questSave() {
+  const r = n => Math.round(n * 100) / 100, at = n => (qpos[n] ? [r(qpos[n].x), r(qpos[n].z)] : [null, null]);
+  return [questNo, quest2Bases, r(quest4Gold), ...at(3), ...at(5), ...at(6), ...at(7), galaxy, warpOwned ? 1 : 0,
+    othroPos ? r(othroPos.x) : null, othroPos ? r(othroPos.z) : null, 3];
 }
 function planetFromSave(a) {
   return { x: a[0], z: a[1], vx: a[2], vz: a[3], r: a[4], heat: a[5], seed: a[6], kind: a[7], cols: [a[8], a[9], a[10]],
     rock: a[11] === 1, bases: a[12], treasure: a[13], stock: a[14], ring: a[15] === -1 ? null : a[15], tiny: a[16] === 1 };
 }
 function loadGame() {
-  let s;
+  let s, qu = null;
   try { s = JSON.parse(store.get('save')); } catch (e) { return false; }
   if (!s || (s.v !== 1 && s.v !== 2) || !Array.isArray(s.planets)) return false;
+  if (Array.isArray(s.qu)) qu = s.qu;
   G.gems = +s.gems || 0;
   if (s.aliensPaused) toggleAlienPause(true);
   if (s.friendsExplore) toggleExplore(true);
@@ -1969,6 +2735,7 @@ function loadGame() {
       G.rocket = Math.min(Math.max(q.g[5] | 0, 0), ROCKETS.length - 1);
       G.made = q.g[6] | 0;
       ship.x = +q.s[0] || 0; ship.z = +q.s[1] || 0;
+      if (Array.isArray(q.qu)) qu = q.qu;
     }
   } catch (e) { /* no quick save yet */ }
   for (const o of s.planets) makePlanet(Array.isArray(o) ? planetFromSave(o) : o);
@@ -1976,6 +2743,28 @@ function loadGame() {
   fillTiny();
   if (Array.isArray(s.aliens)) for (const o of s.aliens) if (SPECIES[o.kind]) makeAlien(o);
   spawnAliens();
+  if (qu) {
+    questNo = Math.min(Math.max(qu[0] | 0, 1), QUESTS + 1);
+    quest2Bases = Math.max(qu[1] | 0, 0);
+    quest4Gold = Math.max(+qu[2] || 0, 0);
+    const pos = (x, z) => (typeof x === 'number' && typeof z === 'number' && Number.isFinite(x + z) ? { x, z } : null);
+    // A save that had finished the 4 first quests (it stored 5) is now simply at Quest 5.
+    for (const [n, i] of [[3, 3], [5, 5], [6, 7], [7, 9]]) if (questNo === n) qpos[n] = pos(qu[i], qu[i + 1]) || { ...placeFar(QTHING[n].dist[0], QTHING[n].dist[1], 14) };
+    warpOwned = qu[12] === 1 || questNo > 7;
+    othroPos = pos(qu[13], qu[14]);
+    const gi = qu[11] | 0;
+    if (gi > 0 && GALAXIES[gi]) {
+      GALAXIES[gi].build && !galaxyBuilt[gi] && (galaxyBuilt[gi] = true, GALAXIES[gi].build());
+      const g = GALAXIES[gi];
+      applyGalaxy(gi);
+      if (Math.hypot(ship.x - g.cx, ship.z - g.cz) > g.R) { ship.x = g.cx + g.arrive[0]; ship.z = g.cz + g.arrive[1]; }
+      awayNoted = true;
+    }
+    updateWarpUi();
+  } else {
+    // A save from before the quests: start at Quest 1, and the Els and Oos are strangers again (once).
+    for (const al of aliens) { al.friend = false; al.gifts = 0; al.job = null; al.slot = null; }
+  }
   sizeShip();
   $('hint').hidden = G.made > 0 && baseTotal() > 0;
   return true;
@@ -1989,6 +2778,7 @@ function stepShip(dt) {
   let ax = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), az = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
   if (ax && az) { ax *= Math.SQRT1_2; az *= Math.SQRT1_2; }
   if (stick.on && (stick.x || stick.z)) { ax = stick.x; az = stick.z; }   // phones: the touch stick
+  if (warping) ax = az = 0;
   const moving = ax !== 0 || az !== 0;
   const k = 1 - Math.exp(-dt * (moving ? 3 : 1.2));
   ship.vx += (ax * R.speed - ship.vx) * k;
@@ -1998,19 +2788,20 @@ function stepShip(dt) {
 
   const r = shipR();
   // The sun is solid.
-  let d = Math.hypot(ship.x, ship.z) || 1;
-  if (d < SUN_R + r) {
-    ship.x *= (SUN_R + r) / d; ship.z *= (SUN_R + r) / d;
-  } else if (d > WORLD_R + 10) {
-    const back = Math.min((d - WORLD_R - 10) * 8, 200) * dt;
-    ship.vx -= ship.x / d * back; ship.vz -= ship.z / d * back;
+  const gx = ship.x - GC.x, gz = ship.z - GC.z;
+  let d = Math.hypot(gx, gz) || 1;
+  if (galaxy === 0 && d < SUN_R + r) {
+    ship.x = GC.x + gx * (SUN_R + r) / d; ship.z = GC.z + gz * (SUN_R + r) / d;
+  } else if (d > GC.R + 10) {
+    const back = Math.min((d - GC.R - 10) * 8, 200) * dt;
+    ship.vx -= gx / d * back; ship.vz -= gz / d * back;
   }
   // Bump planets out of the way. Planets with a base stay still.
   nearPlanets(ship.x, ship.z, r + 1, p => {
     const dx = p.x - ship.x, dz = p.z - ship.z, dist = Math.hypot(dx, dz) || .001, min = p.r + r;
     if (dist >= min) return;
     const nx = dx / dist, nz = dz / dist, inward = (ship.vx - p.vx) * nx + (ship.vz - p.vz) * nz;
-    if (p.bases) {
+    if (p.bases || p.fixed) {
       ship.x -= nx * (min - dist); ship.z -= nz * (min - dist);
       if (inward > 0) { ship.vx -= nx * inward; ship.vz -= nz * inward; }
       return;
@@ -2039,12 +2830,13 @@ function stepShip(dt) {
   ship.flameGlow.scale.setScalar(.6 + flameLevel * 2.2);
 }
 
+let freePlanets = 0, movingPlanets = 0;   // planets without a base, counted in stepPlanets
 function stepPlanets(dt) {
   let pair = null;
   for (const a of planets) {
-    if (!awake(a)) continue;
+    if (a.fixed || !awake(a)) continue;   // real planets of other galaxies never move
     nearPlanets(a.x, a.z, a.r + PULL_RANGE + 2, b => {
-      if (b === a || (awake(b) && b.id < a.id)) return;   // each pair once
+      if (b.fixed || b === a || (awake(b) && b.id < a.id)) return;   // each pair once
       const dx = b.x - a.x, dz = b.z - a.z, d2 = dx * dx + dz * dz, touch = a.r + b.r, reach = touch + PULL_RANGE;
       if (d2 > reach * reach) return;
       const d = Math.sqrt(d2) || .001, nx = dx / d, nz = dz / d;
@@ -2058,9 +2850,17 @@ function stepPlanets(dt) {
   if (pair) crash(pair[0], pair[1]);
 
   const damp = Math.exp(-dt * .35);
+  const grow = 1 - Math.exp(-dt * 5);
+  let freeCount = 0, moving = 0;
   for (const p of planets) {
+    if (!p.bases && !p.fixed) freeCount++;
+    if (p.fixed) continue;
+    // A planet that sleeps, is cool, fully grown and has no 3D shape has nothing to do. (Thousands of them.)
+    if (p.vx === 0 && p.vz === 0 && p.wakeT <= 0 && p.heat <= 0 && !p.bases && !p.group && p.wob > 20 && p.shown === p.r) continue;
+    if (p.vx !== 0 || p.vz !== 0 || p.heat > 0 || p.wakeT > 0) moving++;
     p.wob += dt;
-    p.shown += (p.r - p.shown) * (1 - Math.exp(-dt * 5));
+    p.shown += (p.r - p.shown) * grow;
+    if (Math.abs(p.r - p.shown) < 1e-4) p.shown = p.r;
     if (p.wakeT > 0) p.wakeT -= dt;
     gridPlace(p);
     if (!p.bases) {
@@ -2092,6 +2892,7 @@ function stepPlanets(dt) {
       p.stock = Math.min(room(p), p.stock + digRate(p) * dt);
     }
   }
+  freePlanets = freeCount; movingPlanets = moving;
 }
 
 function stepNear(dt) {
@@ -2107,6 +2908,7 @@ function stepNear(dt) {
     const take = Math.min(ROCKETS[G.rocket].grab * dt, best.stock);
     best.stock -= take;
     G[best.treasure] += take;
+    if (best.treasure === 'gold') earned('gold', take);
     const from = BASE_UP.clone().multiplyScalar(best.r);
     const fx1 = best.x + from.x, fy = from.y, fz = best.z + from.z, life = .45;
     const [cr, cg, cb] = TREASURE[best.treasure].spark;
@@ -2152,17 +2954,17 @@ function drawPlanet(p, dt) {
 function stepWorld(dt) {
   dt = Math.min(Math.max(dt, 0), .05);   // time never goes backwards
   time += dt;
+  stepWarp(dt);
   stepShip(dt);
-  stepPlanets(dt);
+  if (galaxy === 0) stepPlanets(dt);   // when you are away in another galaxy, home waits and so do your friends
   stepNear(dt);
-  stepAliens(dt);
-  stepBefriend(dt);
+  if (galaxy === 0) { stepAliens(dt); stepBefriend(dt); }
+  stepQuest(dt);
   stepSparks(dt);
   stepFx(dt);
   updateVisuals(dt);
-  let free = 0;
-  for (const p of planets) if (!p.bases) free++;
-  if (free < FREE_PLANETS && time > nextPlanetAt) { spawnBaby(); nextPlanetAt = time + 1.5; }
+  const free = freePlanets;
+  if (galaxy === 0 && free < FREE_PLANETS && time > nextPlanetAt) { spawnBaby(); nextPlanetAt = time + 1.5; }
   if (time > nextSaveAt) { nextSaveAt = time + 10; saveGame(); }
 }
 
@@ -2174,7 +2976,7 @@ function tick(now) {
   const dt = Math.min(Math.max((now - last) / 1000, 0), .05);
   last = now;
 
-  if (!shopOpen) stepWorld(dt);
+  if (!shopOpen && !warpOpen) stepWorld(dt);
   quickSave();
   if (now > nextHudAt) { nextHudAt = now + 100; updateHud(); }
 
@@ -2190,12 +2992,18 @@ function tick(now) {
   camera.position.set(focus.x + (Math.random() - .5) * shake, h, focus.z + back + (Math.random() - .5) * shake);
   camera.lookAt(focus.x, 0, focus.z);
   starField.position.copy(camera.position);
+  if (skyArt) {   // it hangs far below the game, straight ahead of the camera, a little to the right
+    const k = 2400 / Math.hypot(46 * zoom, 28.5 * zoom);
+    skyArt.position.set(camera.position.x + 650, camera.position.y - 46 * zoom * k, camera.position.z - 28.5 * zoom * k + 250);
+  }
   sun.userData.mesh.material.uniforms.uTime.value = time;
   sun.userData.mesh.rotation.y += dt * .03;
 
-  drawAliens();
+  if (galaxy === 0) drawAliens();
   renderer.render(scene, camera);
   if (mapOpen) drawMap();
+  questArrow();
+  drawWarp();
 }
 
 window.solar = { planets, ship, G, ROCKETS, COOL_TIME, WORLD_R, TINY_PLANETS, removePlanet, get shownCount() { return shownPlanets.size; },
@@ -2205,6 +3013,15 @@ window.solar = { planets, ship, G, ROCKETS, COOL_TIME, WORLD_R, TINY_PLANETS, re
   makeStranger(al) { al.friend = false; al.gifts = 0; al.job = null; al.slot = null; },
   facePixel(al) { const c = FACE_CELL(al.kind, al.gifts); return [...atlasCanvas.getContext('2d').getImageData((c % 4) * 128 + 64, Math.floor(c / 4) * 128 + 87, 1, 1).data]; }, BOOM_VOLUME, renderBoom, saveGame,
   step(dt) { stepWorld(dt); }, quickSave,
+  get quest() { return questNo; }, get quest2Bases() { return quest2Bases; }, get quest4Gold() { return quest4Gold; }, get lostMap() { return qpos[3] || null; },
+  get questTarget() { return questTarget; }, earned, questSave, QUEST4_GOLD, MAP_LOST_DIST, questEvent, qpos, GALAXIES, GOLDEN, warpTo, toggleWarpPicker,
+  get galaxy() { return galaxy; }, get warpOwned() { return warpOwned; }, get warping() { return !!warping; }, get warpOpen() { return warpOpen; }, GC, earthPlanet,
+  setQuest(n) {
+    if (n > QUESTS) { questNo = QUESTS + 1; for (const k of [3, 5, 6, 7]) { delete qpos[k]; removeQThing(k); } questHideAt = 0; updateQuestPanel(); }
+    else startQuest(n, false);
+    if (n >= 8) warpOwned = true;
+    updateWarpUi();
+  },
   advance(seconds) { for (let t = 0; t < seconds; t += 1 / 30) stepWorld(1 / 30); updateHud(); } };
 
 // ---------- Start ----------
@@ -2219,6 +3036,19 @@ for (const part of location.hash.slice(1).split(',')) {
   if (k === 'settings') show('settings');
 }
 requestAnimationFrame(frame);
+
+// While you are on the menu, get the game ready quietly, so Play starts straight away (it used to stop for half a second).
+function preloadGame() {
+  if (gameReady || current !== 'menu') return;
+  try {
+    if (!initGame()) return;
+    camera.position.set(ship.x, 46, ship.z + 28.5);
+    camera.lookAt(ship.x, 0, ship.z);
+    updateVisuals(0);
+    renderer.render(scene, camera);   // one hidden picture, so the planet shaders are compiled
+  } catch (e) { /* Play will try again */ }
+}
+if (current === 'menu') setTimeout(preloadGame, 700);
 </script>
 </body>
 </html>

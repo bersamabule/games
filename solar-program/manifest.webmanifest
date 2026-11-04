@@ -4,7 +4,7 @@
   "id": "./",
   "start_url": "./",
   "scope": "./",
-  "description": "A space game! Fly your rocket (WASD, or drag your finger on a phone), bump planets together to crash them into hot new planets, build bases that dig treasure, buy bigger rockets, and make 1,000 Els and Oos your friends. T shows the space map.",
+  "description": "A space game! Fly your rocket (WASD, or drag your finger on a phone), bump planets together to crash them into hot new planets, build bases that dig treasure, buy bigger rockets, and make 1,000 Els and Oos your friends. Do 8 quests, then press H to warp to 12 galaxies. T shows the space map.",
   "lang": "en",
   "display": "fullscreen",
   "display_override": [
