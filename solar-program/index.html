@@ -85,6 +85,9 @@
   #questBanner { position: fixed; left: 0; right: 0; top: 36%; text-align: center; pointer-events: none; opacity: 0;
     font-size: clamp(30px, 7vw, 76px); font-weight: bold; color: #fff2b0; text-shadow: 0 0 22px #ff9a00, 0 4px 0 #8a4a00; }
   #questBanner small { display: block; font-size: .45em; color: #fff; text-shadow: 0 2px 8px #000; }
+  #raceHud { position: fixed; left: 0; right: 0; top: 84px; text-align: center; pointer-events: none; font-size: clamp(18px, 3.6vw, 30px); font-weight: bold;
+    color: #fff2b0; text-shadow: 0 2px 8px #000, 0 0 14px #ff9a00; }
+  #raceHud[hidden] { display: none; }
   #questBanner.show { animation: qpop 3s ease-out forwards; }
   @keyframes qpop { 0% { opacity: 0; transform: scale(.4); } 12% { opacity: 1; transform: scale(1.15); } 22% { transform: scale(1); }
     80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
@@ -186,6 +189,7 @@
   <div id="quest" hidden></div>
   </div>
   <div id="questBanner"></div>
+  <div id="raceHud" hidden></div>
   <div id="questArrow"><span class="ar">➤</span><span class="lb"></span></div>
   <div id="hudButtons">
     <button id="exploreBtn">💥 Explore (F)</button>
@@ -430,10 +434,17 @@ function frame(ms) {
 const WORLD_R = 4000;       // how far the planets can go (95 at first, 400 next, now 10 times wider for 10,000 more planets)
 const SUN_R = 13;
 // The questline: 4 quests in a row.
-const QUESTS = 8;
+const QUESTS = 11;
 const QUEST_FRIENDS = 4;      // finishing this quest makes every El and Oo your friend (and they are friends on every Play from then on)
-const QUEST_REWARD = [0, 50, 100, 200, 0, 0, 0, 0, 500];   // 💎 you get for finishing quest 1 to 8 (prizes: 4 the friends, 5 the Golden Rocket, 7 the Warp Drive)
-const QUEST_PRIZE = { 4: 'All the aliens are your friends now! 💖', 5: 'The Golden Rocket is yours! 🚀✨', 6: 'Oh no! You can not get to Earth. It is in another galaxy!', 7: 'The Warp Drive is yours! Press H 🌀' };
+const QUEST_REWARD = [0, 50, 100, 200, 0, 0, 0, 0, 500, 300, 500, 0];   // 💎 you get for finishing quest 1 to 11 (prizes: 4 the friends, 5 the Golden Rocket, 7 the Warp Drive)
+const STATION_COST = { gems: 500, gold: 200, ice: 200 };   // quest 11: the space station around Earth
+const RACE_HOOPS = 8, RACE_LAPS = 2;   // quest 10: hoops around Saturn, and laps
+const WHIZZ_SPEED = .85;     // Whizz flies this much of your rocket's top speed
+const HOOP_HIT = 11;         // fly this close to a hoop to pass it
+const RACE_GAP = 22;         // the hoops float this far outside Saturn's rings
+const START_NEAR = 30;       // how close to Whizz you must be to press E and race
+const QUEST_PRIZE = { 4: 'All the aliens are your friends now! 💖', 5: 'The Golden Rocket is yours! 🚀✨', 6: 'Oh no! You can not get to Earth. It is in another galaxy!', 7: 'The Warp Drive is yours! Press H 🌀',
+  8: 'You found Earth! 🌍', 9: 'Your Moon base digs 💎!', 10: 'You beat Whizz! 🏆' };
 const GOLD_DIST = [700, 1100];   // quest 5: the Golden Rocket floats this far from the rocket
 const SIGN_DIST = [600, 900];    // quest 6: the Earth signpost
 const WARP_DIST = [700, 1100];   // quest 7: the Warp Drive
@@ -680,7 +691,7 @@ const BASE_TILT = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,
 const sparks = { i: 0, data: [], points: null, pos: null, col: null };
 
 const shipR = () => 1.2 * ROCKETS[G.rocket].size;
-const baseTotal = () => planets.reduce((n, p) => n + p.bases, 0);
+const baseTotal = () => planets.reduce((n, p) => n + (p.fixed ? 0 : p.bases), 0);   // the Moon base is free and does not make the next base cost more
 // If you need a yellow, red, teal or blue planet, crashes near you make one.
 // You need one when quest 4 wants gold, or the next rocket costs gold, ice, rubies or emeralds you don't have enough of,
 // and you don't have a base on a planet of that colour yet.
@@ -688,6 +699,7 @@ const NEED_RANGE = 250;   // crashes this close to your rocket make the colour y
 function neededTreasure() {
   const need = new Set();
   if (questNo === QUEST_FRIENDS && quest4Gold < QUEST4_GOLD) need.add('gold');
+  if (questNo === 11 && !stationBuilt) { if (G.gold < STATION_COST.gold) need.add('gold'); if (G.ice < STATION_COST.ice) need.add('ice'); }
   const next = ROCKETS[G.rocket + 1];
   if (next && !next.quest) for (const [t, n] of Object.entries(next.cost)) if (t !== 'gems' && G[t] < n) need.add(t);
   if (need.size) for (const p of planets) if (p.bases && need.delete(p.treasure) && !need.size) break;
@@ -948,8 +960,8 @@ function addBaseModel(p, instant) {
   p.baseModel = { m, lamp, drill, gem, grow: instant ? 1 : 0 };
 }
 
-function buildBase(p) {
-  G.gems -= basePrice();
+function buildBase(p, free) {
+  if (!free) G.gems -= basePrice();
   ensureVisual(p);
   p.bases = 1;
   p.vx = p.vz = 0;
@@ -958,16 +970,23 @@ function buildBase(p) {
   burst(p.x + up.x, up.y, p.z + up.z, 50, 12, [1, .85, .4]);
   chime(660, .22); chime(990, .16, .12);
   saveGame();
-  say('🏗️ You built a base!');
+  say(free ? '🌙 You built a Moon base!' : '🏗️ You built a base!');
+  mapLayerCount = -1;
   questEvent('base', p);
 }
 
 // E key, or the button at the bottom.
 function pressAction() {
   if (shopOpen) { closeShop(); return; }
+  if (whizzNear()) { startRace(); return; }
   const p = near;
   if (!p) return;
-  if (p.fixed) { say(p.earth ? 'This is Earth! People live here 🌍' : `This is ${p.name}! A real planet 🌍`); return; }
+  if (p.name === 'The Moon' && !p.bases) {   // the Moon is the one real planet you can build on, and it is free
+    if (questNo === 9) buildBase(p, true); else say(questNo < 9 ? 'The Moon! Finish your quests first 🌙' : 'This is the Moon! A real planet 🌙');
+    return;
+  }
+  if (p.earth && questNo === 11 && !stationBuilt) { buildStation(); return; }
+  if (p.fixed && !p.bases) { say(p.earth ? 'This is Earth! People live here 🌍' : `This is ${p.name}! A real planet 🌍`); return; }
   if (p.bases) { openShop(); return; }
   if (p.heat > 0) { say('🔥 Too hot! Wait for it to cool.'); return; }
   const cost = basePrice();
@@ -1512,6 +1531,7 @@ const QTHING = {
   7: { dist: WARP_DIST,     mark: '⚡', pick: MAP_PICKUP + 3, glow: 0x7a6aff, beam: 0x9a8aff, sparkle: [.6, .7, 1.7], build: buildWarpShape },
 };
 const QUEST_START_SAY = {
+  9: '🌙 Build a base on the Moon!', 10: '🏁 Find Whizz near Saturn!', 11: '🛰️ Build a space station around Earth!',
   3: '😱 Oh no! Your map is lost! Find it!', 5: '✨ A Golden Rocket is out there! Find it!',
   6: '🌍 Let us go home to Earth!', 7: '⚡ Find the Warp Drive!', 8: '🌀 Press H to warp!',
 };
@@ -1634,11 +1654,11 @@ function completeQuest() {
   G.gems += reward;
   questConfetti(); questChime();
   if (n < QUESTS) {
-    questBanner('⭐ Quest complete!', QUEST_PRIZE[n] || (reward ? `+${reward} 💎` : ''));
+    questBanner('⭐ Quest complete!', (QUEST_PRIZE[n] || '') + (reward ? `  +${reward} 💎` : ''));
     startQuest(n + 1, true);
     if (n === QUEST_FRIENDS) befriendAll();
   } else {
-    questBanner('🎉 All quests done!', `You found Earth! 🌍  +${reward} 💎`);
+    questBanner('🎉 All quests done!', 'Your space station circles Earth! 🛰️');
     chime(1319, .16, .5); chime(1568, .16, .62);
     startQuest(QUESTS + 1);
     questHideAt = performance.now() + QUEST_DONE_SHOW * 1000;
@@ -1653,7 +1673,7 @@ function questEvent(kind, p) {
       else say('That is not a grey planet. Try a grey one 🌑');
     } else if (questNo === 2) {
       if (++quest2Bases >= QUEST2_BASES) completeQuest();
-    }
+    } else if (questNo === 9 && p.name === 'The Moon') completeQuest();
   } else if (kind === 'thing') {
     const n = questNo;
     if (n === 3) { completeQuest(); say('You found your map! 🗺️'); }
@@ -1725,6 +1745,11 @@ function updateQuestPanel() {
     if (questNo === 7) html += row('qk', 'Find the Warp Drive ⚡') + row('qh', 'Follow the arrow!');
     if (questNo === 8) html += row('qk', 'Warp to the Milky Way and find Earth 🌍')
       + row('qh', galaxy === 0 ? 'Press H to warp! 🌀' : 'Fly to Earth, the blue planet!');
+    const away = galaxy !== 1 ? row('qh', 'Press H and warp to the Milky Way! 🌀') : '';
+    if (questNo === 9) html += row('qk', 'Build a base on the Moon 🌙') + (away || row('qh', 'Fly close to the Moon and press E.'));
+    if (questNo === 10) html += row('qk', 'Saturn race 🏁') + (away || row('qh', race.state === 'go' ? 'Pass every hoop before Whizz!' : 'Find Whizz near Saturn and press E.'));
+    if (questNo === 11) html += row('qk', 'Build a space station around Earth 🛰️') + row('qp', `${STATION_COST.gems} 💎  ${STATION_COST.gold} 💰  ${STATION_COST.ice} 🧊`)
+      + (away || row('qh', 'Fly close to Earth and press E.'));
   }
   if (el.dataset.html !== html) { el.dataset.html = html; el.innerHTML = html; el.className = cls; }
   el.hidden = !html;
@@ -1738,8 +1763,12 @@ function questArrow() {
     const now = performance.now();
     if (QTHING[questNo]) {
       questTarget = galaxy === 0 ? qpos[questNo] : null; mark = QTHING[questNo].mark;
-    } else if (questNo === 8) {
-      questTarget = galaxy === 1 ? earthPlanet() : null; mark = '🌍';
+    } else if (questNo === 8 || questNo === 11) {
+      questTarget = galaxy === 1 ? earthPlanet() : null; mark = questNo === 8 ? '🌍' : '🛰️';
+    } else if (questNo === 9) {
+      questTarget = galaxy === 1 ? moonP : null; mark = '🌙';
+    } else if (questNo === 10) {
+      questTarget = galaxy === 1 && race.group ? (race.state === 'go' ? race.hoops[race.idx % RACE_HOOPS].position : race.whizz.position) : null; mark = race.state === 'go' ? '⭕' : '🏁';
     } else if (galaxy === 0 && (questNo === 1 || (questNo === 4 && !hasGoldBase()))) {
       if (now > questScanAt) {
         questScanAt = now + 250;
@@ -1782,6 +1811,186 @@ function questArrow() {
   el.firstChild.style.transform = `rotate(${Math.atan2(uz, ux)}rad)`;
   const lb = `${mark} ${fmt(dist)}`;
   if (el.lastChild.textContent !== lb) el.lastChild.textContent = lb;
+}
+
+// ---------- Moon base, Saturn race and the space station (all in the Milky Way) ----------
+let moonP = null, stationBuilt = false, stationGroup = null;
+const moonState = { bases: 0, stock: 0 };   // the Moon base, kept here until the Milky Way is built
+const race = { state: 'idle', group: null, hoops: [], whizz: null, cx: 0, cz: 0, R: 0, a0: 0, aStart: 0, t: 0, travel: 0, idx: 0, shown: -1 };
+const raceTotal = () => TAU / 16 + (RACE_HOOPS * RACE_LAPS - 1) * TAU / RACE_HOOPS;   // how far round the loop the last hoop is, from the start line
+
+function stepMoon(dt) {
+  if (moonP && moonP.bases) moonP.stock = Math.min(room(moonP), moonP.stock + digRate(moonP) * dt);
+}
+function buildWhizz() {
+  const std = (color, rough, metal, extra) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+  const g = new THREE.Group(), body = std(0xff8c3a, .3, .4, { emissive: 0x401800 }), white = std(0xffffff, .3, .2, { emissive: 0x303030 });
+  const disc = new THREE.Mesh(new THREE.SphereGeometry(4, 32, 16), body);
+  disc.scale.set(1, .3, 1);
+  g.add(disc);
+  for (const y of [-.4, .6]) {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(y < 0 ? 3.95 : 3.7, .32, 10, 40), white);
+    t.rotation.x = Math.PI / 2; t.position.y = y * 1.2 + .2;
+    g.add(t);
+  }
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.3, 24, 12, 0, TAU, 0, Math.PI / 2), std(0x9adfff, .1, .2, { emissive: 0x1a5f9a, transparent: true, opacity: .85 }));
+  dome.position.y = .9;
+  g.add(dome);
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(32, 32, 30, 0, TAU); x.fill();
+  x.fillStyle = '#111'; x.beginPath(); x.arc(38, 32, 14, 0, TAU); x.fill();
+  const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false }));
+  eye.scale.setScalar(2.4); eye.position.y = 2.2;
+  g.add(eye);
+  for (const sx of [-1, 1]) { const h = new THREE.Mesh(new THREE.ConeGeometry(.45, 1.6, 10), body); h.position.set(sx * 1.2, 2.9, 0); g.add(h); }
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(.3, 1.8, 2.6), std(0xd8261f, .4, .2));   // a racing tail fin
+  fin.position.set(0, 1.2, -3.4);
+  g.add(fin);
+  addGlowSprite(g, 0xffb050, .5).scale.setScalar(14);
+  return g;
+}
+function buildRace() {
+  const sat = planets.find(p => p.name === 'Saturn');
+  if (!sat) return;
+  race.cx = sat.x; race.cz = sat.z; race.R = sat.r * 2.4 + RACE_GAP;
+  race.a0 = Math.PI * .25; race.aStart = race.a0 - TAU / (RACE_HOOPS * 2);
+  const g = new THREE.Group();
+  race.hoops = [];
+  for (let k = 0; k < RACE_HOOPS; k++) {
+    const a = race.a0 + k * TAU / RACE_HOOPS;
+    const h = new THREE.Mesh(new THREE.TorusGeometry(9, .9, 12, 44), new THREE.MeshBasicMaterial({ color: 0xffd040, transparent: true, opacity: .4,
+      blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    h.rotation.x = Math.PI / 2;
+    const holder = new THREE.Group();
+    holder.position.set(race.cx + Math.cos(a) * race.R, 1, race.cz + Math.sin(a) * race.R);
+    holder.add(h); holder.userData.ring = h;
+    g.add(holder); race.hoops.push(holder);
+  }
+  // The start line: a black and white strip across the track.
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 256;
+  const x = c.getContext('2d');
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#fff' : '#111'; x.fillRect(j * 16, i * 16, 16, 16); }
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(8, 30), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: .9, toneMapped: false }));
+  line.geometry.rotateX(-Math.PI / 2);
+  line.position.set(race.cx + Math.cos(race.aStart) * race.R, .2, race.cz + Math.sin(race.aStart) * race.R);
+  line.rotation.y = Math.PI / 2 - race.aStart;
+  g.add(line);
+  race.whizz = buildWhizz();
+  g.add(race.whizz);
+  scene.add(g);
+  race.group = g; race.state = 'idle'; race.travel = 0; race.idx = 0;
+  placeWhizz(0);
+}
+function placeWhizz(travel) {
+  const a = race.aStart + travel, w = race.whizz;
+  w.position.set(race.cx + Math.cos(a) * race.R, 2 + Math.sin(time * 3) * .5, race.cz + Math.sin(a) * race.R);
+  w.rotation.set(Math.sin(time * 2.3) * .06, -a, Math.sin(time * 1.7) * .08);
+}
+function removeRace() {
+  if (!race.group) return;
+  scene.remove(race.group);
+  race.group.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { if (c.material.map) c.material.map.dispose(); c.material.dispose(); } });
+  race.group = null; race.hoops = []; race.whizz = null; race.state = 'idle';
+  $('raceHud').hidden = true;
+}
+const whizzNear = () => !!(race.group && galaxy === 1 && questNo === 10 && race.state !== 'go' && Math.hypot(ship.x - race.whizz.position.x, ship.z - race.whizz.position.z) < START_NEAR + shipR());
+function startRace() {
+  if (race.state !== 'idle') return;
+  race.state = 'count'; race.t = 0; race.travel = 0; race.idx = 0; race.shown = 4;
+  placeWhizz(0);
+}
+function cancelRace(msg) {
+  if (race.state === 'count' || race.state === 'go') { race.state = 'idle'; race.travel = 0; race.idx = 0; $('raceHud').hidden = true; if (msg) say(msg); }
+}
+function stepRace(dt) {
+  if (questNo !== 10 || galaxy !== 1) { removeRace(); return; }
+  if (!race.group) buildRace();
+  if (!race.group) return;
+  const rs = race.state;
+  if (rs === 'count') {
+    race.t += dt;
+    const n = 3 - Math.floor(race.t);
+    if (race.t >= 3) { race.state = 'go'; race.t = 0; race.travel = 0; race.idx = 0; questBanner('GO! 🏁', ''); chime(1047, .3); chime(1319, .3, .1); }
+    else if (n !== race.shown) { race.shown = n; questBanner(String(n), ''); chime(440, .15); }
+  } else if (rs === 'go') {
+    race.t += dt;
+    race.travel += WHIZZ_SPEED * ROCKETS[G.rocket].speed / race.R * dt;
+    if (Math.hypot(ship.x - race.cx, ship.z - race.cz) > race.R + 350) { cancelRace('You left the race track. Press E near Whizz to race again!'); return; }
+    const hp = race.hoops[race.idx % RACE_HOOPS].position;
+    if (Math.hypot(ship.x - hp.x, ship.z - hp.z) < HOOP_HIT + shipR() * .5) {
+      race.idx++;
+      chime(660 + (race.idx % RACE_HOOPS) * 80, .12);
+      burst(hp.x, 1, hp.z, 24, 9, [1.6, 1.3, .3]);
+      if (race.idx >= RACE_HOOPS * RACE_LAPS) { $('raceHud').hidden = true; race.state = 'idle'; completeQuest(); say('You beat Whizz! 🏆'); return; }
+    }
+    if (race.travel >= raceTotal()) { cancelRace(); race.state = 'idle'; say('So close! Press E to race again'); return; }
+    const hud = $('raceHud'), t = `🏁 Lap ${Math.min(Math.floor(race.idx / RACE_HOOPS) + 1, RACE_LAPS)} of ${RACE_LAPS}  ⭕ Hoop ${race.idx % RACE_HOOPS + 1} of ${RACE_HOOPS}`;
+    if (hud.hidden) hud.hidden = false;
+    if (hud.textContent !== t) hud.textContent = t;
+  }
+  const racing = race.state === 'go';
+  placeWhizz(racing ? race.travel : 0);
+  race.hoops.forEach((h, i) => {
+    const next = racing && i === race.idx % RACE_HOOPS;
+    h.userData.ring.material.opacity = next ? .95 : racing ? .22 : .4;
+    h.scale.setScalar(next ? 1.15 + Math.sin(time * 8) * .1 : 1);
+  });
+}
+function ensureStation() {
+  if (!stationBuilt || stationGroup) return;
+  const e = earthPlanet();
+  if (!e) return;
+  const std = (color, rough, metal, extra) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+  const g = new THREE.Group(), metal = std(0xc8ccd6, .35, .8), panel = std(0x1a3a8a, .3, .5, { emissive: 0x0a1a50 }), mod = std(0xf2f2ee, .4, .2);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(e.r + 10, 1.1, 14, 72), metal);
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+  g.userData.lights = [];
+  for (let i = 0; i < 4; i++) {   // solar panels
+    const a = i * TAU / 4, arm = new THREE.Group();
+    arm.position.set(Math.cos(a) * (e.r + 10), 0, Math.sin(a) * (e.r + 10)); arm.rotation.y = -a;
+    const p = new THREE.Mesh(new THREE.BoxGeometry(14, .25, 6), panel);
+    p.position.x = 9;
+    arm.add(p);
+    g.add(arm);
+  }
+  for (let i = 0; i < 3; i++) {   // little rooms
+    const a = i * TAU / 3 + .5, m = new THREE.Mesh(new THREE.BoxGeometry(4, 2.6, 3), mod);
+    m.position.set(Math.cos(a) * (e.r + 10), .6, Math.sin(a) * (e.r + 10)); m.rotation.y = -a;
+    g.add(m);
+  }
+  for (let i = 0; i < 12; i++) {   // blinking lights
+    const a = i * TAU / 12, l = new THREE.Mesh(new THREE.SphereGeometry(.45, 10, 8), new THREE.MeshBasicMaterial({ color: i % 2 ? 0xff3a3a : 0x3aff6a, toneMapped: false }));
+    l.position.set(Math.cos(a) * (e.r + 10), 1.4, Math.sin(a) * (e.r + 10));
+    g.add(l); g.userData.lights.push(l);
+  }
+  g.position.set(e.x, 2, e.z);
+  g.visible = galaxy === 1;
+  scene.add(g);
+  stationGroup = g;
+}
+function stepStation(dt) {
+  if (!stationGroup || galaxy !== 1) return;
+  stationGroup.rotation.y += dt * .12;
+  stationGroup.userData.lights.forEach((l, i) => { l.visible = Math.sin(time * 5 + i * 1.7) > -.2; });
+}
+function buildStation() {
+  if (!canPay(STATION_COST)) {
+    const parts = Object.entries(STATION_COST).filter(([t, n]) => G[t] < n).map(([t, n]) => `${fmt(n - G[t])} more ${icon(t)}`);
+    say(`You need ${parts.join(' and ')} for the station.`);
+    return;
+  }
+  for (const [t, n] of Object.entries(STATION_COST)) G[t] -= n;
+  stationBuilt = true;
+  ensureStation();
+  const e = earthPlanet();
+  burst(e.x, 3, e.z, 70, 18, [.6, .9, 1.7]);
+  mapLayerCount = -1;
+  completeQuest();
+  say('🛰️ Your space station circles Earth!');
 }
 
 // ---------- Galaxies and the Warp Drive (H) ----------
@@ -1901,6 +2110,9 @@ function buildMilkyWay() {
     makePlanet({ x, z, r: b.r, rock: false, kind: b.kind ?? 0, cols: b.cols || [0, 0, 0], treasure: 'gems', ring: b.ring ?? null,
       fixed: true, mw: true, gal: 1, name: b.name, earth: !!b.earth, star: !!b.star });
   }
+  moonP = planets.find(p => p.name === 'The Moon');
+  if (moonState.bases) { moonP.bases = moonState.bases; moonP.stock = moonState.stock; ensureVisual(moonP); }
+  ensureStation();
 }
 function applyGalaxy(i) {
   galaxy = i;
@@ -1911,6 +2123,7 @@ function applyGalaxy(i) {
   sun.visible = worldEdge.visible = i === 0;
   setText('galaxyName', `🌌 ${g.name}`);
   setSkyArt(g.art);
+  if (stationGroup) stationGroup.visible = i === 1;
   mapLayerCount = -1;
   nearAlien = null;
   if (i !== 0 && alienKit) for (const m of [alienKit.body, alienKit.dome, alienKit.lights, alienKit.boards]) m.count = 0;   // the friends wait at home
@@ -1924,6 +2137,7 @@ function warpTo(i, instant) {
   warpSound();
 }
 function arriveIn(i) {
+  cancelRace('The race stopped.');
   if (galaxy === 0) othroPos = { x: ship.x, z: ship.z };
   const g = GALAXIES[i];
   if (g.build && !galaxyBuilt[i]) { galaxyBuilt[i] = true; g.build(); }
@@ -2103,7 +2317,7 @@ function drawMap(force) {
     m.textBaseline = 'bottom';
     m.strokeStyle = '#fff';
     for (const p of planets) {
-      if (!p.bases || galaxy !== 0) continue;
+      if (!p.bases || p.gal !== galaxy) continue;
       const x = cx + p.x * k, y = cy + p.z * k, d = Math.max(2.5, p.r * k * 1.6);
       circle(m, x, y, d + 4); m.stroke();
       m.fillText('🏗️', x, y - d - 5);
@@ -2114,6 +2328,11 @@ function drawMap(force) {
   m.clearRect(0, 0, cw, ch);
   m.setTransform(dpr, 0, 0, dpr, 0, 0);
   // Els and Oos: little saucers, yellow until they are your friends, then green.
+  if (galaxy === 1) {
+    if (race.group) for (const h of race.hoops) { m.strokeStyle = '#ffd040'; m.lineWidth = 2; circle(m, cx + (h.position.x - GC.x) * k, cy + (h.position.z - GC.z) * k, 3.5); m.stroke(); }
+    const e = earthPlanet();
+    if (stationBuilt && e) { m.font = '16px "Segoe UI Emoji", "Apple Color Emoji", sans-serif'; m.textAlign = 'center'; m.textBaseline = 'middle'; m.fillText('🛰️', cx + (e.x - GC.x) * k + 11, cy + (e.z - GC.z) * k - 9); }
+  }
   if (galaxy === 0) {
     for (const al of aliens) m.drawImage(mapSaucer(al.gifts, dpr), cx + al.x * k - 8, cy + al.z * k - 7, 16, 12);
     // The thing you are looking for (the Golden Rocket, the Earth sign or the Warp Drive) shows as a little picture.
@@ -2638,8 +2857,11 @@ function updateHud() {
   setText('rocketName', `🚀 ${ROCKETS[G.rocket].name}`);
   const a = $('action'), p = near;
   let text = '', off = false;
-  actionMode = nearAlien ? 'alien' : p ? 'planet' : '';
-  if (nearAlien) {
+  actionMode = nearAlien ? 'alien' : p || whizzNear() ? 'planet' : '';
+  if (whizzNear()) {
+    text = race.state === 'idle' ? '🏁 Race Whizz! (E)' : '🏁 Get ready!';
+    off = race.state !== 'idle';
+  } else if (nearAlien) {
     const al = nearAlien, name = SPECIES[al.kind].name;
     if (al.friend) {
       text = `💚 Your ${name} friend!`;
@@ -2649,7 +2871,13 @@ function updateHud() {
       off = G[al.want] < GIFT;
     }
   } else if (p) {
-    if (p.fixed) {
+    if (p.name === 'The Moon' && !p.bases) {
+      text = questNo === 9 ? '🌙 Build a Moon base: free! (E)  It digs 💎' : '🌙 The Moon: a real planet';
+      off = questNo !== 9;
+    } else if (p.earth && questNo === 11 && !stationBuilt) {
+      text = `🛰️ Build the space station: ${STATION_COST.gems} 💎 ${STATION_COST.gold} 💰 ${STATION_COST.ice} 🧊 (E)`;
+      off = !canPay(STATION_COST);
+    } else if (p.fixed && !p.bases) {
       text = p.earth ? '🌍 This is Earth! People live here' : `🪐 ${p.name}: a real planet`;
       off = true;
     } else if (p.bases) {
@@ -2706,7 +2934,7 @@ function quickSave() {
 function questSave() {
   const r = n => Math.round(n * 100) / 100, at = n => (qpos[n] ? [r(qpos[n].x), r(qpos[n].z)] : [null, null]);
   return [questNo, quest2Bases, r(quest4Gold), ...at(3), ...at(5), ...at(6), ...at(7), galaxy, warpOwned ? 1 : 0,
-    othroPos ? r(othroPos.x) : null, othroPos ? r(othroPos.z) : null, 3];
+    othroPos ? r(othroPos.x) : null, othroPos ? r(othroPos.z) : null, 4, moonP ? moonP.bases : moonState.bases, r(moonP ? moonP.stock : moonState.stock), stationBuilt ? 1 : 0];
 }
 function planetFromSave(a) {
   return { x: a[0], z: a[1], vx: a[2], vz: a[3], r: a[4], heat: a[5], seed: a[6], kind: a[7], cols: [a[8], a[9], a[10]],
@@ -2750,6 +2978,10 @@ function loadGame() {
     const pos = (x, z) => (typeof x === 'number' && typeof z === 'number' && Number.isFinite(x + z) ? { x, z } : null);
     // A save that had finished the 4 first quests (it stored 5) is now simply at Quest 5.
     for (const [n, i] of [[3, 3], [5, 5], [6, 7], [7, 9]]) if (questNo === n) qpos[n] = pos(qu[i], qu[i + 1]) || { ...placeFar(QTHING[n].dist[0], QTHING[n].dist[1], 14) };
+    // Older saves have a shorter list. An old save that had finished all 8 quests stored 9, which is now simply Quest 9.
+    moonState.bases = qu[15] >= 4 ? (qu[16] | 0) : 0; moonState.stock = qu[15] >= 4 ? Math.max(+qu[17] || 0, 0) : 0;
+    stationBuilt = qu[15] >= 4 && qu[18] === 1;
+    if ((moonState.bases || stationBuilt) && !galaxyBuilt[1]) { galaxyBuilt[1] = true; GALAXIES[1].build(); }
     warpOwned = qu[12] === 1 || questNo > 7;
     othroPos = pos(qu[13], qu[14]);
     const gi = qu[11] | 0;
@@ -2959,7 +3191,10 @@ function stepWorld(dt) {
   if (galaxy === 0) stepPlanets(dt);   // when you are away in another galaxy, home waits and so do your friends
   stepNear(dt);
   if (galaxy === 0) { stepAliens(dt); stepBefriend(dt); }
+  stepMoon(dt);
   stepQuest(dt);
+  stepRace(dt);
+  stepStation(dt);
   stepSparks(dt);
   stepFx(dt);
   updateVisuals(dt);
@@ -3015,6 +3250,7 @@ window.solar = { planets, ship, G, ROCKETS, COOL_TIME, WORLD_R, TINY_PLANETS, re
   step(dt) { stepWorld(dt); }, quickSave,
   get quest() { return questNo; }, get quest2Bases() { return quest2Bases; }, get quest4Gold() { return quest4Gold; }, get lostMap() { return qpos[3] || null; },
   get questTarget() { return questTarget; }, earned, questSave, QUEST4_GOLD, MAP_LOST_DIST, questEvent, qpos, GALAXIES, GOLDEN, warpTo, toggleWarpPicker,
+  neededTreasure, race, startRace, whizzNear, buildStation, STATION_COST, get stationBuilt() { return stationBuilt; }, get moonP() { return moonP; }, raceTotal, moonState,
   get galaxy() { return galaxy; }, get warpOwned() { return warpOwned; }, get warping() { return !!warping; }, get warpOpen() { return warpOpen; }, GC, earthPlanet,
   setQuest(n) {
     if (n > QUESTS) { questNo = QUESTS + 1; for (const k of [3, 5, 6, 7]) { delete qpos[k]; removeQThing(k); } questHideAt = 0; updateQuestPanel(); }
