@@ -1,0 +1,37 @@
+{
+  "name": "Creature Maker",
+  "short_name": "Creature Maker",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "description": "Start as a tiny blob in a pond. Eat food to grow from Tiny to GIANT, and make your creature your own: eyes, legs, wings, horns, a tail, a shell, any colour and a voice (C opens the maker). Meet pond friends, beat 4 silly bosses, swim under the sea, visit the volcano and the Moon, lay 6 eggs at once and raise up to 30 babies, tame wild creatures, build a nest, win races and collect 21 trophies. WASD or arrow keys move and Space flaps.",
+  "lang": "en",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#ffab3d",
+  "theme_color": "#ffab3d",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
