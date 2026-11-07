@@ -59,7 +59,7 @@ canvas#game { position:fixed; inset:0; width:100%; height:100%; display:block; t
 #trailerBox[hidden] { display:none; }
 #trailerVid { width:100%; height:100%; object-fit:contain; background:#000; }
 #trailerX { position:absolute; top:12px; right:12px; font-size:clamp(26px,6vmin,44px); padding:6px 18px; z-index:2; }
-#toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:#fff; border:4px solid var(--ink); border-radius:20px; padding:10px 22px; font-weight:900; font-size:clamp(18px,3.6vmin,30px); z-index:40; pointer-events:none; text-align:center; max-width:90vw; }
+#toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:#fff; border:4px solid var(--ink); border-radius:20px; padding:10px 22px; font-weight:900; font-size:clamp(18px,3.6vmin,30px); z-index:60; pointer-events:none; text-align:center; max-width:90vw; }
 .tb { position:absolute; width:clamp(64px,17vmin,120px); height:clamp(64px,17vmin,120px); border-radius:50%; border:4px solid var(--ink); background:rgba(255,255,255,.82); font:inherit; font-weight:900; font-size:clamp(22px,6vmin,44px); color:var(--ink); display:flex; align-items:center; justify-content:center; touch-action:none; box-shadow:0 5px 0 rgba(0,0,0,.3); }
 .tb.down { background:#ffe98a; transform:translateY(3px); }
 .tb small { display:block; font-size:clamp(9px,2vmin,14px); }
@@ -91,6 +91,21 @@ canvas#game { position:fixed; inset:0; width:100%; height:100%; display:block; t
 .tile.pulse { animation:coinpop .5s 2; }
 @media (max-aspect-ratio:1/1) { #shopGrid { grid-template-columns:repeat(2,1fr); } #gCoins { left:12px; top:calc(max(10px,env(safe-area-inset-top)) + 44px); margin:0; } }
 @media (max-width:640px) { #shopGrid { grid-template-columns:repeat(2,1fr); } }
+/* saved cars: G saves, V opens My cars */
+#gCars { position:absolute; top:calc(max(10px,env(safe-area-inset-top)) + 52px); right:12px; display:flex; gap:10px; }
+#cars { z-index:48; background:rgba(30,40,80,.5); }
+#cars .card { width:min(96vw,980px); max-height:94vh; gap:10px; padding:14px 18px; }
+#carsHead { display:flex; gap:12px; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; }
+#carsHead h2 { margin:0; }
+#carsCount { font-weight:900; font-size:clamp(14px,2.6vmin,20px); background:#fff; border:3px solid var(--ink); border-radius:14px; padding:2px 12px; }
+#carsGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%; overflow-y:auto; padding:4px; max-height:68vh; }
+.ctile img, .ctile .nopic { width:100%; aspect-ratio:4/3; border-radius:12px; border:2px solid var(--ink); object-fit:cover; display:block; background:#bfe6ff; }
+.ctile .nopic { display:flex; align-items:center; justify-content:center; font-size:44px; }
+#carsEmpty { font-weight:800; font-size:clamp(16px,3.2vmin,26px); padding:24px 10px; }
+body.touch .nottouch { display:none; }
+body.carsopen #toast { top:auto; bottom:6%; }
+@media (max-aspect-ratio:1/1) { #carsGrid { grid-template-columns:repeat(2,1fr); } #gCars { top:calc(max(10px,env(safe-area-inset-top)) + 128px); } }
+@media (max-width:640px) { #carsGrid { grid-template-columns:repeat(2,1fr); } }
 .tb.sm { width:clamp(46px,11vmin,80px); height:clamp(46px,11vmin,80px); font-size:clamp(18px,4.4vmin,32px); }
 #tHorn { right:3vmin; top:calc(max(10px,env(safe-area-inset-top)) + 54px); background:rgba(255,217,61,.9); }
 #tLights { right:calc(3vmin + clamp(46px,11vmin,80px) + 2vmin); top:calc(max(10px,env(safe-area-inset-top)) + 54px); }
@@ -153,6 +168,7 @@ body.touch #gHint { font-size:12px; }
   <button class="btn big green" id="btnPlay">Play</button>
   <button class="btn big" id="btnShop">&#128722; Shop</button>
   <button class="btn big" id="btnSettings">Settings</button>
+  <button class="btn" id="btnCarsM">&#128663; My cars<span class="keyhint"> (V)</span></button>
   <button class="btn" id="btnTrailer" hidden>&#127916; Trailer</button>
   <div id="menuRaces"></div>
 </div>
@@ -170,6 +186,7 @@ body.touch #gHint { font-size:12px; }
   <div id="gTitle">Garage</div>
   <div id="gCoins"><span class="coinic"></span><b id="gCoinN">0</b></div>
   <div id="gTop"><button class="btn small" id="btnShopG">&#128722; Shop</button><button class="btn small" id="btnNew">New car</button><button class="btn small" id="btnMenu">Menu</button></div>
+  <div id="gCars"><button class="btn small" id="btnSaveG">&#128190; Save car<span class="keyhint"> (G)</span></button><button class="btn small" id="btnCarsG">&#128663; My cars<span class="keyhint"> (V)</span></button></div>
   <div id="gHint">Tap a part to stick a new one on. Drag to look around.</div>
   <div id="paintPanel">
     <h3>Colours</h3>
@@ -188,14 +205,14 @@ body.touch #gHint { font-size:12px; }
     <div class="stat"><b id="hBal">0</b><small>balloons</small></div>
   </div>
   <div id="hudCoins"><span class="coinic"></span><b id="hCoins">0</b></div>
-  <div id="hudBtns"><button class="btn small" id="btnGarage">Garage<span class="keyhint"> (B)</span></button></div>
+  <div id="hudBtns"><button class="btn small nottouch" id="btnSaveD">&#128190; Save car<span class="keyhint"> (G)</span></button><button class="btn small nottouch" id="btnCarsD">&#128663; My cars<span class="keyhint"> (V)</span></button><button class="btn small" id="btnGarage">Garage<span class="keyhint"> (B)</span></button></div>
   <div id="raceHud" hidden>
     <div id="raceArrow"><svg id="raceArrowSvg" viewBox="0 0 48 48"><path d="M24 3 L43 40 L24 31 L5 40Z" fill="#ffd93d" stroke="#26345a" stroke-width="4" stroke-linejoin="round"/></svg><span id="raceDist">0 m</span></div>
     <div id="racePlace"><b id="racePl">1st</b><small id="raceOf"></small></div>
     <button class="btn small" id="raceStop">Stop</button>
   </div>
 
-  <div id="keyHelp">W/S go &middot; A/D steer &middot; Space rockets &middot; H horn &middot; L lights &middot; E tie balloon &middot; Q let go &middot; R flip / shore &middot; B garage</div>
+  <div id="keyHelp">W/S go &middot; A/D steer &middot; Space rockets &middot; H horn &middot; L lights &middot; E tie balloon &middot; Q let go &middot; R flip / shore &middot; B garage &middot; G save car &middot; V my cars</div>
 </div>
 
 <div id="touch" hidden>
@@ -215,6 +232,14 @@ body.touch #gHint { font-size:12px; }
   <div class="card">
     <div id="shopHead"><h2>&#128722; Shop</h2><div id="shopCoins"><span class="coinic"></span><b id="shopCoinN">0</b></div><button class="btn small green" id="shopClose">Done</button></div>
     <div id="shopGrid"></div>
+  </div>
+</div>
+
+<div id="cars" class="screen" hidden>
+  <div class="card">
+    <div id="carsHead"><h2>&#128663; My cars</h2><span id="carsCount">0</span><button class="btn small" id="carsSave">&#128190; Save this car<span class="keyhint"> (G)</span></button><button class="btn small green" id="carsClose">Done</button></div>
+    <div id="carsEmpty">No saved cars yet. Press <b>G</b> or &#128190; to save your car!</div>
+    <div id="carsGrid"></div>
   </div>
 </div>
 
@@ -259,7 +284,8 @@ const ROCKET_FORCE = 70, DRAG = 0.0022, MAX_SPEED = 140, MAX_SPIN = 4.5;
 // and balloons switch it off (3 balloons = none) so they can still lift the car. On the ground it also damps roll and pitch and tips the car back upright; in the air it gently levels the car.
 const SPOILER_DOWNFORCE = 100, SPOILER_CAP = 3, SPOILER_DAMP = 3.5, SPOILER_STABLE = 6, SPOILER_AIR_LEVEL = 1.4, SPOILER_AIR_DAMP = 0.8;
 // coin magnet: coins this close fly to the car (30 m for one magnet, +15 m for each extra, up to 3)
-const MAGNET_RANGE = 30, MAGNET_EXTRA = 15, MAGNET_CAP = 3, MAGNET_FLY_MAX = 160, MAGNET_START_PER_FRAME = 14;
+// The magnet's range is infinite, so every coin on the map flies to the car. (A finite MAGNET_RANGE still works: + MAGNET_EXTRA per extra magnet.)
+const MAGNET_RANGE = Infinity, MAGNET_EXTRA = 15, MAGNET_CAP = 3, MAGNET_FLY_MAX = 4000, MAGNET_START_PER_FRAME = 200, MAGNET_FLY_TIME_MAX = 2.2;
 const WING_LIFT = 0.35, WING_DRAG = 0.02, WING_BIAS = 0.15, WING_SLOPE = 3;
 const AIR_PITCH = 2, AIR_CTRL_DELAY = 0.4, AIR_ROLL = 4, AIR_YAW = 1.8, AIR_RIGHT = 3, AIR_PITCH_HOLD = 8, AIR_PITCH_DAMP = 4, AIR_PITCH_FOLLOW = 0.8, AIR_ALIGN = 1.2, AIR_DAMP = 0.7, GROUND_DAMP = 0.25;
 const BALLOON_LIFT = 80, BALLOON_MAX = 12, BALLOON_STRING = 3.4, BALLOON_DAMP = 0.9, ALT_MAX = 450;
@@ -1338,7 +1364,7 @@ function coinGot(n) {
   else sfx('coin');
 }
 /* ---- the magnet: coins near the car fly to it in a swoopy arc (only those coins are animated, in one small InstancedMesh) ---- */
-const MAG = { n: 0, items: [], mesh: null, last: 0, m4: new THREE.Matrix4(), q: new QT(), sc: new V3(), p: new V3() };
+const MAG = { n: 0, items: [], mesh: null, last: 0, scan: 0,m4: new THREE.Matrix4(), q: new QT(), sc: new V3(), p: new V3() };
 function magMesh() {
   if (MAG.mesh) return MAG.mesh; const g = coinGeo.clone(); g.setAttribute('aHide', new THREE.InstancedBufferAttribute(new Float32Array(MAGNET_FLY_MAX), 1));
   const m = new THREE.InstancedMesh(g, coinMat, MAGNET_FLY_MAX); m.frustumCulled = false; m.count = 0; sceneW.add(m); MAG.mesh = m; return m;
@@ -1347,14 +1373,23 @@ function stepMagnet(b, dt) {
   const items = MAG.items; let arrived = 0;
   if (b.magnets > 0) {
     const rng = MAGNET_RANGE + MAGNET_EXTRA * (Math.min(b.magnets, MAGNET_CAP) - 1), r2 = rng * rng, px = b.p.x, py = b.p.y, pz = b.p.z; let started = 0;
-    const x0 = Math.floor((px - rng + 700) / COIN_CELL), x1 = Math.floor((px + rng + 700) / COIN_CELL), z0 = Math.floor((pz - rng + 700) / COIN_CELL), z1 = Math.floor((pz + rng + 700) / COIN_CELL);
+    if (!isFinite(rng)) {                   // infinite range: any free coin anywhere, a few hundred a frame, going round the whole map
+      const N = COINS.length;
+      for (let n = 0; n < N && started < MAGNET_START_PER_FRAME && items.length < MAGNET_FLY_MAX; n++) {
+        const i = (MAG.scan + n) % N, c = COINS[i]; if (c.t > 0 || c.pull) continue; const dx = c.x - px, dy = c.y - py, dz = c.z - pz, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        c.pull = true; coinHide(c, 1); started++; items.push({ i, sx: c.x, sy: c.y, sz: c.z, u: 0, dur: 0.35 + Math.min(d / 110, MAGNET_FLY_TIME_MAX), side: Math.random() < 0.5 ? -1 : 1, arc: 0.5 + Math.random() * 0.5 });
+        if (n === N - 1 || started >= MAGNET_START_PER_FRAME) MAG.scan = (i + 1) % N;
+      }
+    } else {
+    const x0 =Math.floor((px - rng + 700) / COIN_CELL), x1 = Math.floor((px + rng + 700) / COIN_CELL), z0 = Math.floor((pz - rng + 700) / COIN_CELL), z1 = Math.floor((pz + rng + 700) / COIN_CELL);
     for (let ix = x0; ix <= x1 && started < MAGNET_START_PER_FRAME; ix++) for (let iz = z0; iz <= z1; iz++) {
       const a = COIN_GRID.get(ix * 400 + iz); if (!a) continue;
       for (let n = 0; n < a.length; n++) {
         const c = COINS[a[n]]; if (c.t > 0 || c.pull) continue; const dx = c.x - px, dy = c.y - py, dz = c.z - pz, d2 = dx * dx + dy * dy + dz * dz; if (d2 > r2) continue;
         if (items.length >= MAGNET_FLY_MAX || started >= MAGNET_START_PER_FRAME) break;
-        c.pull = true; coinHide(c, 1); started++; items.push({ i: a[n], sx: c.x, sy: c.y, sz: c.z, u: 0, dur: 0.35 + Math.sqrt(d2) / 110, side: Math.random() < 0.5 ? -1 : 1, arc: 0.5 + Math.random() * 0.5 });
+        c.pull = true; coinHide(c, 1); started++; items.push({ i: a[n], sx: c.x, sy: c.y, sz: c.z, u: 0, dur: 0.35 + Math.min(Math.sqrt(d2) / 110, MAGNET_FLY_TIME_MAX), side: Math.random() < 0.5 ? -1 : 1, arc: 0.5 + Math.random() * 0.5 });
       }
+    }
     }
   }
   const mesh = magMesh(), m4 = MAG.m4, tx = b.p.x, ty = b.p.y + 0.6, tz = b.p.z; let sparks = 0;
@@ -1765,7 +1800,7 @@ function tick(now) {
   let dt = last < 0 ? 0 : (now - last) / 1000; last = now; if (!(dt > 0)) dt = 0; dt = Math.min(dt, MAX_FRAME_DT);
   if (dt > 0) fpsAvg += (Math.min(1 / dt, 240) - fpsAvg) * 0.05; frames++;
   if (mode === 'drive') {
-    startFrame(dt); sky.position.copy(camera.position); placeSun(); cloudGroup.position.x = Math.sin(now * 0.00004) * 220;
+    if (!carsOpen) startFrame(dt); sky.position.copy(camera.position); placeSun(); cloudGroup.position.x = Math.sin(now * 0.00004) * 220;
     audioUpdate(dt); renderer.render(sceneW, camera);
   } else {
     updateGarageCamera(dt); shimmer(garageRainbow, performance.now() * 0.001);
@@ -1968,6 +2003,72 @@ $('raceStop').onclick = () => stopRace();
 $('rcAgain').onclick = () => { if (race) startRace(race.def.id, true); };
 $('rcDrive').onclick = () => endRace();
 
+/* ======================= saved cars (G saves the car, V opens the saved cars) ======================= */
+const SAVED_KEY = 'build-a-car-saved', SAVED_MAX = 50;
+let saved = { v: 1, next: 1, cars: [] }, carsOpen = false;
+function loadSavedCars() {
+  if (FRESH) return;
+  try { const o = JSON.parse(lsGet(SAVED_KEY)); if (o && Array.isArray(o.cars)) saved = { v: 1, next: Math.max(o.next | 0, 1), cars: o.cars.filter(c => c && Array.isArray(c.parts) && c.parts.length).slice(0, SAVED_MAX) }; } catch (e) { }
+}
+function storeSavedCars() { try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); return true; } catch (e) { return false; } }
+const carSig = list => list.map(p => p.t + ':' + p.x + ',' + p.y + ',' + p.z + ':' + p.c).sort().join('|');
+function savedIndexOf(list) { const s = carSig(list); return saved.cars.findIndex(c => carSig(c.parts) === s); }
+const thumbCam = new THREE.PerspectiveCamera(30, 1, 0.3, 500);
+function carPicture() {                     // a little photo of the garage car: drawn once to the screen canvas and copied straight away
+  try {
+    const box = new THREE.Box3().setFromObject(garageCar); if (box.isEmpty()) return '';
+    const ctr = box.getCenter(new V3()), rad = Math.max(1.5, box.getSize(new V3()).length() / 2);
+    const W = canvas.width, H = canvas.height; if (!W || !H) return '';
+    let cw = W, ch = W * 0.75; if (ch > H) { ch = H; cw = H / 0.75; }
+    const F = 30 * Math.PI / 180, yaw = Math.PI - 0.7, pitch = 0.4, d = rad / Math.sin(F / 2) * 0.68;
+    thumbCam.aspect = W / H; thumbCam.fov = 2 * Math.atan(Math.tan(F / 2) * H / ch) * 180 / Math.PI; thumbCam.updateProjectionMatrix();
+    thumbCam.position.set(ctr.x + Math.sin(yaw) * Math.cos(pitch) * d, ctr.y + Math.sin(pitch) * d, ctr.z + Math.cos(yaw) * Math.cos(pitch) * d); thumbCam.lookAt(ctr);
+    const hid = []; for (const o of sceneG.children) if (o.visible && (o.isLineSegments || o === ghost.obj)) { o.visible = false; hid.push(o); }
+    renderer.render(sceneG, thumbCam);
+    const tc = document.createElement('canvas'); tc.width = 240; tc.height = 180; tc.getContext('2d').drawImage(canvas, (W - cw) / 2, (H - ch) / 2, cw, ch, 0, 0, 240, 180);
+    hid.forEach(o => { o.visible = true; });
+    renderer.render(mode === 'drive' ? sceneW : sceneG, camera);
+    return tc.toDataURL('image/jpeg', 0.8);
+  } catch (e) { return ''; }
+}
+function saveCar() {                        // G: keep a copy of this car in My cars
+  audioInit();
+  const i = savedIndexOf(design);
+  if (i >= 0) { toast('Already saved! It is ' + saved.cars[i].n, 2000); sfx('click'); if (carsOpen) buildCars(i); return false; }
+  if (saved.cars.length >= SAVED_MAX) { toast('My cars is full! (' + SAVED_MAX + ' cars)', 2600); sfx('click'); return false; }
+  const car = { n: 'Car ' + saved.next, parts: design.map(p => ({ t: p.t, x: p.x, y: p.y, z: p.z, c: p.c })), pic: carPicture(), t: Date.now() };
+  saved.cars.push(car); saved.next++;
+  if (!storeSavedCars()) { car.pic = ''; if (!storeSavedCars()) { saved.cars.pop(); saved.next--; toast('Oops! No room to save it.', 2600); return false; } }
+  saveDesign(); sfx('buy'); toast('Saved! ' + car.n + (TOUCH ? '' : ' • Press V to see your cars'), 2600);
+  if (carsOpen) buildCars(saved.cars.length - 1);
+  return true;
+}
+function buildCars(pop) {
+  const grid = $('carsGrid'); grid.innerHTML = ''; const cur = savedIndexOf(design);
+  $('carsEmpty').hidden = saved.cars.length > 0; $('carsCount').textContent = saved.cars.length + ' / ' + SAVED_MAX;
+  saved.cars.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'tile ctile' + (i === cur ? ' owned' : ''); b.dataset.i = i;
+    if (c.pic && /^data:image\//.test(c.pic)) { const im = document.createElement('img'); im.alt = ''; im.src = c.pic; b.appendChild(im); }
+    else { const np = document.createElement('div'); np.className = 'nopic'; np.textContent = '\u{1F697}'; b.appendChild(np); }
+    const nm = document.createElement('b'); nm.textContent = c.n || ('Car ' + (i + 1)); b.appendChild(nm);
+    b.appendChild(document.createTextNode(i === cur ? 'Your car now ✓' : 'Tap to use'));
+    b.onclick = () => useSaved(i); grid.appendChild(b);
+    if (i === pop) { b.classList.add('pulse'); setTimeout(() => { b.scrollIntoView({ block: 'nearest' }); celebrate(b); }, 30); }
+  });
+}
+function useSaved(i) {                      // tap a saved car: it becomes your car (and you drive it if you were driving)
+  const c = saved.cars[i]; if (!c) return false;
+  design = sanitize(JSON.parse(JSON.stringify(c.parts))); reindex(); rebuildGarage(); saveDesign(); closeCars(); sfx('snap');
+  if (mode === 'drive') { startDrive(); toast('Here comes ' + c.n + '!', 1800); }
+  else { if (mode !== 'build') setMode('build'); toast('Here is ' + c.n + '!', 1800); }
+  return true;
+}
+function openCars() { audioInit(); for (const k in keys) keys[k] = false; buildCars(); show('cars', true); carsOpen = true; document.body.classList.add('carsopen'); }
+function closeCars() { show('cars', false); carsOpen = false; document.body.classList.remove('carsopen'); }
+const blurThen = f => function () { this.blur(); f(); };
+$('btnSaveG').onclick = blurThen(saveCar); $('btnSaveD').onclick = blurThen(saveCar); $('carsSave').onclick = blurThen(saveCar);
+$('btnCarsG').onclick = blurThen(openCars); $('btnCarsD').onclick = blurThen(openCars); $('btnCarsM').onclick = blurThen(openCars); $('carsClose').onclick = closeCars;
+
 /* ======================= input ======================= */
 const KEYMAP = { w: 'w', arrowup: 'w', s: 's', arrowdown: 's', a: 'a', arrowleft: 'a', d: 'd', arrowright: 'd', ' ': 'space', space: 'space', e: 'e', q: 'q', r: 'r', b: 'b', h: 'h', l: 'l' };
 function setKey(name, on) {
@@ -1983,8 +2084,11 @@ function setKey(name, on) {
 window.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return; audioInit();
   if (!$('modal').hidden) { if (e.key === 'Enter' || e.key === 'Escape') { show('modal', false); e.preventDefault(); } return; }
+  if (carsOpen) { const c = e.key.toLowerCase(); if (e.key === 'Escape' || (c === 'v' && !e.repeat)) { closeCars(); e.preventDefault(); } else if (c === 'g' && !e.repeat) saveCar(); return; }
   if (!$('shop').hidden) { if (e.key === 'Escape') closeShop(); return; }
   const k = e.key.toLowerCase();
+  if (k === 'g' && !e.repeat) saveCar();
+  if (k === 'v' && !e.repeat) openCars();
   if (KEYMAP[k] !== undefined) { if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault(); setKey(k, true); }
   if (mode === 'build') { if (k >= '1' && k <= '9') { const l = barList(); if (l[+k - 1]) selectTool(l[+k - 1].id); } if (e.key === 'Escape') { saveDesign(); setMode('menu'); } if (e.key === 'Enter') { startDrive(); } }
   if (k === 'm') setSound(!soundOn);
@@ -2086,7 +2190,7 @@ Object.assign(window.car, {
 });
 
 /* ======================= start ======================= */
-buildUI(); loadDesign(); rebuildGarage();
+buildUI(); loadDesign(); loadSavedCars(); rebuildGarage();
 loadRaceSaves(); buildTerrain(); buildWater(); buildCoins(); buildRaceSigns(); refreshRaceUI(); buildClouds(); buildScenery(); applyQuality(); refreshSettings(); setCoinsUI();
 { const ht = flagVal('time'); if (ht !== null) window.car.setTime(ht); else applyTime(); }
 window.addEventListener('pagehide', () => { saveCoins(); saveShop(); }); document.addEventListener('visibilitychange', () => { if (document.hidden) saveCoins(); });
@@ -2094,6 +2198,8 @@ if (flagVal('place')) { startDrive(); window.car.goto(flagVal('place')); }
 else if (flagVal('race') && RACES[flagVal('race')]) { const rid = flagVal('race'); if (RACES[rid].kind === 'boat' && !flag('keepcar')) { design = sanitize(boatDesign()); reindex(); rebuildGarage(); } startDrive(); startRace(rid, true); }
 else if (flag('drive')) startDrive(); else if (flag('play') || flag('build')) setMode('build'); else setMode('menu');
 if (flag('shop')) openShop();
+if (flag('cars')) openCars();
+Object.assign(window.car, { saveCar, openCars, closeCars, useSaved, carsOpen: () => carsOpen, savedCars: () => saved.cars.map(c => ({ n: c.n, parts: c.parts.length, pic: (c.pic || '').length })) });
 requestAnimationFrame(tick);
 </script>
 </body>
